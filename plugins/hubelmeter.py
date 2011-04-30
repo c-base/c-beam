@@ -19,9 +19,8 @@ import re
 
 ## defines
 
-RE_KARMA = re.compile(r'^(?P<item>\([^\)]+\)|\[[^\]]+\]|\w+)(?P<mod>\+\+|--)( |$)')
 RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer')
-RE_CONJUNCTIVE = re.compile(r'sollte|müsste|könnte|hätte')
+RE_CONJUNCTIVE = re.compile(r'sollte|m.sste|k.nnte|h.tte')
 
 ## hubelmeter-precondition
 
@@ -32,9 +31,12 @@ def prehubelmeter(bot, event):
     pronoun = re.search(RE_PRONOUN, event.txt)
     conjunctive = re.search(RE_CONJUNCTIVE, event.txt)
 
+    print pronoun
+    print conjunctive
     if pronoun and conjunctive:
         # increase hubelcounter and linecounter
         print "hubel!!1elf"
+        event.reply('HUBEL!!1elf')
         return True
     else:
         # increase linecounter only
