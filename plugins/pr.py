@@ -100,8 +100,12 @@ cpr = PR()
 ## pr precondition
 
 def prepr(bot, event):
+    return False
     if event.userhost in bot.ignore: return False
     # do the pr
+
+    if event.txt.lower().find(bot.cfg.nick) == -1:
+        return False
 
     if len(event.txt) > 0 and event.txt[0] != '!':
         ret = '!%s' % cpr.getCommandString(event.txt)
@@ -127,32 +131,6 @@ def prcb(bot, event):
     event.bind(bot)
 
     return 0
-
-    targets = re.findall(RE_KARMA, event.txt)
-    pr = []
-    try: reason = event.txt.split('#', 1)[1] ; reason = reason.strip()
-    except IndexError: reason = None
-    for target in targets:
-        try: item, what, bogus = target
-        except ValueError: print target ; continue
-        item = item.lower()
-        if what == "++":
-            i = PRItem(event.channel.lower() + "-" + item)
-            i.data.count += 1
-            if event.nick not in i.data.whoup: i.data.whoup[event.nick] = 0
-            i.data.whoup[event.nick] += 1
-            if reason and reason not in i.data.whyup: i.data.whyup.append(reason)
-            i.save()
-        else:
-            i = PRItem(event.channel.lower() + "-" + item)
-            i.data.count -= 1
-            if event.nick not in i.data.whodown: i.data.whodown[event.nick] = 0
-            i.data.whodown[event.nick] -= 1
-            if reason and reason not in i.data.whyup: i.data.whydown.append(reason)
-            i.save()
-        pr.append("%s: %s" % (item, i.data.count))
-        got = item or item2
-    if pr: event.reply("pr - ", pr) ; event.ready()
 
 callbacks.add('PRIVMSG', prcb, prepr)
 callbacks.add('MESSAGE', prcb, prepr)
