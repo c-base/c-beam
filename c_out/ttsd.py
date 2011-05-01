@@ -1,9 +1,10 @@
 #! /usr/bin/python
-import httplib, urllib, random, re, os, sys
+import httplib, urllib, random, re, os, sys, time
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 player = 'mpg123'
-sampledir = '/home/mirror/samples/tts'
+sampledir = '/mnt/datengrab/00_audio/c_out'
+sampledir = '/tmp'
 password = '0g7znor2aa'
 
 def main():
@@ -62,8 +63,12 @@ def tts(voice, text):
 
 def play(filename):
     print '%s %s' % (player, filename)
-    os.system('%s %s' % (player, filename))
-    
+    if player == 'mplayer':
+        print 'mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename
+        os.system('mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename)
+    else:
+        os.system('%s %s' % (player, filename))
+
 if __name__ == "__main__":
     main()
 
