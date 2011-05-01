@@ -10,6 +10,8 @@
 from jsb.utils.exception import handle_exception
 from jsb.lib.commands import cmnds
 from jsb.lib.examples import examples
+from jsb.lib.persistconfig import PersistConfig
+from jsb.lib.persist import PlugPersist
 
 ## basic imports
 
@@ -18,12 +20,20 @@ import random
 import os
 import urllib
 import sys
+import jsonrpclib
 
 ## defines
 
-ttslog = '/home/mirror/ttslog'
+
+cfg = PersistConfig()
+cfg.define('rpcurl', 'http://10.0.1.13:1775')
+cfg.define('local', False)
 
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
+ttslog = '%s/botlogs/tts.log' % cfg.get('datadir')
+
+jsonrpclib.config.version = 1.0
+server = jsonrpclib.Server(cfg.get('rpcurl'))
 
 def getuser(ievent):
     if ievent.channel in usermap:
@@ -36,21 +46,27 @@ def getuser(ievent):
 ## tts command
 
 def handle_tts(bot, ievent, voice):
-    """ throw the eight ball. """
+    """ text to speech synthesis. """
     if not ievent.args:
         ievent.missing('text')
         return
+    
+    text = urllib.quote(ievent.rest)
+    #text.replace('$','Dollar')
+    
     try:
-        text = urllib.quote(ievent.rest)
-        #text.replace('$','Dollar')
-        
-        #os.system("echo %s | festival --tts" % ievent.rest)
-        #os.system("tts.sh  julia22k 100 180 %s | xargs mpg123" % text)
-        os.system("tts.py %s %s | xargs mpg123" % (voice, text))
+        if cfg.get('local'):
+            #os.system("echo %s | festival --tts" % ievent.rest)
+            os.system("tts.py %s %s | xargs mpg123" % (voice, text))
+        else:
+            server.tts(voice, text)
+             
+    except:
+        ievent.reply(str(sys.exc_info()[0]))
+    try:
         f = open(ttslog, 'a')
         f.write('%s: %s (%s)\n' % (getuser(ievent), ievent.rest, voice))
         f.close()
-    #open
     except:
         ievent.reply(str(sys.exc_info()[0]))
 
