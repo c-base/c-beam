@@ -76,7 +76,7 @@ def handle_dmx_color(bot, ievent):
 
 def handle_dmx_on(bot, ievent):
     try:
-        if server.on() == 0:
+        if server.on() == 'enabled':
             ievent.reply('aye')
         else:
             ievent.reply('I don\'t know how to turn it on - help!')
@@ -86,7 +86,7 @@ def handle_dmx_on(bot, ievent):
 
 def handle_dmx_off(bot, ievent):
     try:
-        if server.off() == 0:
+        if server.off() == 'disabled':
             ievent.reply('aye')
         else:
             ievent.reply('I don\'t know how to turn it off - help!')
