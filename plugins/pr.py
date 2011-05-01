@@ -28,10 +28,6 @@ class PRItem(PlugPersist):
          PlugPersist.__init__(self, name)
          self.data.name = name
          self.data.count = self.data.count or 0
-         self.data.whoup = self.data.whoup or {}
-         self.data.whodown = self.data.whodown or {}
-         self.data.whyup = self.data.whyup or []
-         self.data.whydown = self.data.whydown or []
 
 
 class PR():
@@ -100,11 +96,11 @@ cpr = PR()
 ## pr precondition
 
 def prepr(bot, event):
-    return False
+    #return False
     if event.userhost in bot.ignore: return False
     # do the pr
 
-    if event.txt.lower().find(bot.cfg.nick) == -1:
+    if event.txt.lower().find(bot.cfg.nick.lower()) == -1:
         return False
 
     if len(event.txt) > 0 and event.txt[0] != '!':
