@@ -19,8 +19,8 @@ import re
 
 ## defines
 
-RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer')
-RE_CONJUNCTIVE = re.compile(r'sollte|m.sste|k.nnte|h.tte')
+RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer', re.IGNORECASE)
+RE_CONJUNCTIVE = re.compile(r'sollte|m.sste|muesste|k.nnte|koennte|h.tte|haette|br.uchte|braeuchte|m.chte|moechte', re.IGNORECASE)
 
 ## HubelItem class
 
@@ -33,8 +33,7 @@ class HubelItem(PlugPersist):
         self.data.hubelcount = self.data.hubelcount or 0.0
 
     def hubel(self):
-        print self.data.hubelcount
-        print  self.data.rowcount
+        if self.data.rowcount == 0: return 0.0
         return float(self.data.hubelcount) / float(self.data.rowcount)
       
 ## hubelmeter-precondition
@@ -47,8 +46,6 @@ def prehubelmeter(bot, event):
     pronoun = re.search(RE_PRONOUN, event.txt)
     conjunctive = re.search(RE_CONJUNCTIVE, event.txt)
 
-    print pronoun
-    print conjunctive
     i = HubelItem(getuser(event))
     # increase linecounter only
     i.data.rowcount += 1.0
@@ -56,8 +53,7 @@ def prehubelmeter(bot, event):
         # increase hubelcounter
         i.data.hubelcount += 1.0
         i.save()
-        print "hubel!!1elf"
-        event.reply('HUBEL!!1elf')
+        event.reply('hubel detected from %s' % getuser(event))
         return True
     else:
         i.save()
@@ -93,3 +89,15 @@ def handle_hubelmeter(bot, event):
 
 cmnds.add('hubelmeter', handle_hubelmeter, ['OPER', 'USER', 'GUEST'])
 examples.add('hubelmeter', 'show hubelmeter', 'hubelmeter jsb')
+
+def handle_hubelmeter_reset(bot, event):
+    """reset hubelemeter for user"""
+    if not event.rest: event.missing("<nick>") ; return
+    item = event.rest.lower()
+    i = HubelItem(item)
+    i.data.rowcount = 0
+    i.data.hubelcount = 0
+    i.save()
+    event.reply("hubelmeter for %s has been neutralized." % item)
+
+cmnds.add('hubelmeter-reset', handle_hubelmeter_reset, ['OPER'])
