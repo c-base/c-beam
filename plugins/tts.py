@@ -3,7 +3,7 @@
 #
 #
 
-""" run the eight ball. """
+""" text to speech. """
 
 ## jsb imports
 
@@ -30,6 +30,7 @@ cfg.define('rpcurl', 'http://10.0.1.13:1775')
 cfg.define('local', False)
 
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
+ttsdata = eval(open('%s/ttsdata' % cfg.get('datadir')).read())
 ttslog = '%s/botlogs/tts.log' % cfg.get('datadir')
 
 jsonrpclib.config.version = 1.0
@@ -48,11 +49,19 @@ def getuser(ievent):
 def handle_tts(bot, ievent, voice):
     """ text to speech synthesis. """
     if not ievent.args:
-        ievent.missing('text')
-        return
-    
-    text = urllib.quote(ievent.rest)
-    #text.replace('$','Dollar')
+        #ievent.missing('<text>')
+        #return
+        text = urllib.quote(random.choice(ttsdata.values()).encode("utf-8"))
+    else:
+        text = urllib.quote(ievent.rest.encode("utf-8"))
+
+    text = text.lower()
+
+    text = text.replace('$','Dollar')
+    if (voice in ['julia', 'sarah', 'klaus']):
+        text = text.replace('c-base','zieh baejs')
+        text = text.replace('c-beam','zieh biem')
+        text = text.replace('c3pb', 'zeh drei p b')
     
     try:
         if cfg.get('local'):
@@ -70,7 +79,30 @@ def handle_tts(bot, ievent, voice):
     except:
         ievent.reply(str(sys.exc_info()[0]))
 
-handle_tts_default = lambda b,i: handle_tts(b,i,'lucy')
+def tail(f, n, offset=0):
+    """Reads a n lines from f with an offset of offset lines."""
+    avg_line_length = 74
+    to_read = n + offset
+    while 1:
+        try:
+            f.seek(-(avg_line_length * to_read), 2)
+        except IOError:
+            # woops.  apparently file is smaller than what we want
+            # to step back, go to the beginning instead
+            f.seek(0)
+        pos = f.tell()
+        lines = f.read().splitlines()
+        if len(lines) >= to_read or pos == 0:
+            return lines[-to_read:offset and -offset or None]
+        avg_line_length *= 1.3
+
+def handle_tts_tail(bot, ievent):
+    print "tail"
+    f = open(ttslog)
+    ievent.reply('\n'.join(tail(f, 5, 0)))
+    f.close()
+
+handle_tts_default = lambda b,i: handle_tts(b,i,'julia')
 handle_tts_julia = lambda b,i: handle_tts(b,i,'julia')
 handle_tts_sarah = lambda b,i: handle_tts(b,i,'sarah')
 handle_tts_klaus = lambda b,i: handle_tts(b,i,'klaus')
@@ -85,18 +117,18 @@ handle_tts_nelly = lambda b,i: handle_tts(b,i,'nelly')
 handle_tts_ryan = lambda b,i: handle_tts(b,i,'ryan')
 handle_tts_en = lambda b,i: handle_tts(b,i,'en')
 
-cmnds.add('tts', handle_tts_default, ['USER', 'GUEST'])
-examples.add('tts', 'show what the magic 8 ball has to say.', 'tts')
-cmnds.add('tts-julia', handle_tts_julia, ['USER', 'GUEST'])
-cmnds.add('tts-sarah', handle_tts_sarah, ['USER', 'GUEST'])
-cmnds.add('tts-klaus', handle_tts_klaus, ['USER', 'GUEST'])
-cmnds.add('tts-de', handle_tts_de, ['USER', 'GUEST'])
-cmnds.add('tts-lucy', handle_tts_lucy, ['USER', 'GUEST'])
-cmnds.add('tts-peter', handle_tts_peter, ['USER', 'GUEST'])
-cmnds.add('tts-rachel', handle_tts_rachel, ['USER', 'GUEST'])
-cmnds.add('tts-heather', handle_tts_heather, ['USER', 'GUEST'])
-cmnds.add('tts-kenny', handle_tts_kenny, ['USER', 'GUEST'])
-cmnds.add('tts-laura', handle_tts_laura, ['USER', 'GUEST'])
-cmnds.add('tts-nelly', handle_tts_nelly, ['USER', 'GUEST'])
-cmnds.add('tts-ryan', handle_tts_ryan, ['USER', 'GUEST'])
-cmnds.add('tts-en', handle_tts_en, ['USER', 'GUEST'])
+cmnds.add('tts', handle_tts_default, ['TTS'])
+cmnds.add('tts-julia', handle_tts_julia, ['TTS'])
+cmnds.add('tts-sarah', handle_tts_sarah, ['TTS'])
+cmnds.add('tts-klaus', handle_tts_klaus, ['TTS'])
+cmnds.add('tts-de', handle_tts_de, ['TTS'])
+cmnds.add('tts-lucy', handle_tts_lucy, ['TTS'])
+cmnds.add('tts-peter', handle_tts_peter, ['TTS'])
+cmnds.add('tts-rachel', handle_tts_rachel, ['TTS'])
+cmnds.add('tts-heather', handle_tts_heather, ['TTS'])
+cmnds.add('tts-kenny', handle_tts_kenny, ['TTS'])
+cmnds.add('tts-laura', handle_tts_laura, ['TTS'])
+cmnds.add('tts-nelly', handle_tts_nelly, ['TTS'])
+cmnds.add('tts-ryan', handle_tts_ryan, ['TTS'])
+cmnds.add('tts-en', handle_tts_en, ['TTS'])
+cmnds.add('tts-tail', handle_tts_tail, ['OPER'])
