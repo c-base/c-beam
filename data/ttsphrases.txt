@@ -11,6 +11,5 @@
 'hyperraum-kommunikationskanal geöffnet.': 'hüperraum kommunikationskanal geöffnet.',
 'ein unerwarteter fehler ist aufgetreten.': 'ein unerwarteter fehler ist aufgetreten.',
 'generalfehler, allgemeine schutzverletzung in 0x7392.': 'generalfehler, allgemeine schutzverletzung in 0 x 7 3 9 2.',
-'update für wurstware erforderlich.': 'update für wurstware erforderlich.', 
-'willcommen auf der c-base.': 'willkommen auf der zieh bejs.'
+'update für wurstware erforderlich.': 'update für wurstware erforderlich.'
 }
