@@ -26,7 +26,8 @@ cfg.define('watcher-interval', 5)
 cfg.define('watcher-enabled', 0)
 cfg.define('eta-timeout', 72000)
 
-userpath = '/home/smile/users'
+userpath = '/home/mirror/users'
+#usermap = eval(open("/home/mirror/.erawrim/usermap").read())
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
 
 class EtaItem(PlugPersist):
@@ -93,6 +94,8 @@ class UserlistWatcher(Pdod):
                         print 'Usercount: %s' % usercount
                         if usercount > 0:
                             self.announce('open', 'chat')
+                            print "self.announce(open)"
+                            print self
                             # check if someone arrived who set an ETA
                             for user in users:
                                 try: 
@@ -114,6 +117,7 @@ class UserlistWatcher(Pdod):
                                 self.announce('incoming', 'dnd')
                             else:
                                 self.announce('closed', 'xa')
+                        print "watcher done"
 
                     # remove expired ETAs
                     for user in etaitem.data.etas.keys():
@@ -123,8 +127,10 @@ class UserlistWatcher(Pdod):
                             etaitem.save()
 
                 except UserlistError:
+                    print "watcher error"
                     pass
                 except KeyError:
+                    print "watcher error"
                     pass
             time.sleep(cfg.get('watcher-interval'))
 
@@ -178,14 +184,20 @@ def handle_userlist(bot, ievent):
 def handle_userlist_login(bot, ievent):
     try:
         result = os.system('touch %s/%s' % (userpath, usermap[ievent.channel]))
-        ievent.reply('Login result: %s' % result)
+        if result == 0:
+            ievent.reply('Danke dass du dich angemeldet hast! :)')
+        else: 
+            ievent.reply('Du konntest nicht manuell angemeldet werden, ich weiss nicht warum.')
     except UserlistError, e:
         ievent.reply(str(s))
 
 def handle_userlist_logout(bot, ievent):
     try:
         result = os.remove('%s/%s' % (userpath, usermap[ievent.channel]))
-        ievent.reply('Logout result: %s' % result)
+        if result == 0:
+            ievent.reply('Danke dass du dich abgemeldet hast! :)')
+        else: 
+            ievent.reply('Du konntest nicht manuell abgemeldet werden, ich weiss nicht warum.')
     except UserlistError, e:
         ievent.reply(str(s))
 
@@ -249,6 +261,8 @@ def handle_userlist_eta(bot, ievent):
     except: pass
     if ievent.channel in usermap.keys():
         user = usermap[ievent.channel]
+    elif ievent.fromm in usermap.keys():
+        user = usermap[ievent.fromm]
     else:
         user = ievent.channel
         if ievent.channel == 'c3pb@conference.c3pb.de':
@@ -302,7 +316,6 @@ def handle_userlist_watch_list(bot, ievent):
         ievent.reply('no watchers running')
 
 
-cmnds.add('ul', handle_userlist, ['USER'])
 cmnds.add('ul', handle_userlist, ['USER'])
 cmnds.add('ul-logout', handle_userlist_logout, ['USER'])
 cmnds.add('ul-login', handle_userlist_login, ['USER'])
