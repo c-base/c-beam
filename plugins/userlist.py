@@ -15,11 +15,13 @@ from jsb.lib.persistconfig import PersistConfig
 from jsb.lib.threads import start_new_thread
 from jsb.lib.fleet import fleet
 from jsb.lib.persist import PlugPersist
+from jsb.lib.threadloop import TimedLoop
 
 ## basic imports
 
 import re, random
 import os, time
+import logging
 
 cfg = PersistConfig()
 cfg.define('watcher-interval', 5)
@@ -29,6 +31,19 @@ cfg.define('eta-timeout', 72000)
 userpath = '/home/mirror/users'
 #usermap = eval(open("/home/mirror/.erawrim/usermap").read())
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
+
+
+def getuser(ievent):
+    if ievent.channel in usermap:
+        return usermap[ievent.channel]
+    elif ievent.fromm in usermap:
+        return usermap[ievent.fromm]
+    elif ievent.channel.find('c-base.org') > -1:
+        return ievent.channel[:-10]
+    elif ievent.fromm.find('c-base.org') > -1:
+        return ievent.fromm[:-10]
+    else:
+        return 0
 
 class EtaItem(PlugPersist):
      def __init__(self, name, default={}):
@@ -43,121 +58,105 @@ etaitem = EtaItem('eta')
 
 class UserlistError(Exception): pass
 
-class UserlistWatcher(Pdod):
-    def __init__(self):
-        Pdod.__init__(self, os.path.join(getdatadir() + os.sep + 'plugs' + os.sep + 'jsb.plugs.sockets.userlist', 'userlist'))
-        self.running = False
+class UserlistWatcher(TimedLoop):
+    lastcount = -1
+    lasteta = -1
+    lastuserlist = []
 
-    def add(self, bot, ievent):
-        if not self.has_key2(bot.name, ievent.channel):
-            self.set(bot.name, ievent.channel, True)
-            self.save()
-
-    def remove(self, bot, ievent):
-        if self.has_key2(bot.name, ievent.channel):
-            del self.data[bot.name][ievent.channel]
-            self.save()
-
-    def start(self):
-        self.running = True
-        start_new_thread(self.watch, ())
-
-    def stop(self):
-        self.running = False
-
-    def watch(self):
+    def handle(self):
         if not cfg.get('watcher-enabled'):
             raise UserlistError('watcher not enabled, use "!%s-cfg watcher-enabled 1" to enable' % os.path.basename(__file__)[:-3])
-        lastcount = -1
-        lasteta = -1
-        lastuserlist = userlist()
-        while self.running:
-            if self.data:
-                try:
-                    # check if at least one user is logged in
-                    # or try to ping the switches
-                    users = userlist()
-                    usercount = len(users)
-                    if usercount != lastcount or lasteta != len(etaitem.data.etas):
-                        if lastcount == 0 and usercount > 0:
-                            print str(self.data.keys())
-                            for name in self.data.keys():
-                                bot = fleet.byname(name)
-                                print name
-                                print str(bot)
-                                if bot and bot.type == "sxmpp":
-                                    for opensub in etaitem.data.opensubs:
-                                        bot.say(opensub, 'c3pO is awake')
-                        lastcount = usercount
-                        lasteta = len(etaitem.data.etas)
+        try:
+            # check if at least one user is logged in
+            # or try to ping the switches
+            users = userlist()
+            usercount = len(users)
+            if usercount != self.lastcount or self.lasteta != len(etaitem.data.etas):
+                if self.lastcount == 0 and usercount > 0:
+                    bot = 0
+                    try: bot = fleet.byname(self.name)
+                    except: pass
+                    if bot and bot.type == "sxmpp":
+                        for opensub in etaitem.data.opensubs:
+                            bot.say(opensub, 'c3pO is awake')
 
-                        print 'Usercount: %s' % usercount
-                        if usercount > 0:
-                            self.announce('open', 'chat')
-                            print "self.announce(open)"
-                            print self
-                            # check if someone arrived who set an ETA
-                            for user in users:
-                                try: 
-                                    del etaitem.data.etas[user]
-                                    etaitem.save()
-                                except: pass
+                self.lastcount = usercount
+                self.lasteta = len(etaitem.data.etas)
 
-                            # find out who just arrived
-                            newusers = []
-                            for user in userlist():
-                                if user not in lastuserlist:
-                                    newusers.append(user)
-                            #tell subscribers who has just arrived
-                            for user in newusers:
-                                print '%s has just arrived!' % user
-                            lastuserlist = userlist()
-                        else:
-                            if len(etaitem.data.etas) > 0:
-                                self.announce('incoming', 'dnd')
-                            else:
-                                self.announce('closed', 'xa')
-                        print "watcher done"
-
-                    # remove expired ETAs
-                    for user in etaitem.data.etas.keys():
-                        if time.time() > etaitem.data.etatimestamps[user]:
+                logging.debug("Usercount: %s" % usercount)
+                if usercount > 0:
+                    self.announce('open', 'chat')
+                    # check if someone arrived who set an ETA
+                    for user in users:
+                        try: 
                             del etaitem.data.etas[user]
-                            del etaitem.data.etatimestamps[user]
                             etaitem.save()
+                        except: pass
 
-                except UserlistError:
-                    print "watcher error"
-                    pass
-                except KeyError:
-                    print "watcher error"
-                    pass
-            time.sleep(cfg.get('watcher-interval'))
+                    # find out who just arrived
+                    newusers = []
+                    for user in userlist():
+                        if user not in self.lastuserlist:
+                            newusers.append(user)
+                    #tell subscribers who has just arrived
+                    for user in newusers:
+                        logging.debug('%s has just arrived!' % user)
+                    self.lastuserlist = userlist()
+                else:
+                    if len(etaitem.data.etas) > 0:
+                        self.announce('incoming', 'dnd')
+                    else:
+                        self.announce('closed', 'xa')
 
+            # remove expired ETAs
+            for user in etaitem.data.etas.keys():
+                if time.time() > etaitem.data.etatimestamps[user]:
+                    del etaitem.data.etas[user]
+                    del etaitem.data.etatimestamps[user]
+                    etaitem.save()
+
+        except UserlistError:
+            logging.error("watcher error")
+            pass
+        except KeyError:
+            logging.error("watcher error")
+            pass
+       
+        time.sleep(cfg.get('watcher-interval'))
+  
     def announce(self, status, show):
+        logging.info('announce(%s, %s)' % (status, show))
+        print 'announce(%s, %s)' % (status, show)
         if not self.running or not cfg.get('watcher-enabled'):
             return
-        for name in self.data.keys():
+        for name in fleet.list():
             bot = 0
-            try: bot = fleet.byname(name)
+            try: bot = fleet.byname(self.name)
             except: pass
             if bot and bot.type == "sxmpp":
-                for channel in self.data[name].keys():
-                    print "account %s %s %s" % (status, show, channel)
-                    bot.setstatus(status, show)
+                print '%s[%s].setstatus(%s, %s)' % (bot.name, bot.type, status, show)
+                bot.setstatus(status, show)
 
-watcher = UserlistWatcher()
-if not watcher.data:
-    watcher = UserlistWatcher()
+#watcher = ''
+watcher = UserlistWatcher('default-sxmpp', cfg.get('watcher-interval'))
+
+#watcher = UserlistWatcher()
+#if not watcher.data:
+#    watcher = UserlistWatcher()
 
 def init():
-    if cfg.get('watcher-enabled'):
-        watcher.start()
-    return 1
+    print "init"
+    watcher.start()
+    return 1 
+#    if cfg.get('watcher-enabled'):
+#        watcher = UserlistWatcher('ulwatcher', 5)
+#        watcher.start()
+#    return 1
 
 def shutdown():
-    if watcher.running:
-        watcher.stop()
+    print "shutdown"
+    #if watcher.running:
+    watcher.stop()
     return 1
 
 def userlist():
@@ -182,8 +181,10 @@ def handle_userlist(bot, ievent):
     ievent.reply(reply)
 
 def handle_userlist_login(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply('I cannot figure out your nickname, sorry')
     try:
-        result = os.system('touch %s/%s' % (userpath, usermap[ievent.channel]))
+        result = os.system('touch %s/%s' % (userpath, user))
         if result == 0:
             ievent.reply('Danke dass du dich angemeldet hast! :)')
         else: 
@@ -192,12 +193,12 @@ def handle_userlist_login(bot, ievent):
         ievent.reply(str(s))
 
 def handle_userlist_logout(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply('I cannot figure out your nickname, sorry')
     try:
-        result = os.remove('%s/%s' % (userpath, usermap[ievent.channel]))
-        if result == 0:
-            ievent.reply('Danke dass du dich abgemeldet hast! :)')
-        else: 
-            ievent.reply('Du konntest nicht manuell abgemeldet werden, ich weiss nicht warum.')
+        result = os.remove('%s/%s' % (userpath, user))
+        ievent.reply('Danke dass du dich abgemeldet hast! :)')
+        #ievent.reply('Du konntest nicht manuell abgemeldet werden, ich weiss nicht warum.')
     except UserlistError, e:
         ievent.reply(str(s))
 
@@ -259,18 +260,8 @@ def handle_userlist_eta(bot, ievent):
     eta = 0
     try:    eta = int(ievent.args[0])
     except: pass
-    if ievent.channel in usermap.keys():
-        user = usermap[ievent.channel]
-    elif ievent.fromm in usermap.keys():
-        user = usermap[ievent.fromm]
-    else:
-        user = ievent.channel
-        if ievent.channel == 'c3pb@conference.c3pb.de':
-            #ievent.reply("This does not work :P")
-            print "This does not work :P"
-        else:
-            ievent.reply("I don't know your nickname, you should contact my owner")
-        return 0
+    user = getuser(ievent)
+    if not user: return ievent.reply('I cannot figure out your nickname, sorry')
     if eta == 0:
         del etaitem.data.etas[user]
     else:
@@ -321,7 +312,6 @@ cmnds.add('ul-logout', handle_userlist_logout, ['USER'])
 cmnds.add('ul-login', handle_userlist_login, ['USER'])
 cmnds.add('ul-eta', handle_userlist_eta, ['USER'])
 cmnds.add('eta', handle_userlist_eta, ['USER'])
-#cmnds.add('ul-lseta', handle_userlist_lseta, ['USER'])
 cmnds.add('ul-subeta', handle_userlist_subeta, ['USER'])
 cmnds.add('ul-unsubeta', handle_userlist_unsubeta, ['USER'])
 cmnds.add('ul-subopen', handle_userlist_subopen, ['USER'])
@@ -329,7 +319,6 @@ cmnds.add('ul-unsubopen', handle_userlist_unsubopen, ['USER'])
 cmnds.add('ul-subscribe', handle_userlist_subeta, ['USER'])
 cmnds.add('ul-unsubscribe', handle_userlist_unsubeta, ['USER'])
 cmnds.add('ul-lssub', handle_userlist_lssub, ['ULADM'])
-#cmnds.add('ul-setname', handle_userlist_setname, ['USER'])
 cmnds.add('userlist', handle_userlist, ['USER'])
 examples.add('userlist', 'list all user that have logged in on the mirror.', 'userlist')
 
@@ -337,3 +326,34 @@ cmnds.add('userlist-watch-start', handle_userlist_watch_start, 'ULADM')
 cmnds.add('userlist-watch-stop',  handle_userlist_watch_stop, 'ULADM')
 cmnds.add('userlist-watch-list',  handle_userlist_watch_list, 'ULADM')
 
+
+
+
+
+
+# MO 1900 2300
+class LteItem(PlugPersist):
+    def __init__(self, name, default={}):
+         PlugPersist.__init__(self, name)
+         self.data.name = name
+         self.data.ltes = self.data.ltes or {}
+
+def handle_lte(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply('I cannot figure out your nickname, sorry')
+    item = LteItem(user)
+    args = ievent.rest.upper().split(' ')
+    if len(args) == 3:
+        (day, start, end) = args
+        if args[0] not in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'):
+            return ievent.reply('Please enter your LTE like this: !lte MO 1900 2200')
+        item.data.ltes[args[0]] = args
+        item.save()
+        ievent.reply(args[0])
+    else:
+        #return handle_lte_ls()
+        ievent.reply('not implemented')
+
+    #ievent.reply(str(len(ievent.rest.split(' '))))
+
+cmnds.add('lte', handle_lte, ['USER'])
