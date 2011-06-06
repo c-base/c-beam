@@ -51,9 +51,9 @@ def handle_tts(bot, ievent, voice):
     if not ievent.args:
         #ievent.missing('<text>')
         #return
-        text = urllib.quote(random.choice(ttsdata.values()).encode("utf-8"))
+        text = random.choice(ttsdata.values()).encode("utf-8")
     else:
-        text = urllib.quote(ievent.rest.encode("utf-8"))
+        text = ievent.rest.encode("utf-8")
 
     text = text.lower()
 
@@ -66,15 +66,15 @@ def handle_tts(bot, ievent, voice):
     try:
         if cfg.get('local'):
             #os.system("echo %s | festival --tts" % ievent.rest)
-            os.system("tts.py %s %s | xargs mpg123" % (voice, text))
+            os.system("tts.py %s %s | xargs mpg123" % (voice, urllib.quote(text)))
         else:
-            server.tts(voice, text)
+            server.tts(voice, urllib.quote(text))
              
     except:
         ievent.reply(str(sys.exc_info()[0]))
     try:
         f = open(ttslog, 'a')
-        f.write('%s: %s (%s)\n' % (getuser(ievent), ievent.rest, voice))
+        f.write('%s: %s (%s)\n' % (getuser(ievent), text, voice))
         f.close()
     except:
         ievent.reply(str(sys.exc_info()[0]))
