@@ -7,7 +7,7 @@ sampledir = '/mnt/datengrab/00_audio/c_out'
 sampledir = '/tmp'
 password = '0g7znor2aa'
 
-voices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus']
+thevoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus']
 
 def main():
     server = SimpleJSONRPCServer(('0.0.0.0', 1775))
@@ -17,10 +17,10 @@ def main():
     server.serve_forever()
 
 def voices():
-    return voices
+    return thevoices
 
 def tts(voice, text):
-    if voice in voices:
+    if voice in thevoices:
         voice = '%s22k' % voice
     else:
         voice = 'lucy22k'
