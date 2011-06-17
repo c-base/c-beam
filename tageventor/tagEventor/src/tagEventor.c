@@ -280,8 +280,8 @@ tagDetachData(
             )
 {
 
-    if ( pTag->contents.pData )
-       free( pTag->contents.pData );
+    //if ( pTag->contents.pData )
+    //   free( pTag->contents.pData );
 
     pTag->contents.pData = NULL;
     pTag->contents.dataSize = 0;
