@@ -1,0 +1,72 @@
+<project name="version" >
+	<description>targets for generating version info files etc</description>
+
+	<target name="toolPath">
+		<path id="tool.classpath">
+			<fileset dir="${build.resources.dir}">
+				<include name="**/*.jar" />
+			</fileset>
+		</path>
+	</target>
+				
+	<target name="antTasks" depends="toolPath">
+		<!-- load SVNANT ant task -->
+		<typedef resource="org/tigris/subversion/svnant/svnantlib.xml" classpathref="tool.classpath" />
+	</target>
+			
+	<target name="svnInfo">
+		<!-- set properties of the version we have in the current directory using "svn info" -->
+		<!-- info the properties with prefix "svn.info" - don't cause build to fail if we are offline -->
+		<svn failonerror="false">
+			<info target="." propPrefix="svn.info" />
+		</svn>
+	</target>
+		
+	<target name="version" depends="antTasks">
+		<!-- Obtenemos informacion de si nuestra workingCopy ha sido modificada 
+		     desde que hemos hecho el check-out o ultimo update - sin contactar repos. -->
+		<svn failonerror="false">
+			<wcVersion path="." prefix="wcVersion." />
+		</svn>
+			
+		<script language="javascript">
+			<![CDATA[
+				importPackage(java.lang);
+				var revision = project.getProperty("wcVersion.revision.max");
+				var path = project.getProperty("wcVersion.repository.path");
+				var modified = project.getProperty("wcVersion.modified");	// true o null
+				var versionName;
+				var versionCode; // incrementing number for versionCode in manifest IF a tag!
+			
+				if (modified == "true") {
+					var date = new Date();
+					versionName = "r" + revision + "++";
+					versionCode = "working"; // not a valid value for Android market release
+				}
+				else {
+					var elems = path.split('/');
+					var tags_index = -1;  
+			
+					// Miramos si es una revision o una release (tag)
+					for (var i = 0; i < elems.length; i++) {
+						if (elems[i] == "tags") tags_index = i;
+					}
+			
+					if (tags_index != -1) {
+						versionName = elems[(tags_index + 1)]; // e.g. "1.00.01" as a string
+						versionCode = versionName.replace( ".", "" ); // an official release versionCode integer "10001"- see RELEASE_README.txt
+					}
+					else {
+						versionName = "r" + revision;
+						versionCode = "revision"; // not a valid value for Android market release
+					}
+				}
+				project.setProperty("version.name", versionName);
+				project.setProperty("version.code", versionCode);
+			]]>
+		</script>
+		
+		
+	</target>
+
+</project>

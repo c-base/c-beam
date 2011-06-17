@@ -1,0 +1,159 @@
+Why the JCOP Simulation Reader?
+===============================
+
+The JCOP Simulation Reader is a simple ifdhandler which plugs into the
+Muscle pcsclite environment and allows for talking to a JCOP simulation
+(where JCOP is an OpenPlatform/JavaCard implementation). You can
+get such a JCOP Simulation with the JCOP Tools development kit from the 
+IBM Zurich Research Laboratory at www.zurich.ibm.com/javacard. The
+Eclipse Development Plugin (www.eclipse.org) allows for developing and 
+debugging JavaCard and OpenPlatform applications on Windows and Linux.
+
+The JCOP Simulation Reader allows you to deploy and debug applets - such as 
+MuscleCard - on a JCOP simulation (with the help of the Eclipse
+Development Kit), while talking to the card simulation with your regular 
+Muscle applications and libraries. It also enables a more convenient development 
+process for offcard Muscle applications and libraries as a JCOP simulation 
+performs much faster than real cards.
+
+
+Building the JCOP Simulation Reader:
+====================================
+
+- edit the Makefile according to your needs, by default the reader library is 
+  installed to /usr/lib/pcsc/drivers, reader.conf is searched in /etc
+- enable or disable debug output by switching on ENABLE_TRACING in the top-level
+  Config file
+- type make clean && make
+
+
+Installing the JCOP Simulation Reader:
+======================================
+- Type make install
+- The following entry is added to or updated in /etc/reader.conf:
+  FRIENDLYNAME     "JCOPSimulReader"
+  DEVICENAME       JCOP_SIMUL_RDR
+  LIBPATH          /usr/lib/pcsc/drivers/simulation/libjcop_remote.so
+  CHANNELID        0x0103F8
+
+
+Using the JCOP Simulation Reader with MuscleCard and muscleTool:
+================================================================
+
+1) Download and install the MuscleCard applet on a JCOP simulation within
+   the Eclipse IDE (you can do this also on the command line, with the cardman, jcshell,
+   converter etc., read the JCOP Tools documentation for details).
+
+   Make sure that eclipse is using the dummy PCSC ifdhandler instead of the
+   default RemoteTerminal. When you open the Run or Debug dialog,
+   choose your JCOP Target (such as JCOP20), and then add in the
+   JCOP Shell Tab the follwing line (to the "Shell Commands" Window):
+
+   /set-var CURR_TERM "PCSC|JCOPSimulReader 0 0|s"
+   @kickoff
+
+   If no other PCSC reader is configured, just specify:
+
+   /set-var CURR_TERM PCSC
+   @kickoff
+
+   Eclipse now talks to the simulation via PCSC in shared mode. You can thus
+   have any other open shared PCSC connection to the simulation at the same
+   time.
+
+2) Start your PCSC daemon (pcscd -f -d stdout): it should connect
+   to the JCOP simulation, and you should see debug output from the faked
+   reader (if you have enabled DEBUG in the Makefile).
+
+3) Add the JCOP ATR to Info.plist  in 
+   /local/pcsc/services/mscMuscleCard.bundle/Contents/
+  (JCOP10, JCOP20 etc. differ in their ATR!)
+
+4) A sample session with muscleTool:
+   (NOTE: do not mistype anything, mucleTool is very picky about proper input!)
+
+LIST TOKENS:
+
+muscle [MuscleCard Applet] > tokens
+   1.    MuscleCard Applet
+
+FORMAT TOKEN:
+
+muscle > format 1
+Would you like to: 
+	1. Use the default factory key: 2C15E526E93E8A19
+ 	2. Use the MUSCLE default key : 4D7573636C653030
+	3. Enter your own transport key
+
+Choose (1-3): 2
+
+How much object memory would you like to allocate ?
+Example: 7096 (7k) : 8192
+Please enter a new auth pin value (pin 0) : 1234
+Please enter your user pin value (pin 1)  : 1234
+Please enter your user pin unblock value  : 1234
+Please enter your number of pin tries     : 5
+
+Are you sure you want to continue ? (1-YES, 2-NO): 1
+
+Formatting token [->: 00 a4 04 00 06 a0 00 00 00 01 01 
+<-: 90 00 
+->: b0 2a 00 00 28 08 4d 75 73 63 6c 65 30 30 04 01 04 31 32 33 34 04 31 32 33 34 05 02 04 31 32 33 34 04 31 32 33 34 00 00 20 00 00 02 01 
+<-: 90 00 
+*] : Success
+
+
+CONNECT TO TOKEN:
+
+muscle > connect 1
+->: 00 a4 04 00 06 a0 00 00 00 01 01 
+<-: 90 00 
+
+
+VERIFY PINS:
+
+muscle [MuscleCard Applet] > verify 0 1234
+->: [INS_VERIFY_PIN] b0 42 00 00 04 31 32 33 34 
+<-: 90 00 
+PIN Verify Successful
+muscle [MuscleCard Applet] > verify 1 1234
+->: [INS_VERIFY_PIN] b0 42 01 00 04 31 32 33 34 
+<-: 90 00 
+PIN Verify Successful
+muscle [MuscleCard Applet] > verify 2 1234
+->: [INS_VERIFY_PIN] b0 42 02 00 04 31 32 33 34 
+<-: 90 00 
+PIN Verify Successful
+
+
+GENERATE KEYS:
+
+muscle [MuscleCard Applet] > genkeys
+***************** Key Generation Routine *****************
+Note: Keys will be generated with default permissions
+       using the RSA CRT algorithm for generation.
+**********************************************************
+Enter the private key number: 0
+Enter the public key number: 1
+Are you sure ? (Y/N): y
+Generating keys [->: [INS_MSC_GEN_KEYPAIR] b0 30 00 01 10 01 04 00 ff ff 00 02 00 02 00 00 00 02 00 02 00 
+<-: 90 00 
+*] : Success
+muscle [MuscleCard Applet] > muscle [MuscleCard Applet] > 
+
+
+LIST KEYS:
+
+muscle [MuscleCard Applet] > listkeys
+
+->: [INS_LIST_KEYS] b0 3a 00 00 0b 
+<-: 00 03 ff 04 00 ff ff 00 02 00 02 90 00 
+            Key Type      Key Num   SIZE     READ   WRITE     USE
+   -----------------  -----------   -----   ------  ------  ------
+     RSA PRIVATE CRT            0   1024     NEVER  PIN #1  PIN #1
+->: [INS_LIST_KEYS] b0 3a 01 00 0b 
+<-: 01 01 ff 04 00 00 00 00 02 00 02 90 00 
+          RSA PUBLIC            1   1024    ALWAYS  PIN #1  PIN #1
+->: [INS_LIST_KEYS] b0 3a 01 00 0b 
+<-: 90 00 
+

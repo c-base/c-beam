@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=gtagEventor
+Comment=Detect NFC/RFID tags and generate system events based on rules
+Icon=/usr/share/gtagEventor/icons/tageventor
+Exec=/usr/sbin/gtagEventor
+Terminal=false
+Type=Application
+Categories=
+OnlyShowIn=GNOME;XFCE;
+X-Ubuntu-Gettext-Domain=gtagEventor

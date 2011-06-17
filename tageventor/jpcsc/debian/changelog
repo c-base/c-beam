@@ -1,0 +1,13 @@
+jpcsc (0.7.6-1) unstable; urgency=low
+
+  * Initial Release.
+  * Adjusted the Makefile to use $DESTDIR
+
+ -- Marcus Oestreicher <oes@zurich.ibm.com>  Sun, 28 Mar 2004 17:25:51 +0200
+
+
+jpcsc (0.8.0) unstable; urgency=low
+
+  * Updated for pcsclite >= 1.2.9.
+
+ -- Marcus Oestreicher <oes@zurich.ibm.com>  Wed, 21 Jul 2004 16:04:14 +0200

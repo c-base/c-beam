@@ -1,0 +1,16 @@
+The following people have commit access to the tagEventor sources which are hosted in the "tageventor" Google Code project at http://code.google.com/p/tageventor
+
+Other people may have contributed to the project via patches submitted, and committed by someone on this list. Those other contributors should be recognized in the commit log for the relevant change, hence the log is the final source of all information on who was the source of a contribution.
+
+If you have a question or comment, it's probably best to mail info@autelic.org, 
+rather than mailing any of these people directly.
+
+Project Owners (able to reconfigure the project at the google code site)
+==============
+andrew		Andrew Mackenzie - andrew at autelic dot org 
+autelic		Andrew Mackenzie - autelic at gmail dot com
+
+Committers (able to check in source code using svn or wiki changes using svn or web UI)
+==========
+sgreenlay       Scott Greenlay - sgreenlay at gmail dot com
+

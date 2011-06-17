@@ -1,0 +1,21 @@
+#!/bin/bash
+# Example tag event script for tagEventor from autelic
+# See http://www.autelic.org for more on autelic
+# See http://code.google.com/p/tageventor for more on tagEventor
+# parameters passed are:
+# $1 = UID (unique ID of the tag, as later we may use wildcard naming)
+# $2 = Event Type (IN for new tag placed on reader, OUT for tag removed from reader)
+
+# if the event is a tag IN then open a web page in a new opera browser if none running,
+# or open in existing instance of browser and active tab if one is running
+if [[ $2 = "IN" ]]
+then
+   # get the pid of all instances of opera running, use ´h´ to not show a header for each column
+   pids=`ps -C opera -o pid h`
+   for pid in $pids
+   do
+      /bin/kill -9 $pid 2>&1 &> /dev/null
+   done
+else
+   exit 0
+fi

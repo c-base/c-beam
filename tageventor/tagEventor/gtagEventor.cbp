@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="gtagEventor" />
+		<Option makefile="gtagEventor.mak" />
+		<Option makefile_is_custom="1" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/gtagEventor" prefix_auto="0" extension_auto="0" />
+				<Option object_output="obj/Debug/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-DDEBUG" />
+					<Add option="-DBUILD_SYSTEM_TRAY" />
+					<Add option="-DBUILD_CONTROL_PANEL" />
+					<Add option="-DBUILD_ABOUT_DIALOG" />
+					<Add option="-DBUILD_CONTROL_PANEL_HELP" />
+					<Add option="-DBUILD_SETTINGS_DIALOG" />
+					<Add option="-DBUILD_RULES_EDITOR" />
+					<Add option="-DBUILD_RULES_EDITOR_HELP" />
+					<Add option="-DBUILD_EXPLORER" />
+				</Compiler>
+				<Linker>
+					<Add library="/home/andrew/tageventor/trunk/lib/Debug/libtagReader.a" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/gtagEventor" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-Wall" />
+					<Add option="-DBUILD_SYSTEM_TRAY" />
+					<Add option="-DBUILD_CONTROL_PANEL" />
+					<Add option="-DBUILD_ABOUT_DIALOG" />
+					<Add option="-DBUILD_CONTROL_PANEL_HELP" />
+					<Add option="-DBUILD_SETTINGS_DIALOG" />
+					<Add option="-DBUILD_RULES_EDITOR" />
+					<Add option="-DBUILD_RULES_EDITOR_HELP" />
+					<Add option="-DBUILD_EXPLORER" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="/home/andrew/tageventor/trunk/lib/Release/libtagReader.a" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="`pkg-config gtk+-2.0 --cflags`" />
+			<Add directory="/home/andrew/tageventor/trunk" />
+			<Add directory="/usr/include/PCSC" />
+		</Compiler>
+		<Linker>
+			<Add option="`pkg-config gtk+-2.0 --libs`" />
+			<Add library="libpcsclite.a" />
+			<Add directory="/home/andrew/tageventor/trunk" />
+		</Linker>
+		<Unit filename="aboutDialog.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="aboutDialog.h" />
+		<Unit filename="explorer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="explorer.h" />
+		<Unit filename="rulesEditor.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="rulesEditor.h" />
+		<Unit filename="rulesEditorHelp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="rulesEditorHelp.h" />
+		<Unit filename="rulesTable.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="rulesTable.h" />
+		<Unit filename="settingsDialog.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="settingsDialog.h" />
+		<Unit filename="stringConstants.h" />
+		<Unit filename="systemTray.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="systemTray.h" />
+		<Unit filename="tagEventor.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="tagEventor.h" />
+		<Extensions>
+			<code_completion />
+			<debugger>
+				<search_path add="lib" />
+				<search_path add="lib/source" />
+			</debugger>
+			<envvars />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

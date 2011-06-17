@@ -1,0 +1,248 @@
+Title   :  JPCSC: JNI-wrapper for PCSC
+Author  :  Marcus Oestreicher
+Version :  0.7.7
+License :  IBM Alphaworks Source Code License, see License.html
+Requires:  JDK with JNI support (>= 1.3), PCSC Lite (> 1.0)
+
+
+CONTENTS
+========
+
+0) PURPOSE
+1) INSTALLATION
+2) USAGE
+3) STATUS
+4) DESIGN
+5) CONTACT
+6) WINDOWS SUPPORT
+7) CHANGES
+8) MISCELLANEOUS PACKAGES
+9) JCOP SIMULATION IFDHANDLER
+
+1) PURPOSE
+
+JPCSC provides a simple JNI library to allow for the access of PCSC 
+functions from Java. It offers an API to access most of the Card- 
+and Context-related functions, i.e. establish a context, list readers, 
+open a reader connection, and send APDUs to a reader and card. 
+JPCSC supports both Windows and Linux, a port to MacOSX should 
+be easy. JPCSC does not offer any advanced, application- or 
+card-specific APIs (such as OpenCard), it just provides a 
+resource-efficient and simple access to the smartcard infrastructure
+available on most desktop systems as of today, i.e. PCSC. 
+
+
+0) INSTALLATION:
+
+
+BINARY INSTALLATION
+
+The JPCSC package now contains precompiled binaries for both Linux and Windows.
+The Linux library libjpcsc.so has been compiled and tested on Fedora Core 1
+and Debian Sid, your success with other glibc's and distributions may vary.
+The Windows library has been built on Windows 2000 using Microsoft 
+Visual C++ Version 6. 
+
+You can test the precompiled libraries, before trying to rebuild
+JPCSC. In case of Linux, edit Config in the top-level directory
+to specify the location of your PCSC installation (/usr/local/pcsc
+by default). Then, type "make testbin".  The test program asks for a 
+reader to connect to, waits for a card, and then asks for the APDUs
+to send to the card. Type 'quit' to end the Test program.
+
+You can also try out "make toolbin" which starts a Swing
+application allowing you to connect to PCSC readers and cards,
+to select Applets on a card, and to send arbitrary APDUs
+to the applet or card. The application especially traces all
+the data sent to and received from the card.
+
+ 
+
+COMPILATION
+
+Edit Config in the top directory. If you want to compile JPCSC 
+on Windows, read the last section as well.
+In case of Linux, specify the base directory of your PCSC
+installation (typically /usr in case of an installation from
+a debian or RPM package or /usr/local/pcsc). Use a recent 
+PCSC version, for instance 1.1.
+PCSC_PACKAGE_NAME specifies the package name the JPCSC package
+uses. "com.linuxnet.jpcsc" is the default, but modifying the
+package name may allow for a better integration into your 
+application,
+ENABLE_TRACING controls the output of debugging information,
+use "yes" to get log output during JPCSC execution. 
+INSTALL_DIR finally specifies the directory where to install
+the libraries and documentation. They will be stored in
+${INSTALLDIR}/lib, ${INSTALLDIR}/share/java and 
+${INSTALLDIR}/share/doc/jpcsc.
+
+Type "make". The libraries, test application and documentation
+is built and stored in the build directory. Use "make test"
+to test JPCSC before you install it. The test program asks for a 
+reader to connect to, waits for a card, and then asks for the APDUs
+to send to the card. Type 'quit' to end the Test program.
+
+Type "make bins" to build everything and copy the libraries to
+the bin folder. Documentation can be found in apidocs.
+
+Use "make all && make debpkg" to build a debian package. It can
+be found in build/debian/jpcsc*deb after a successful build.
+
+After "make all", you can use "make rpmpkgs" to build a 
+RPM package on a RPM based system. By default, it tries to 
+build the package in /usr/src/redhat, and thus, typically expects
+root priviledges.
+
+
+2) USAGE:
+
+If you are familiar with Java, PCSC and native libraries,
+using JPCSC should be easy. The JPCS jar-file must be listed
+in your CLASSPATH, the directory where libjpcsc.so
+is installed may have to be listed in your LD_LIBRARY_PATH
+(or in ld.so.conf). Additionally, the dynamic linker
+must be able to find libpcsc-lite.so.
+Check back with the Makefile in the src/samples directory
+to find out how to setup correctly all necessary paths.
+
+When installing a RPM or Debian package, you can run
+the test program as follows:
+
+java -cp /usr/share/doc/jpcsc-0.7.6/samples.jar:/usr/share/java/jpcsc.jar samples.Test
+
+
+
+3) STATUS:
+
+Most of the functions found in PCSClite and in case of Windows
+are accessible. The JNI wrapper is fairly  simple and should be 
+easy to fix in case you encounter any problems.
+
+
+4) DESIGN:
+
+The package supports basically two classes, Context and
+Card. If you are familiar with the PCSC lite API, you will 
+immediately feel comfortable. With Context, you establish 
+the communication with the PCSC daemon, query readers and 
+setup a connection with a card. This results in a Card 
+instance which is used to exchange APDUs with the card.
+Error are typically signaled by PCSCExceptions. The State 
+class wraps structures such as READER_STATE and is used to 
+return the status of readers and card connections such
+as in Context.GetStatusChange() or Card.Status().
+The Context and Card class methods are mapped pretty much 
+straight to native functions. PCSC constants are
+defined in PCSC.java. Their values depend on the underlying 
+platform, Linux or Windows, but are mapped accordingly at 
+JPCSC initialization time.
+
+
+5) CONTACT 
+
+If you have questions or comments, feel free to contact me
+at oes@zurich.ibm.com or search for more information
+at www.zurich.ibm.com/javacard
+
+
+6) WINDOWS SUPPORT
+
+The Makefile uses the Microsoft Visual Studio 6 C-compiler and 
+expects the cygnus-tools like cpp to be setup correctly. JPCSC 
+should then compile as cleanly as on Linux. 
+
+
+7) CHANGES:
+0.7.6: bug-fixes and minor extensions, thanks to Martin Leung, ccmartin@ust.hk, and others
+- rpm and debian package build support
+- Allowing external modification to Apdu (e.g. adding of secure messaging) by:
+    make Apdu.java serializable and add a wrapWith method
+    add  interface Apdu.Wrapper
+- Allow protocol T0|T1 in Context.connect()
+- More details in State.toString():
+  State.toString() can now either log the flags according to a Card.Status() or
+  Context.GetStatusChange() invocation
+- Add boolean field resendOnWrongLe to Card.java & jpcsc.c
+    automatically resend on 6cxx will fail if secure messaging is applied.
+    In this case, resend requires a different hash in the apdu.
+- Use system error message on Win32 platform
+    On win32, many errors thrown by Resource Manager are not SCARD_*,e.g. 0x6,0x17,0x3e3,etc. Using 
+    native error msg would make the err msg more readable.
+- Add fix for the beginTransaction reset bug on Win9x/winxpsp1.
+- New methods:
+  Context.WaitForCard(): blocks for a card to be inserted. Demonstrates proper use to
+  	                 GetStatusChange() for blocking correctly on both Linux and Windows.
+  GetStatusChange() now returns boolean to signal whether it has been timed out or not.
+
+0.7.5: 
+- Windows build is up-to-date again and does not fail due to an initializer error
+- Documentation fixes thanks to Ville Skytta (ville.skytta@iki.fi)
+- Added misc directory which contains a pcsc-ifdhandler for testing pcsc and jpcsc
+  applications with JCOP simulations
+- Fixed CardControl:
+  - native funtion declaration was invalid
+  - windows expects the use of CARD_CTL_CODE to create a proper control code for CardControl()
+0.7.4: 
+- Parameters passed are checked, especially PROTOCOL_T0 etc.
+- GetStatusShange(timeout, NULL) supported.
+- PCSC.INFINITE constant introduced.
+- Context.Connect() introduced, connects to the first available card  
+  in the system.
+0.7.3: 
+- Bug-fix Release (Thanks to Wei-Ching Su, suwc@mail.fisc.com.tw)
+- Introduced the bin folder to contain the pre-built libraries. 
+0.7.2: 
+- Bug-fix Release (Thanks to Martin Leung, ccmartin@ust.hk)
+0.7.1: 
+- JPCSC now handles get-reponse in case of T=0 transparently by default.
+- The class Card still offers a getT0GetResponse and setT0GetResponse
+  method to switch this behavior on and off in case.
+0.7: 
+- JNI related bug fixes, a pretty nasty bug when used with JDK 1.4.2 fixed.
+0.6: 
+- Apdu.java added to jpcsc. Allows to define APDU header and data to send and/or
+  receive from card. Especially, it allows to convert from bytearray 
+  to string representation and vice versa.
+- ListReaderGroups() now supported by jpcsc.
+0.5: 
+- int Card.Transmit(byte[] in, int inOff, int inLen, byte[] out, int outOff)
+  now raises an exception in case of an error, otherwise, the number
+  of bytes received in out is returned
+0.4: 
+- a simple apdu tool has been added, it allows selection of reader,
+  connection to card, and sending arbitrary APDUs
+- include both jpcsc.dll and jpcsc.lib in build directory
+- PCSC.java also contains now PCSC error and warning codes, additionally,
+  all codes are now kept in final static fields. Source and build tree
+  reorganized so that both Linux and Windows binaries can be shipped
+  with the source code. Makefile environment updated.
+- Special thanks to Ross Burton (r.burton@180sw.com) for the many contributions
+  to this release.
+0.3: 
+- Context.c has been removed, applications are now expected to
+  instantiate Context-instances themselfes. Codes.java
+  has been moved to PCSC.java. Other than that, bug fixes.
+0.2: 
+- jpcsc sets at initialization time the values for the parameters
+  and flags PCSC expects and returns (see PCSC.java and Context.c).
+
+
+
+8) MISCELLANEOUS PACKAGES
+
+You can find miscellaneous software packages in the misc subdirectory. The
+only available package for now is a PCSC ifdhandler which simulates a simple 
+reader and connects to a running JCOP simulation process 
+(see www.zurich.ibm.com/javacard for more information).
+
+
+9) JCOP SIMULATION IFDHANDLER
+
+The JCOP PCSC ifdhandler simulates a simple reader and connects to a running 
+JCOP simulation process (see www.zurich.ibm.com/javacard for more information).
+It allows to use all PCSC client software to talk to a JCOP simulation
+process and executed JavaCard applets, and thus, allows to debug
+both C-based PCSC client software and Javacard applets to be debugged at the
+same time. Have a look into the misc/jcop_simul_ifdhandler subdirectory for 
+more information.

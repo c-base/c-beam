@@ -1,0 +1,21 @@
+# not need to touch these
+BUILDDIR = ${TOPDIR}/build
+BINDIR = ${TOPDIR}/bin
+ARCHDIR = ${BUILDDIR}/${ARCH}
+CLASSDIR = ${BUILDDIR}/java
+JARNAME = jpcsc-${JPCSC_VERSION}.jar
+JPCSCJAR = ${CLASSDIR}/${JARNAME}
+
+INSTALL_LIB = ${INSTALL_DIR}/lib
+INSTALL_JAR = ${INSTALL_DIR}/lib
+INSTALL_DOC = ${INSTALL_DIR}/share/doc/jpcsc
+
+ifeq (${ARCH}, unix)
+CPSEP = :
+else
+ifeq (${ARCH}, win32)
+CPSEP = ;
+else
+$(error The architecture '${ARCH}' is not supported)
+endif
+endif

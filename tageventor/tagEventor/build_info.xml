@@ -1,0 +1,18 @@
+<project name="build-info">
+	<import file="version.xml" />
+
+	<property name="version_info_file" value="src/version.h" />
+	<property name="build.resources.dir" value="buildresources" />
+	
+	<target name="build-info" depends="version">
+		<tstamp>
+	    	    <format property="build.time" pattern="dd MMM yyyy HH:mm" locale="en,US"/>
+	  	</tstamp>
+		<echo message="Build time: ${build.time}" />
+		<echo message="versionCode: ${version.code}" />
+		<echo message="versionName: ${version.name}" />
+				
+		<echo file="${version_info_file}" message="#define BUILD_TIME ${build.time}\n#define VERSION_CODE ${version.code}\n#define VERSION_NAME ${version.name}" />
+		
+	</target>
+</project>

@@ -1,0 +1,231 @@
+#!/bin/bash
+
+################## check_root() ##########################
+function check_root {
+# Check we have root permissions and report an error if not
+if [[ `whoami` != "root" ]]
+then
+   echo You must be \"root\" for this install script to work correctly
+   echo Re-run it as 'root' or using \'sudo $0\'
+   exit
+fi
+}
+
+################### common dependant variables ################
+function set_vars {
+
+# common variables
+cl_version_name=tagEventor
+daemon_name=tagEventord
+gtk_version_name=gtagEventor
+
+# OS dependant variables
+OS=`uname`
+case $OS in
+   Linux)
+      echo Linux operating system detected
+      cl_version_scripts_dir=/etc/$cl_version_name
+      cl_version_bin_dir=/usr/sbin/
+      daemon_script_dir=/etc/init.d/
+      gtk_version_scripts_dir=/etc/$gtk_version_name
+      gtk_version_bin_dir=/usr/sbin
+      gtk_startup_entry_dir=/etc/xdg/autostart/
+      default_icon_theme_name=hicolor
+      # NOTE: This path is also in the code, so if you change one, change both
+      gtk_version_icon_dir=/usr/share/$gtk_version_name/icons/
+   ;;
+
+   Darwin)
+      echo Mac OS X operating system detected
+      cl_version_scripts_dir=\"/Library/Application\ Support/$cl_version_name\"
+      cl_version_bin_dir=/usr/sbin/
+      daemon_script_dir=
+      gtk_version_scripts_dir=\"/Library/Application\ Support/$gtk_version_name\"
+      gtk_version_bin_dir=/usr/sbin
+      gtk_startup_entry_dir=/etc/xdg/autostart/
+      default_icon_theme_name=hicolor
+      # NOTE: This path is also in the code, so if you change one, change both
+      gtk_version_icon_dir=/usr/share/$gtk_version_name/icons/
+   ;;
+
+   *)
+      echo Sorry, this install script does not \(yet\) support your Operating System
+      echo Your Operating system was detected as being $OS
+      echo Please contact tagEventor project at http://tageventor.googlecode.com to request support for your OS.
+   ;;
+
+esac
+echo ""
+}
+
+################## install_command_line_version ##########
+function install_command_line_version {
+echo Installing command_line_version
+# Copy the generic script that is used when no specific script is found for the tag ID
+echo "Installing event scripts"
+mkdir -pv $cl_version_scripts_dir
+cp -f ./scripts/generic $cl_version_scripts_dir/
+echo Script ./scripts/generic copied to $cl_version_scripts_dir/
+echo ""
+
+# copy the cl_version binary to the system directory
+echo "Installing the program binary"
+cp -f bin/Release/$cl_version_name $cl_version_bin_dir/
+echo Executable ./bin/Release/$cl_version_name copied to $cl_version_bin_dir
+echo ""
+
+}
+
+################## install_daemon ########################
+function install_daemon {
+echo Installing daemon
+# copy the init script to the system directory to start tagEventor as a daemon
+echo Installing $daemon_name daemon script
+cp -f $daemon_name $daemon_script_dir 
+echo Init script ./$daemon_name copied to $daemon_script_dir
+echo ""
+
+# to run the init script at start-up you need these links in the system directories
+cd $daemon_script_dir
+echo Adding init script links with update-rc.d
+update-rc.d -f $daemon_name start 80 2 3 4 5 .
+cd -
+echo ""
+}
+
+################## install_gtk_version ###################
+function install_gtk_version {
+echo Installing gtk_version
+# Copy the generic script that is used when no specific script is found for the tag ID
+echo Installing $gtk_version_name tag event scripts
+mkdir -pv $gtk_version_scripts_dir
+cp -f ./scripts/generic $gtk_version_scripts_dir/
+echo Script ./scripts/generic copied to $gtk_version_scripts_dir/
+echo ""
+
+# copy the gtagEventor binary to the system directory
+echo Installing the $gtk_version_name program binary
+cp -f bin/Release/$gtk_version_name $gtk_version_bin_dir
+echo Executable ./bin/Release/$gtk_version_name copied to $gtk_version_bin_dir
+echo ""
+
+# copy the required icons to a place where GNOME can find them without .svn directories!
+# delete older icons first
+rm -rf $gtk_version_icon_dir/$default_icon_theme_name/*
+
+echo Installing icons
+# This one is a temporary fix
+mkdir -p $gtk_version_icon_dir/
+cp -R ./icons/*.png $gtk_version_icon_dir/
+
+for size in 16x16 22x22 32x32 48x48 64x64 128x128
+do
+   mkdir -p $gtk_version_icon_dir/$default_icon_theme_name/$size
+   cp -R ./icons/$default_icon_theme_name/$size/*.png $gtk_version_icon_dir/$default_icon_theme_name/$size/
+done
+
+echo Copied ./icons/ into $gtk_version_icon_dir
+echo ""
+}
+
+################## install_gtk_autostart #################
+function install_gtk_autostart {
+echo Installing gtk_autostart
+# put a desktop link in the right place and it will start executable with each GNOME session
+echo Installing Gnome start-up entries for $gtk_version_name
+mkdir -p $gtk_startup_entry_dir
+cp $gtk_version_name.desktop $gtk_startup_entry_dir
+echo ./$gtk_version_name.desktop copied into $gtk_startup_entry_dir so it is started with each GNOME session
+echo ""
+}
+
+
+################## default     ###########################
+function install_default {
+echo Installing default
+install_command_line_version
+install_gtk_version
+install_gtk_autostart
+}
+
+################## all         ###########################
+function install_all {
+echo Installing all
+install_command_line_version 
+install_daemon 
+install_gtk_version 
+install_gtk_autostart
+}
+
+################## exec_command ##########################
+function exec_command {
+case $1 in
+   command_line_version)
+      install_command_line_version
+   ;;
+   daemon)
+      install_daemon
+   ;;
+   gtk_version)
+      install_gtk_version
+   ;;
+   gtk_autostart)
+      install_gtk_autostart
+   ;;
+   all)
+      install_all
+   ;;
+   quit)
+      echo Exiting...
+      exit
+   ;;
+   *)
+      echo Unknown option \'$action\'
+   ;;
+esac
+}
+
+###################### interactive_mode #################
+function interactive_mode {
+   while true
+   do
+      echo Please select an option install 
+      select action in quit command_line_version daemon gtk_version gtk_autostart all;
+      do
+         exec_command $action
+      done
+   done
+}
+
+############################ MAIN ########################
+check_root
+
+set_vars
+
+# if no command line options are passed in, then enter interactive install mode
+if  [[ $1 == "-" ]]
+then
+   interactive_mode
+else
+   echo "Individual options include: command_line_version"
+   echo "                            daemon"
+   echo "                            gtk_version"
+   echo "                            gtk_autostart"
+   echo "Compound   options include: all"
+   echo "Default    options are    : command_line_version gtk_version gtk_autostart"
+   if (( $# == 0 ))
+   then
+      set $* command_line_version gtk_version gtk_autostart
+      echo ""
+      echo Using default options
+   fi
+
+   echo ""
+
+   # now do the commands as requested via the command line
+   for action in $*
+   do
+      exec_command $action
+      shift
+   done
+fi

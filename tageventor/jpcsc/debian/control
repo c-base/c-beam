@@ -1,0 +1,11 @@
+Source: jpcsc
+Section: unknown
+Priority: optional
+Maintainer: Marcus Oestreicher <oes@zurich.ibm.com>
+Build-Depends: debhelper (>= 4.0.0), libpcsclite-dev, j2sdk1.4
+Standards-Version: 3.6.0
+
+Package: jpcsc
+Architecture: any
+Depends: j2re1.4 | java1-runtime | java2-runtime, ${shlibs:Depends}
+Description: JPCSC is a library which allows Java to talk to PC/SC compliant smart card readers.

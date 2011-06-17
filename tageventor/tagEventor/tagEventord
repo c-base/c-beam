@@ -1,0 +1,105 @@
+#! /bin/sh
+#  tagEventord - Shell script for starting the daemon to be placed in /etc/init.d on Linux systems
+#                Use "make install" option as root to perform installation in necessary directories
+#
+#  Copyright 2008-2009 Autelic Association (http://www.autelic.org)
+# 
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+# 
+#       http://www.apache.org/licenses/LICENSE-2.0
+# 
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+# /etc/init.d/tagEventord
+# start/stop/reload/restart tagEventor daemon
+#
+# Andrew Mackenzie <andrew@autelic.org>
+
+# TODO copy other aspects of the reccomended skeleton script in /etc/init.d
+
+### BEGIN INIT INFO
+# Provides: tagEventord
+# Required-Start: $local_fs $syslog $pcscd
+# Required-Stop: $local_fs $syslog
+# Should-Start: udev hal
+# Should-Stop: udev hal
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Daemon to create system events from smart cards
+# Description: The tagEventor daemon is used to detect smart card events on an attached contactless
+#	 smart card reader and generate system events by calling scripts in /etc/tagEventor
+### END INIT INFO
+
+# if you pass a number after the "start" parameter ($1), that will be used as the verbosity level
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="tagEventor"
+NAME=tagEventor
+DAEMON=/usr/sbin/$NAME
+
+PIDFILE=/var/run/tagEventor/$NAME.lock
+SCRIPTNAME=/etc/init.d/tagEventord
+
+# Check if /var/run/tagEventor exists, if not, create it.
+if [ ! -d /var/run/tagEventor/ ]; then
+        mkdir -p -m 0755 /var/run/tagEventor/
+fi
+
+# Gracefully exit if the package has been removed (but not purged).
+#[ -x "$DAEMON" ] || exit 0
+
+
+#
+# Function that stops the daemon/service
+#
+stop()
+{
+   $DAEMON -d stop
+   /bin/rm -f $PIDFILE
+}
+
+#
+# Function that sends a SIGHUP to the daemon/service
+#
+reload()
+{
+	# Have the daemon can reload its configuration without
+	# restarting by sending SIGHUP
+	start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
+}
+
+case "$1" in
+    start)
+       #remove any old lock files to be sure
+       /bin/rm -f $PIDFILE  
+       case "$2" in
+        1|2|3)
+           $DAEMON -d start -v "$2"
+           ;;
+        *)
+           $DAEMON -d start -v 3
+           ;;
+        esac 
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        $DAEMON -d start
+        ;;
+    reload)
+        reload
+        ;;
+    *)
+        echo "Usage:  {start|stop|reload|restart}"
+        exit 1
+        ;;
+esac
+exit $?

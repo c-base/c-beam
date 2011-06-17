@@ -1,0 +1,94 @@
+#
+# The PCSC-lite install prefix.
+#
+PCSCDIR=/usr/local/pcsc
+#PCSCDIR=/usr
+
+#
+# installation directories: 
+# libjpcsc.so is stored in ${DESTDIR}/lib, jpcsc.jar is stored in 
+# ${DESTDIR}/share/java/jpcsc.jar, documentation, samples, and readme
+# is stored in ${DESTDIR}/share/doc/jpcsc.
+# By default, DESTDIR is set to PCSCDIR.
+#
+INSTALL_DIR=${PCSCDIR}
+
+JNILIB_INSTALL_DIR=${DESTDIR}${INSTALL_DIR}/lib
+JPCSCJAR_INSTALL_DIR=${DESTDIR}${INSTALL_DIR}/share/java
+DOC_INSTALL_DIR=${DESTDIR}${INSTALL_DIR}/share/doc/jpcsc
+
+#
+# Paths to the Java tools. The defaults work assuming that $JAVA_HOME
+# has been set correctly.
+#
+JAVA_HOME = /System/Library/Frameworks/JavaVM.framework/Home
+
+ifeq (${JAVA_HOME},)
+$(error Please define JAVA_HOME to point to your JDK installation)
+endif
+JAVA = ${JAVA_HOME}/bin/java
+JAVAC = ${JAVA_HOME}/bin/javac
+JAVADOC = ${JAVA_HOME}/bin/javadoc
+JAVAH = ${JAVA_HOME}/bin/javah
+JAR = ${JAVA_HOME}/bin/jar
+
+
+#
+# Base directory of RPM package builds. May require root priviledges to build.
+#
+RPM_BUILD_DIR = /usr/src/redhat
+
+#
+# enable debug output with ENABLE_TRACING=yes
+#
+ENABLE_TRACING=no
+
+#
+# the package name to use.
+#
+PCSC_PACKAGE_NAME = com.linuxnet.jpcsc
+
+#
+# JPCSC Version
+#
+JPCSC_VERSION=0.8.0
+
+#
+# Determines the system to build for. Other unices should
+# also work. 
+#
+OSTYPE := $(shell echo `uname -s` | tr A-Z a-z)
+ifneq ($(findstring linux,${OSTYPE}),)
+ARCH = linux
+else
+ifneq ($(findstring darwin,${OSTYPE}),)
+ARCH = darwin
+else
+ifneq ($(findstring win,${OSTYPE}),)
+ARCH = win32
+else
+$(error Unsupported OSTYPE '${OSTYPE}')
+endif
+endif
+endif
+
+# targets
+BUILDDIR = ${TOPDIR}/build
+BINDIR = ${TOPDIR}/bin
+ARCHDIR = ${BUILDDIR}/${ARCH}
+CLASSDIR = ${BUILDDIR}/java
+JARNAME = jpcsc.jar
+JPCSCJAR = ${CLASSDIR}/${JARNAME}
+
+# class path separator
+ifeq (${ARCH}, win32)
+CPSEP = ;
+else
+CPSEP = :
+endif
+
+# subdirectory of machine-specific jni includes
+MACH_JNI_INCLDIR = ${ARCH}
+
+# basic compiler flags
+CCFLAGS = -D$(shell echo ${ARCH} | tr a-z A-Z)
