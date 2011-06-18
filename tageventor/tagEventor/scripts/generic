@@ -13,24 +13,5 @@ OS=`uname`
 # show a message in a dialog on the screen
 if [[ $2 = "IN" ]]
 then
-   case $OS in
-      Linux)
-         export DISPLAY=:0.0
-         /usr/bin/X11/xmessage -center -timeout 5 "Generic event script - Event $2, UID=$1"&
-         exit 0
-      ;;
-
-      Darwin)
-         /usr/local/bin/growlnotify -m "Tag with UID = $1, Event Type = IN"
-      ;;
-
-      *)
-         echo Sorry, your OperatingSystem is not supported
-         echo You will have to edit the "generic" script and add your own command
-         echo Your Operating system was detected as being $OS
-         echo Please contact tagEventor project at http://tageventor.googlecode.com to request support for your OS.
-         exit -1
-      ;;
-
-esac
+    cp scripts/default scripts/$1 
 fi
