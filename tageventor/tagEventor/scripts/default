@@ -15,6 +15,6 @@ result = login.login(user, logindelta, timeoutdelta)
 if result == "login":
     login.tts("julia", "hallo %s, willkommen an bord" % nickspell)
 elif result == "logout":
-    login.tts("julia", "bis bald %s" % nickspell)
+    login.tts("julia", "guten heimflug %s" % nickspell)
 else:
     print "ignore"
