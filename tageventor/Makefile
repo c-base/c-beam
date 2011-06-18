@@ -15,28 +15,28 @@ binary: Release
 Debug:
 	@make -s -C tagReader -f Makefile Debug
 	@make -s -C tagEventor -f tagEventor.mak Debug
-	@make -s -C tagEventor -f gtagEventor.mak Debug
+	#@make -s -C tagEventor -f gtagEventor.mak Debug
 	@echo "Debug Done."
 	@echo ""
 
 Release:
 	@make -s -C tagReader -f Makefile Release
 	@make -s -C tagEventor -f tagEventor.mak Release
-	@make -s -C tagEventor -f gtagEventor.mak Release
+	#@make -s -C tagEventor -f gtagEventor.mak Release
 	@echo "Release Done."
 	@echo ""
 
 cleanDebug:
 	@make -s -C tagReader -f Makefile cleanDebug
 	@make -s -C tagEventor -f tagEventor.mak cleanDebug
-	@make -s -C tagEventor -f gtagEventor.mak cleanDebug
+	#@make -s -C tagEventor -f gtagEventor.mak cleanDebug
 	@echo "cleanDebug Done."
 	@echo ""
 
 cleanRelease:
 	@make -s -C tagReader -f Makefile cleanRelease
 	@make -s -C tagEventor -f tagEventor.mak cleanRelease
-	@make -s -C tagEventor -f gtagEventor.mak cleanRelease
+	#@make -s -C tagEventor -f gtagEventor.mak cleanRelease
 	@echo "cleanRelease Done."
 	@echo ""
 
@@ -46,5 +46,5 @@ clean:
 	@rm -rf *~
 	@make -s -C tagReader -f Makefile clean
 	@make -s -C tagEventor -f tagEventor.mak clean
-	@make -s -C tagEventor -f gtagEventor.mak clean
+	#@make -s -C tagEventor -f gtagEventor.mak clean
 	@echo "Clean Done."
