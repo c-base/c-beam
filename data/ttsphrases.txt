@@ -16,7 +16,9 @@
 'malformierte zeichenkette in c-lang sprachdefinitionsmodul.': 'malformierte zeichenkette in zieh lang sprachdefinitionsmodul.',
 'hoppla.': 'hoppla.',
 'systemfehler in modul 0x7b.': 'systemfehler in modul 0 x 7 b.',
-'lichtabsaugung stabil.': 'lichtabsaugung stabil.',
+'lichtabsaugung stabil.': 'licht-absaugung stabil.',
 'auCenhu:lle intakt.': 'aussenhülle intakt.',
+'hu:llenintegrita:t 100%.': 'hüllen-integrität einhundert prozent.',
+'die c-base begrüßt alle aliens an bord.': 'die c-base begrüßt alle aliens an bord.',
 'update für wurstware erforderlich.': 'update für wurstware erforderlich.'
 }
