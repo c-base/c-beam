@@ -27,7 +27,7 @@ def tts(voice, text):
 
     pitch = 100
     speed = 180
-    text = "%s." % text if not text.endswith(".")
+    text = "%s." % (text,) if not text.endswith(".")
     filename = '%s/%s_%s_%d_%d.mp3' % (sampledir, urllib.quote(text.lower()), voice, pitch, speed)
     textparam = '\\vct=%d\\ \\spd=%d\\ %s' % (pitch, speed, text)
 
