@@ -24,6 +24,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>  /* for umask() */
+#include <sys/wait.h>  /* for waitpid() */
+
 #include <limits.h>
 
 #include "constants.h"
@@ -244,7 +246,8 @@ execScriptInChild(
    {
       sprintf(messageString, "Fork of child process successful with child pid=%d", pid);
       readersLogMessage( &readerManager, LOG_INFO, 2, messageString);
-      return( TRUE ); /* we will have to assume the exec in the child will work */
+      ret = waitpid(pid, NULL, 0); /*force synchronous operation. othwerwise need SIGCHLD handler to prevent zombies */
+      return ( TRUE );
    }
 
    /* If we got this far, then "pid" = 0 and we are in the child process */
