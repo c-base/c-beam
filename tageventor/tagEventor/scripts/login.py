@@ -30,7 +30,6 @@ def login(user, logindelta, timeoutdelta):
         else:
            #logout
            os.rename(userfile, "%s.logout" % userfile)
-           #login.tts("julia", "bis bald smile")
            return "logout"
     else:
         if os.path.isfile("%s.logout" % userfile):
@@ -44,5 +43,4 @@ def login(user, logindelta, timeoutdelta):
            f = open(userfile, 'w')
            f.write(str(expire))
 
-           #tts("julia", "hallo %, willkommen an bord")
            return "login"
