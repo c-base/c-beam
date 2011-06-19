@@ -17,10 +17,12 @@ from jsb.lib.fleet import fleet
 from jsb.lib.persist import PlugPersist
 from jsb.lib.threadloop import TimedLoop
 
+from jsb.lib.persist import PlugPersist
+
 ## basic imports
 
 import re, random
-import os, time
+import os, time, datetime
 import logging
 
 cfg = PersistConfig()
@@ -28,9 +30,15 @@ cfg.define('watcher-interval', 5)
 cfg.define('watcher-enabled', 0)
 cfg.define('eta-timeout', 72000)
 
-userpath = '/home/mirror/users'
+## defines
+
+RE_ETA = re.compile(r'ETA (?P<item>\([^\)]+\)|\[[^\]]+\]|\w+)(?P<mod>\+\+|--)( |$)')
+
+userpath = '/home/c-beam/users'
 #usermap = eval(open("/home/mirror/.erawrim/usermap").read())
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
+
+weekdays = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO']
 
 
 def getuser(ievent):
@@ -39,7 +47,7 @@ def getuser(ievent):
     elif ievent.fromm in usermap:
         return usermap[ievent.fromm]
     elif ievent.channel.find('c-base.org') > -1:
-        return ievent.channel[:-10]
+        return ievent.channel[:-11]
     elif ievent.fromm.find('c-base.org') > -1:
         return ievent.fromm[:-10]
     else:
@@ -62,8 +70,25 @@ class UserlistWatcher(TimedLoop):
     lastcount = -1
     lasteta = -1
     lastuserlist = []
+    oldday = weekdays[datetime.datetime.now().weekday()]
 
     def handle(self):
+        day = weekdays[datetime.datetime.now().weekday()]
+        if day != self.oldday:
+            self.oldday = day
+            dayitem = LteItem(day)
+            # convert LTEs to ETAs for current day
+            for user in dayitem.data.ltes.keys():
+                seteta(user, dayitem.data.ltes[user][0])
+                try: bot = fleet.byname(self.name)
+                except: pass
+                if bot and bot.type == "sxmpp":
+                    for etasub in etaitem.data.etasubs:
+                        bot.say(etasub, 'ETA %s %s' % (user, dayitem.data.ltes[user][0]))
+                del dayitem.data.ltes[user]
+            # clear LTEs for current day
+            dayitem.data.ltes = {}
+            dayitem.save()   
         if not cfg.get('watcher-enabled'):
             raise UserlistError('watcher not enabled, use "!%s-cfg watcher-enabled 1" to enable' % os.path.basename(__file__)[:-3])
         try:
@@ -85,7 +110,7 @@ class UserlistWatcher(TimedLoop):
 
                 logging.debug("Usercount: %s" % usercount)
                 if usercount > 0:
-                    self.announce('open', 'chat')
+                    #self.announce('open', 'chat')
                     # check if someone arrived who set an ETA
                     for user in users:
                         try: 
@@ -102,11 +127,11 @@ class UserlistWatcher(TimedLoop):
                     for user in newusers:
                         logging.debug('%s has just arrived!' % user)
                     self.lastuserlist = userlist()
-                else:
-                    if len(etaitem.data.etas) > 0:
-                        self.announce('incoming', 'dnd')
-                    else:
-                        self.announce('closed', 'xa')
+                #else:
+                    #if len(etaitem.data.etas) > 0:
+                        #self.announce('incoming', 'dnd')
+                    #else:
+                        #self.announce('closed', 'xa')
 
             # remove expired ETAs
             for user in etaitem.data.etas.keys():
@@ -174,7 +199,7 @@ def handle_userlist(bot, ievent):
         if len(etaitem.data.etas) > 0:
             etalist = []
             for key in etaitem.data.etas.keys():
-                etalist += ['%s (%s)' % (key, etaitem.data.etas[key])]
+                etalist += ['%s [%s]' % (key, etaitem.data.etas[key])]
             reply += 'ETA: ' + ', '.join(etalist) + '\n'
     else:
         reply = "No one there"
@@ -194,6 +219,7 @@ def handle_userlist_login(bot, ievent):
 
 def handle_userlist_logout(bot, ievent):
     user = getuser(ievent)
+    print user
     if not user: return ievent.reply('I cannot figure out your nickname, sorry')
     try:
         result = os.remove('%s/%s' % (userpath, user))
@@ -251,26 +277,39 @@ def handle_userlist_lseta(bot, ievent):
         if len(etaitem.data.etas) > 0:
             etalist = []
             for key in etaitem.data.etas.keys():
-                etalist += ['%s (%s)' % (key, etaitem.data.etas[key])]
+                etalist += ['%s [%s]' % (key, etaitem.data.etas[key])]
             ievent.reply('ETA: %s' % ', '.join(etalist))
     except UserlistError, e:
         ievent.reply(str(s))
 
-def handle_userlist_eta(bot, ievent):
-    eta = 0
-    try:    eta = int(ievent.args[0])
-    except: pass
-    user = getuser(ievent)
-    if not user: return ievent.reply('I cannot figure out your nickname, sorry')
-    if eta == 0:
+def seteta(user, eta):
+    if eta == '0':
         del etaitem.data.etas[user]
     else:
         etaitem.data.etas[user] = eta
         etaitem.data.etatimestamps[user] = time.time() + cfg.get('eta-timeout')
     etaitem.save()
+
+
+def handle_userlist_eta(bot, ievent):
+    eta = 0
+    if ievent.args[0].upper() in weekdays:
+        return handle_lte(bot, ievent)
+    if ievent.args[0] in ('gleich', 'bald'):
+        foo = datetime.datetime.now() + datetime.timedelta(minutes=30)
+        print foo
+        eta = int(foo.strftime("%H%M"))
+    else:
+        eta = ievent.rest
+        
+        #try:    eta = int(ievent.args[0])
+        #except: return ievent.reply('Please set your ETA like this: !eta 1800')
+    user = getuser(ievent)
+    if not user: return ievent.reply('I cannot figure out your nickname, sorry')
+    seteta(user, eta)
     try:
         for etasub in etaitem.data.etasubs:
-            bot.say(etasub, 'ETA %s %d' % (user, eta))
+            bot.say(etasub, 'ETA %s %s' % (user, eta))
         #ievent.reply('Set eta for %s to %d' % (user, eta))
         ievent.reply('Danke dass Du bescheid sagst :)')
  
@@ -308,8 +347,11 @@ def handle_userlist_watch_list(bot, ievent):
 
 
 cmnds.add('ul', handle_userlist, ['USER'])
+cmnds.add('who', handle_userlist, ['USER'])
 cmnds.add('ul-logout', handle_userlist_logout, ['USER'])
+cmnds.add('logout', handle_userlist_logout, ['USER'])
 cmnds.add('ul-login', handle_userlist_login, ['USER'])
+cmnds.add('login', handle_userlist_login, ['USER'])
 cmnds.add('ul-eta', handle_userlist_eta, ['USER'])
 cmnds.add('eta', handle_userlist_eta, ['USER'])
 cmnds.add('ul-subeta', handle_userlist_subeta, ['USER'])
@@ -327,10 +369,6 @@ cmnds.add('userlist-watch-stop',  handle_userlist_watch_stop, 'ULADM')
 cmnds.add('userlist-watch-list',  handle_userlist_watch_list, 'ULADM')
 
 
-
-
-
-
 # MO 1900 2300
 class LteItem(PlugPersist):
     def __init__(self, name, default={}):
@@ -343,17 +381,49 @@ def handle_lte(bot, ievent):
     if not user: return ievent.reply('I cannot figure out your nickname, sorry')
     item = LteItem(user)
     args = ievent.rest.upper().split(' ')
-    if len(args) == 3:
+
+    lteusers = PlugPersist('lteusers')
+    if not lteusers.data: lteusers.data = {}
+    if len(ievent.args) == 3:
         (day, start, end) = args
-        if args[0] not in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'):
+        if args[0] not in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'): 
+            #, 'MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'):
             return ievent.reply('Please enter your LTE like this: !lte MO 1900 2200')
         item.data.ltes[args[0]] = args
         item.save()
-        ievent.reply(args[0])
+        dayitem = LteItem(args[0])
+        dayitem.data.ltes[user] = args[1:]
+        dayitem.save()
+        lteusers.data[user] = time.time()
+        lteusers.save()
+        ievent.reply('Thanks, your LTE has been saved.')
+    elif len(ievent.args) == 2:
+        if args[1] == '0':
+            dayitem = LteItem(args[0])
+            if user in dayitem.data.ltes.keys():
+                del dayitem.data.ltes[user]            
+                dayitem.save()
+                ievent.reply('Thanks, your LTE for %s has been deleted.' % args[0])
+            else:
+                ievent.reply('You have no LTE set for %s.' % args[0])
+    elif len(ievent.args) == 1:
+        if args[0] in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
+            dayitem = LteItem(args[0])
+            if len(dayitem.data.ltes.keys()) > 0:
+                reply = 'LTEs for %s: \n' % args[0]
+                for user in dayitem.data.ltes.keys():
+                    reply += '%s [%s]\n' % (user, '-'.join(dayitem.data.ltes[user]))
+                ievent.reply(reply)
+        else:
+            ievent.reply('Unknown day')
+    elif len(ievent.args) == 0:
+        reply = ''
+        for day in weekdays:
+            dayitem = LteItem(day)
+            if len(dayitem.data.ltes.keys()) > 0:
+                reply += '%s: %s\n' % (day, ', '.join(dayitem.data.ltes.keys()))
+        ievent.reply(reply)
     else:
-        #return handle_lte_ls()
-        ievent.reply('not implemented')
-
-    #ievent.reply(str(len(ievent.rest.split(' '))))
+        ievent.reply(str(len(ievent.rest.split(' '))))
 
 cmnds.add('lte', handle_lte, ['USER'])
