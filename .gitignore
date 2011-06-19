@@ -1,1 +1,5 @@
 *.pyc
+tageventor/tagEventor/Debug
+tageventor/tagEventor/Release
+tageventor/tagReader/Debug
+tageventor/tagReader/Release
