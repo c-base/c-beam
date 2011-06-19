@@ -1,0 +1,5 @@
+#! /bin/bash
+
+user="keyboardsurfer"
+touch /home/c-beam/users/$user
+/home/smile/projects/c-beam/c_out/ttsclient.py hallo keyboard surfer
