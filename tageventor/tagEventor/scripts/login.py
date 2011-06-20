@@ -9,7 +9,7 @@ server = jsonrpclib.Server('http://10.0.1.13:1775')
 
 userdir = "/home/c-beam/users"
 
-logindelta = 10
+logindelta = 30
 
 
 def tts(voice, text):
