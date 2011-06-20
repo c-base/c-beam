@@ -1,4 +1,5 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
 
 import httplib, urllib, random, re, os, sys, time
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
