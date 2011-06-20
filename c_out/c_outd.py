@@ -39,7 +39,7 @@ def raw2wav(raws, outfile):
 
     os.system("sox -r 44100 -c 2 -s -w %s/%s.raw %s/%s" % (sampledir, outfile, sampledir, outfile))    
     print  "sox -r 44100 -c 2 -s -w %s/%s.raw %s/%s" % (sampledir, outfile, sampledir, outfile)
-    return outfile
+    return "%s/%s" % (sampledir, outfile)
 
 
 def tts(voice, text):
