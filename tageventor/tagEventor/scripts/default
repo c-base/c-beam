@@ -7,7 +7,6 @@ import os.path
 user="unknown"
 nickspell = "unbekannte kohlenstoffeinheit"
 
-logindelta = 1
 timeoutdelta = 600
 
 
