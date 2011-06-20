@@ -11,7 +11,7 @@ logindelta = 1
 timeoutdelta = 600
 
 
-result = login.login(user, logindelta, timeoutdelta)
+result = login.login(user, timeoutdelta)
 if result == "login":
     login.tts("julia", "hallo %s, willkommen an bord" % nickspell)
 elif result == "logout":
