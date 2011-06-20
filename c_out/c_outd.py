@@ -10,8 +10,9 @@ sampledir = '/tmp/shout'
 r2d2path = '/home/smile/projects/c-beam/c_out/r2d2_wav'
 password = '0g7znor2aa'
 
-thevoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus']
-
+thevoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus', 'r2d2']
+acapela = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus']
+ 
 def main():
     server = SimpleJSONRPCServer(('0.0.0.0', 1775))
 
@@ -39,8 +40,10 @@ def mergemp3(mp3s, outfile):
 
 
 def tts(voice, text):
-    if voice in thevoices:
+    if voice in acapela:
         voice = '%s22k' % voice
+    elif voice == 'r2d2':
+        return r2d2(text)
     else:
         voice = 'lucy22k'
 
