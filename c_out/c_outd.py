@@ -73,6 +73,25 @@ def tts(voice, text):
         play(filename)
 
 def r2d2(text):
+    wavs = ""
+    #text = text.lower()
+
+    for char in text:
+        char = char.replace(" ", "space")
+        char = char.replace("\n", "space")
+        char = char.replace("/", "slash")
+        char = char.replace("-", "minus")
+        char = char.replace("?", "ask")
+        char = char.replace("ß", "szett")
+        char = char.replace("ä", "ae")
+        char = char.replace("ö", "oe")
+        char = char.replace("ü", "ue")
+        char = char.replace("Ä", "AE")
+        char = char.replace("Ö", "OE")
+        char = char.replace("Ü", "UE")
+
+        wavs = "%s %s.raw" % (wavs, char)
+    print wavs
     return "not implemented"
 
 def festival(text):
