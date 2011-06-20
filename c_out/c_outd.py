@@ -106,9 +106,10 @@ def r2d2(text):
         char = char.replace("Ö", "OE")
         char = char.replace("Ü", "UE")
 
-        mp3s.append("%s.mp3" % char)
+        mp3s.append("%s/%s.mp3" % (r2d2path, char))
     print mp3s
-    return play(mergemp3(mp3s, "r2d2.mp3"))
+    #return play(mergemp3(mp3s, "r2d2.mp3"))
+    return play(mp3s)
 
 def festival(text):
     return "not implemented"
