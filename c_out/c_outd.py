@@ -14,7 +14,6 @@ thevoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'r
 
 def main():
     server = SimpleJSONRPCServer(('0.0.0.0', 1775))
-    r2d2("foo der bar!")
 
     server.register_function(tts, 'tts')
     server.register_function(r2d2, 'r2d2')
