@@ -6,7 +6,7 @@ from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 player = 'mpg123'
 sampledir = '/mnt/datengrab/00_audio/c_out'
-sampledir = '/tmp'
+sampledir = '/tmp/shout'
 r2d2path = '/home/smile/projects/c-beam/c_out/r2d2_wav'
 password = '0g7znor2aa'
 
