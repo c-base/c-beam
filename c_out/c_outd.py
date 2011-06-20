@@ -7,12 +7,14 @@ from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 player = 'mpg123'
 sampledir = '/mnt/datengrab/00_audio/c_out'
 sampledir = '/tmp'
+r2d2path = '/home/smile/projects/c-beam/c_out/r2d2_wav'
 password = '0g7znor2aa'
 
 thevoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus']
 
 def main():
     server = SimpleJSONRPCServer(('0.0.0.0', 1775))
+    r2d2("foo der bar!")
 
     server.register_function(tts, 'tts')
     server.register_function(r2d2, 'r2d2')
@@ -23,6 +25,22 @@ def main():
 
 def voices():
     return thevoices
+
+def raw2wav(raws, outfile):
+    #os.system("cat %s" > /tmp/$$.raw)
+    oFile = open('%s/%s.raw' % (sampledir, outfile),'wb')
+    oFile.close
+
+    for raw in raws:
+        iFile = open("%s/%s" % (r2d2path, raw), 'r')
+        oFile.write(iFile.read())
+        iFile.close
+    oFile.close
+
+    os.system("sox -r 44100 -c 2 -s -w %s/%s.raw %s/%s" % (sampledir, outfile, sampledir, outfile))    
+    print  "sox -r 44100 -c 2 -s -w %s/%s.raw %s/%s" % (sampledir, outfile, sampledir, outfile)
+    return outfile
+
 
 def tts(voice, text):
     if voice in thevoices:
@@ -74,7 +92,7 @@ def tts(voice, text):
         play(filename)
 
 def r2d2(text):
-    wavs = ""
+    raws = []
     #text = text.lower()
 
     for char in text:
@@ -91,9 +109,10 @@ def r2d2(text):
         char = char.replace("Ö", "OE")
         char = char.replace("Ü", "UE")
 
-        wavs = "%s %s.raw" % (wavs, char)
-    print wavs
-    return "not implemented"
+        #raws = "%s %s.raw" % (raws, char)
+        raws.append("%s.raw" % char)
+    print raws
+    return play(raw2wav(raws, "r2d2.wav"))
 
 def festival(text):
     return "not implemented"
