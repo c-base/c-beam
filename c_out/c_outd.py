@@ -26,19 +26,16 @@ def main():
 def voices():
     return thevoices
 
-def raw2wav(raws, outfile):
-    #os.system("cat %s" > /tmp/$$.raw)
-    oFile = open('%s/%s.raw' % (sampledir, outfile),'wb')
+def mergemp3(mp3s, outfile):
+    oFile = open('%s/%s.mp3' % (sampledir, outfile),'wb')
     oFile.close
 
-    for raw in raws:
-        iFile = open("%s/%s" % (r2d2path, raw), 'r')
+    for mp3 in mp3s:
+        iFile = open("%s/%s" % (r2d2path, mp3), 'r')
         oFile.write(iFile.read())
         iFile.close
     oFile.close
 
-    os.system("sox -r 44100 -c 2 -s -w %s/%s.raw %s/%s" % (sampledir, outfile, sampledir, outfile))    
-    print  "sox -r 44100 -c 2 -s -w %s/%s.raw %s/%s" % (sampledir, outfile, sampledir, outfile)
     return "%s/%s" % (sampledir, outfile)
 
 
@@ -92,7 +89,7 @@ def tts(voice, text):
         play(filename)
 
 def r2d2(text):
-    raws = []
+    mp3s = []
     #text = text.lower()
 
     for char in text:
@@ -109,10 +106,9 @@ def r2d2(text):
         char = char.replace("Ö", "OE")
         char = char.replace("Ü", "UE")
 
-        #raws = "%s %s.raw" % (raws, char)
-        raws.append("%s.raw" % char)
-    print raws
-    return play(raw2wav(raws, "r2d2.wav"))
+        mp3s.append("%s.mp3" % char)
+    print mp3s
+    return play(mergemp3(mp3s, "r2d2.mp3"))
 
 def festival(text):
     return "not implemented"
