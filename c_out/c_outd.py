@@ -23,7 +23,7 @@ def main():
     server.register_function(play, 'play')
     server.register_function(volume, 'volume')
     server.register_function(voices, 'voices')
-    server.register_function(voices, 'sounds')
+    server.register_function(sounds, 'sounds')
     server.register_function(voices, 'c_out')
     server.serve_forever()
 
