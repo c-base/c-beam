@@ -24,7 +24,7 @@ def main():
     server.register_function(volume, 'volume')
     server.register_function(voices, 'voices')
     server.register_function(sounds, 'sounds')
-    server.register_function(voices, 'c_out')
+    server.register_function(c_out, 'c_out')
     server.serve_forever()
 
 def voices():
