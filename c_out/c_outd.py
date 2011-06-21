@@ -124,10 +124,10 @@ def volume(vol):
     return "not implemented"
 
 def c_out():
-    return c_out(random.choice(sounds()))
+    return play(random.choice(sounds()))
 
-def c_out(sound):
-    return play(sound)
+#def c_out(sound):
+#    return play(sound)
 
 def sounds():
     return os.listdir(sampledir)
