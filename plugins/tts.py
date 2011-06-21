@@ -21,6 +21,7 @@ import os
 import urllib
 import sys
 import jsonrpclib
+import datetime
 
 ## defines
 
@@ -74,7 +75,7 @@ def handle_tts(bot, ievent, voice):
         ievent.reply(str(sys.exc_info()[0]))
     try:
         f = open(ttslog, 'a')
-        f.write('%s: %s (%s)\n' % (getuser(ievent), text, voice))
+        f.write('%s: %s: %s (%s)\n' % (datetime.datetime.now(), getuser(ievent), text, voice))
         f.close()
     except:
         ievent.reply(str(sys.exc_info()[0]))
