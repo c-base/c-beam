@@ -202,7 +202,7 @@ def handle_userlist(bot, ievent):
                 etalist += ['%s [%s]' % (key, etaitem.data.etas[key])]
             reply += 'ETA: ' + ', '.join(etalist) + '\n'
     else:
-        reply = "No one there"
+        reply = "Es ist derzeit niemand angemeldet.."
     ievent.reply(reply)
 
 def handle_userlist_login(bot, ievent):
