@@ -6,7 +6,9 @@ from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 player = 'mpg123'
 sampledir = '/mnt/datengrab/00_audio/c_out'
-sampledir = '/tmp/shout'
+sampledir = '/usr/local/sounds/loop'
+tmpdir = '/tmp/shout'
+
 r2d2path = '/home/smile/projects/c-beam/c_out/r2d2_wav'
 password = '0g7znor2aa'
 
@@ -27,7 +29,7 @@ def voices():
     return thevoices
 
 def mergemp3(mp3s, outfile):
-    oFile = open('%s/%s.mp3' % (sampledir, outfile),'wb')
+    oFile = open('%s/%s.mp3' % (tmpdir, outfile),'wb')
     oFile.close
 
     for mp3 in mp3s:
@@ -36,7 +38,7 @@ def mergemp3(mp3s, outfile):
         iFile.close
     oFile.close
 
-    return "%s/%s" % (sampledir, outfile)
+    return "%s/%s" % (tmpdir, outfile)
 
 
 def tts(voice, text):
@@ -50,7 +52,7 @@ def tts(voice, text):
     pitch = 100
     speed = 180
     if not text.endswith("."): text = "%s." % (text,)
-    filename = '%s/%s_%s_%d_%d.mp3' % (sampledir, urllib.quote(text.lower()), voice, pitch, speed)
+    filename = '%s/%s_%s_%d_%d.mp3' % (tmpdir, urllib.quote(text.lower()), voice, pitch, speed)
     textparam = '\\vct=%d\\ \\spd=%d\\ %s' % (pitch, speed, text)
 
     # check whether we have a cached version of the the file
@@ -119,8 +121,20 @@ def festival(text):
 def volume(vol):
     return "not implemented"
 
+def c_out():
+    return c_out(random.choice(sounds()))
+
+def c_out(sound):
+    return play(sound)
+
+def sounds():
+    return os.listdir(sampledir)
+
 def play(filename):
-    # TODO: check if filename contains /, otherwise use default directory
+    if filename.find(".") == -1:
+        filename = "%s.mp3" % filename
+    if filename.find("/") == -1:
+        filename = "%s/%s" % (sampledir, filename)
     print '%s %s' % (player, filename)
     if player == 'mplayer':
         print 'mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename
