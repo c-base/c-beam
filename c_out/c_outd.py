@@ -21,7 +21,8 @@ def main():
     server.register_function(tts, 'tts')
     server.register_function(r2d2, 'r2d2')
     server.register_function(play, 'play')
-    server.register_function(volume, 'volume')
+    server.register_function(setvolume, 'setvolume')
+    server.register_function(getvolume, 'getvolume')
     server.register_function(voices, 'voices')
     server.register_function(sounds, 'sounds')
     server.register_function(c_out, 'c_out')
@@ -120,8 +121,13 @@ def r2d2(text):
 def festival(text):
     return "not implemented"
 
-def volume(vol):
-    return "not implemented"
+def getvolume():
+    curvol = os.system('amixer get Master|grep "^  Mono" | cut -d "[" -f2 | cut -d "%" -f1')
+    return curvol
+
+def setvolume(vol):
+    os.system('amixer set Master %s%%' % vol)
+    return getvolume()
 
 def c_out():
     return play(random.choice(sounds()))
