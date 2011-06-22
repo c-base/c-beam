@@ -1,7 +1,7 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-import httplib, urllib, random, re, os, sys, time
+import httplib, urllib, random, re, os, sys, time, subprocess
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 player = 'mpg123'
@@ -122,7 +122,7 @@ def festival(text):
     return "not implemented"
 
 def getvolume():
-    curvol = os.system('amixer get Master|grep "^  Mono" | cut -d "[" -f2 | cut -d "%" -f1')
+    curvol = subprocess.Popen('/usr/local/bin/getvol', stdout=subprocess.PIPE).stdout.read()
     return curvol
 
 def setvolume(vol):
