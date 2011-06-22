@@ -122,7 +122,14 @@ def festival(text):
     return "not implemented"
 
 def getvolume():
-    curvol = subprocess.Popen('/usr/local/bin/getvol', stdout=subprocess.PIPE).stdout.read()
+    res = subprocess.Popen(['amixer', 'get', 'Master'],  stdout=subprocess.PIPE).stdout.read()
+    m = re.search('\[(\d+)\%\]', res)
+    try:
+        curvol = m.group(1)
+    except:
+        curvol = -1
+
+    #curvol = subprocess.Popen('/usr/local/bin/getvol', stdout=subprocess.PIPE).stdout.read()
     return curvol
 
 def setvolume(vol):
