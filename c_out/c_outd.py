@@ -172,7 +172,8 @@ def play(filename):
         filename = "%s.mp3" % filename
     if filename.find("/") == -1:
         filename = "%s/%s" % (sampledir, filename)
-    print '%s %s' % (player, filename)
+        filename = findFile(sampledir, filename)
+#    print '%s %s' % (player, filename)
     if player == 'mplayer':
         print 'mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename
         os.system('mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename)
