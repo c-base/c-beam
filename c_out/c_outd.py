@@ -44,7 +44,7 @@ def listFiles(dir):
 def findFile(dir, filename):
     for item in os.listdir(dir):
         if os.path.isfile("%s/%s" % (dir, item)):
-            if item.find(filename) != 0:
+            if item.find(filename) != -1:
                 return "%s/%s" % (dir, item)
         elif os.path.isdir("%s/%s" % (dir, item)):
             res = findFile("%s/%s" % (dir, item), filename)
