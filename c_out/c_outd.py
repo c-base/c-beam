@@ -171,7 +171,7 @@ def play(filename):
     if filename.find(".") == -1:
         filename = "%s.mp3" % filename
     if filename.find("/") == -1:
-        filename = "%s/%s" % (sampledir, filename)
+        #filename = "%s/%s" % (sampledir, filename)
         filename = findFile(sampledir, filename)
 #    print '%s %s' % (player, filename)
     if player == 'mplayer':
