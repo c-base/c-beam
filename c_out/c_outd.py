@@ -7,6 +7,7 @@ from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 player = 'mpg123'
 sampledir = '/mnt/datengrab/00_audio/c_out'
 sampledir = '/usr/local/sounds/loop'
+sampledir = '/usr/local/sounds/samples'
 tmpdir = '/tmp/shout'
 
 r2d2path = '/home/smile/projects/c-beam/c_out/r2d2_wav'
@@ -30,6 +31,15 @@ def main():
 
 def voices():
     return thevoices
+
+def listFiles(dir):
+    ls = []
+    for item in os.listdir(dir):
+        if os.path.isdir("%s/%s" % (dir, item)):
+            ls.extend(listFiles("%s/%s" % (dir, item)))
+        else:
+            ls.append(item)
+    return ls
 
 def mergemp3(mp3s, outfile):
     oFile = open('%s/%s.mp3' % (tmpdir, outfile),'wb')
@@ -143,7 +153,8 @@ def c_out():
 #    return play(sound)
 
 def sounds():
-    return os.listdir(sampledir)
+#    return os.listdir(sampledir)
+    return listFiles(sampledir)
 
 def play(filename):
     if filename.find(".") == -1:
