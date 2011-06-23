@@ -59,12 +59,12 @@ def handle_c_out(bot, ievent):
     except:
         ievent.reply(str(sys.exc_info()[0]))
 
-cmnds.add('c_out', handle_c_out, ['USER'])
+cmnds.add('c_out', handle_c_out, ['USER', 'GUEST'])
 
 def handle_c_out_list(bot, ievent):
     return ievent.reply("\n".join(server.sounds()))
 
-cmnds.add('c_out-list', handle_c_out_list, ['USER'])
+cmnds.add('c_out-list', handle_c_out_list, ['USER', 'GUEST'])
 
 def tail(f, n, offset=0):
     """Reads a n lines from f with an offset of offset lines."""
@@ -89,4 +89,4 @@ def handle_c_out_tail(bot, ievent):
     ievent.reply('\n'.join(tail(f, 5, 0)))
     f.close()
 
-cmnds.add('c_out-tail', handle_c_out_tail, ['USER'])
+cmnds.add('c_out-tail', handle_c_out_tail, ['USER', 'GUEST'])
