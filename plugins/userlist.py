@@ -79,7 +79,8 @@ class UserlistWatcher(TimedLoop):
     def handle(self):
         bot = 0
         try: bot = fleet.byname(self.name)
-        except: pass
+    
+        except: print str(fleet) #"fleet.byname(%s)" % self.name
         day = weekdays[datetime.datetime.now().weekday()]
         if day != self.oldday:
             self.oldday = day
@@ -102,7 +103,6 @@ class UserlistWatcher(TimedLoop):
             users = userlist()
             usercount = len(users)
             if usercount != self.lastcount or self.lasteta != len(etaitem.data.etas):
-                print users
                 #if self.lastcount == 0 and usercount > 0:
 
                 self.lastcount = usercount
@@ -124,11 +124,12 @@ class UserlistWatcher(TimedLoop):
                         if user not in self.lastuserlist and not user.endswith('.logout'):
                             newusers.append(user)
                     if len(newusers) > 0:
+                        logging.info('newusers: %s' % ", ".join(newusers))
                         if bot and bot.type == "sxmpp":
                             for arrivesub in etaitem.data.arrivesubs:
                                 #tell subscribers who has just arrived
                                 bot.say(arrivesub, 'boarding: %s' % ", ".join(newusers))
-                                logging.debug('boarding: %s' % ", ".join(user))
+                                logging.info('boarding: %s -> %s' % (", ".join(user), arrivesub))
                     self.lastuserlist = userlist()
 
             # remove expired ETAs
