@@ -31,8 +31,7 @@ def precbeam(bot, event):
     if event.userhost in bot.ignore: return False
 
     print 'c-beam for %s' % event.userhost
-
-    if len(event.txt) > 2 and event.txt[0] != '!':
+    if len(event.txt) > 2 and event.txt[0] not in event.chan.data.cc:
         return True
     return False
 
