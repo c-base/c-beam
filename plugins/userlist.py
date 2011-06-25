@@ -81,6 +81,8 @@ class UserlistWatcher(TimedLoop):
         try: bot = fleet.byname(self.name)
     
         except: print str(fleet) #"fleet.byname(%s)" % self.name
+
+        # LTE conversion to ETA
         day = weekdays[datetime.datetime.now().weekday()]
         if day != self.oldday:
             self.oldday = day
@@ -95,11 +97,10 @@ class UserlistWatcher(TimedLoop):
             # clear LTEs for current day
             dayitem.data.ltes = {}
             dayitem.save()   
+
         if not cfg.get('watcher-enabled'):
             raise UserlistError('watcher not enabled, use "!%s-cfg watcher-enabled 1" to enable' % os.path.basename(__file__)[:-3])
         try:
-            # check if at least one user is logged in
-            # or try to ping the switches
             users = userlist()
             usercount = len(users)
             if usercount != self.lastcount or self.lasteta != len(etaitem.data.etas):
@@ -120,7 +121,7 @@ class UserlistWatcher(TimedLoop):
 
                     # find out who just arrived
                     newusers = []
-                    for user in userlist():
+                    for user in users:
                         if user not in self.lastuserlist and not user.endswith('.logout'):
                             newusers.append(user)
                     if len(newusers) > 0:
@@ -128,8 +129,10 @@ class UserlistWatcher(TimedLoop):
                         if bot and bot.type == "sxmpp":
                             for arrivesub in etaitem.data.arrivesubs:
                                 #tell subscribers who has just arrived
+                                logging.info('boarding: %s -> %s' % (", ".join(newusers), arrivesub))
                                 bot.say(arrivesub, 'boarding: %s' % ", ".join(newusers))
-                                logging.info('boarding: %s -> %s' % (", ".join(user), arrivesub))
+                        else:
+                                logging.info('bot undefined or not xmpp')
                     self.lastuserlist = userlist()
 
             # remove expired ETAs
