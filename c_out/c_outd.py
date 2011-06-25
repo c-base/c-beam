@@ -165,14 +165,11 @@ def r2d2(text):
     return playfile(" ".join(mp3s))
 
 def txt2pho(voice, text):
-
-    filename = "/tmp/shout/foo.wav"
     filenamemp3 = '%s/%s_%s.mp3' % (tmpdir, urllib.quote(text.lower()), voice)
     filenamewav = '%s/%s_%s.wav' % (tmpdir, urllib.quote(text.lower()), voice)
     os.system('echo "%s" | %s/txt2pho | %s/mbrola -v 2.5 %s/data/%s/%s - %s' % (text, txt2phopath, txt2phopath, txt2phopath, voice, voice, filenamewav))
     os.system('lame %s %s' % (filenamewav, filenamemp3))
-    #return play(filenamemp3)
-    return "not implemented"
+    return play(filenamemp3)
 
 def getvolume():
     res = subprocess.Popen(['amixer', 'get', 'Master'],  stdout=subprocess.PIPE).stdout.read()
