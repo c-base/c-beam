@@ -69,7 +69,7 @@ def handle_tts(bot, ievent, voice):
             #os.system("echo %s | festival --tts" % ievent.rest)
             os.system("tts.py %s %s | xargs mpg123" % (voice, urllib.quote(text)))
         else:
-            server.tts(voice, urllib.quote(text))
+            ievent.reply(server.tts(voice, urllib.quote(text)))
              
     except:
         ievent.reply(str(sys.exc_info()[0]))
