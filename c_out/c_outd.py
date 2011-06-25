@@ -5,9 +5,11 @@ import httplib, urllib, random, re, os, sys, time, subprocess
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 player = 'mpg123'
-c_outlimit = 1
-suppressiontimeout = 10
-cpamdelta = 5
+
+c_outlimit = 5
+suppressiontimeout = 600
+cpamdelta = 60
+
 sampledir = '/mnt/datengrab/00_audio/c_out'
 sampledir = '/usr/local/sounds/loop'
 sampledir = '/usr/local/sounds/samples'
@@ -134,7 +136,7 @@ def acapela(voice, text):
 def r2d2(text):
     #c_outcount += 1
     if iscpam():
-        return "cpam alarm. bitte mindestens %d cecunden warten." % (suppressuntil - int(time.time()))
+        return "cpam alarm. bitte beachten sie die sicherheitshinweise. (%d)" % (suppressuntil - int(time.time()))
     mp3s = []
     #text = text.lower()
 
