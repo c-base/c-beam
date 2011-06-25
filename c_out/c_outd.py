@@ -5,6 +5,9 @@ import httplib, urllib, random, re, os, sys, time, subprocess
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 player = 'mpg123'
+c_outlimit = 1
+suppressiontimeout = 10
+cpamdelta = 5
 sampledir = '/mnt/datengrab/00_audio/c_out'
 sampledir = '/usr/local/sounds/loop'
 sampledir = '/usr/local/sounds/samples'
@@ -14,9 +17,16 @@ r2d2path = '/home/smile/projects/c-beam/c_out/r2d2_wav'
 password = '0g7znor2aa'
 
 thevoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus', 'r2d2']
-acapela = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus']
- 
+acapelavoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus']
+
+coutcount = 0
+suppressuntil = 0
+lastcpamcheck = 0
+
 def main():
+
+    #tts("julia", "c")
+
     server = SimpleJSONRPCServer(('0.0.0.0', 1775))
 
     server.register_function(tts, 'tts')
@@ -66,12 +76,16 @@ def mergemp3(mp3s, outfile):
 
 
 def tts(voice, text):
-    if voice in acapela:
-        voice = '%s22k' % voice
+    if voice in acapelavoices:
+        return acapela(voice, text)
     elif voice == 'r2d2':
         return r2d2(text)
     else:
-        voice = 'lucy22k'
+        return acapela('julia', text)
+
+def acapela(voice, text):
+    if voice.find('22k') == -1:
+        voice = '%s22k' % voice
 
     pitch = 100
     speed = 180
@@ -81,7 +95,7 @@ def tts(voice, text):
 
     # check whether we have a cached version of the the file
     if os.path.isfile(filename):
-        play(filename)
+        return play(filename)
     else:
         params = urllib.urlencode({
             'cl_env': 'FLASH_AS_3.0',
@@ -114,9 +128,13 @@ def tts(voice, text):
         oFile.write(fileToSave)
         oFile.close
 
-        play(filename)
+        return play(filename)
+    
 
 def r2d2(text):
+    #c_outcount += 1
+    if iscpam():
+        return "cpam alarm. bitte mindestens %d cecunden warten." % (suppressuntil - int(time.time()))
     mp3s = []
     #text = text.lower()
 
@@ -137,9 +155,10 @@ def r2d2(text):
         mp3s.append("%s/%s.mp3" % (r2d2path, char))
     print mp3s
     #return play(mergemp3(mp3s, "r2d2.mp3"))
-    return play(" ".join(mp3s))
+    return playfile(" ".join(mp3s))
 
 def festival(text):
+    #return play(filename)
     return "not implemented"
 
 def getvolume():
@@ -167,7 +186,35 @@ def sounds():
 #    return os.listdir(sampledir)
     return listFiles(sampledir)
 
+
+def iscpam():
+    global coutcount
+    global suppressuntil
+    global lastcpamcheck
+    now = int(time.time())
+    if lastcpamcheck + cpamdelta > now:
+        coutcount += 1
+    lastcpamcheck = now
+    if coutcount > c_outlimit:
+        if suppressuntil == 0:
+            suppressuntil = now + suppressiontimeout
+            return True
+        elif now > suppressuntil:
+            coutcount = 1
+            suppressuntil = 0
+            return False
+        else:
+            return True
+    else:
+        return False
+
 def play(filename):
+    if iscpam():
+        return "cpam alarm. bitte mindestens %d cecunden warten." % (suppressuntil - int(time.time()))
+    else:
+        return playfile(filename)
+
+def playfile(filename):
     if filename.find(".") == -1:
         filename = "%s.mp3" % filename
     if filename.find("/") == -1:
@@ -179,6 +226,7 @@ def play(filename):
         os.system('mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename)
     else:
         os.system('%s %s' % (player, filename))
+    return "aye"
 
 if __name__ == "__main__":
     main()
