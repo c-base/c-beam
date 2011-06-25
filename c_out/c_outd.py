@@ -16,10 +16,13 @@ sampledir = '/usr/local/sounds/samples'
 tmpdir = '/tmp/shout'
 
 r2d2path = '/home/smile/projects/c-beam/c_out/r2d2_wav'
-password = '0g7znor2aa'
+txt2phopath = "/var/www/c_out.c-base.org/txt2speech/txt2pho"
+
+acapelapassword = '0g7znor2aa'
 
 thevoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus', 'r2d2']
 acapelavoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus']
+txt2phovoices = ['de5']
 
 coutcount = 0
 suppressuntil = 0
@@ -80,6 +83,8 @@ def mergemp3(mp3s, outfile):
 def tts(voice, text):
     if voice in acapelavoices:
         return acapela(voice, text)
+    if voice in txt2phovoices:
+        return txt2pho(voice, text)
     elif voice == 'r2d2':
         return r2d2(text)
     else:
@@ -111,7 +116,7 @@ def acapela(voice, text):
             'cl_login': 'ACAPELA_BOX',
             'prot_vers': '2',
             'req_snd_id': '0_0_84%s88' % random.randint(0, 32767),
-            'cl_pwd': password
+            'cl_pwd': acapelapassword
         })
 
         headers = {"Content-type": "application/x-www-form-urlencoded",
@@ -159,8 +164,14 @@ def r2d2(text):
     #return play(mergemp3(mp3s, "r2d2.mp3"))
     return playfile(" ".join(mp3s))
 
-def festival(text):
-    #return play(filename)
+def txt2pho(voice, text):
+
+    filename = "/tmp/shout/foo.wav"
+    filenamemp3 = '%s/%s_%s_%d_%d.mp3' % (tmpdir, urllib.quote(text.lower()), voice, pitch, speed)
+    filenamewav = '%s/%s_%s_%d_%d.wav' % (tmpdir, urllib.quote(text.lower()), voice, pitch, speed)
+    os.system('echo "%s" | %s/txt2pho | %s/mbrola -v 2.5 %s/data/%s/%s - %s' % (text, txt2phopath, txt2phopath, txt2phopath, voice, voice, filenamewav))
+    os.system('lame %s %s' % (filenamewav, filenamemp3))
+    #return play(filenamemp3)
     return "not implemented"
 
 def getvolume():
@@ -212,7 +223,7 @@ def iscpam():
 
 def play(filename):
     if iscpam():
-        return "cpam alarm. bitte mindestens %d cecunden warten." % (suppressuntil - int(time.time()))
+        return "cpam alarm. bitte beachten sie die sicherheitshinweise. (%d)" % (suppressuntil - int(time.time()))
     else:
         return playfile(filename)
 
