@@ -77,10 +77,12 @@ class UserlistWatcher(TimedLoop):
     oldday = weekdays[datetime.datetime.now().weekday()]
 
     def handle(self):
+        if not cfg.get('watcher-enabled'):
+            raise UserlistError('watcher not enabled, use "!%s-cfg watcher-enabled 1" to enable' % os.path.basename(__file__)[:-3])
+        print "fleet: %s - %s" % (str(fleet), str(fleet.list())) #"fleet.byname(%s)" % self.name
         bot = 0
         try: bot = fleet.byname(self.name)
-    
-        except: print str(fleet) #"fleet.byname(%s)" % self.name
+        except: pass #print "fleet: %s" % str(fleet) #"fleet.byname(%s)" % self.name
 
         # LTE conversion to ETA
         day = weekdays[datetime.datetime.now().weekday()]
@@ -98,8 +100,6 @@ class UserlistWatcher(TimedLoop):
             dayitem.data.ltes = {}
             dayitem.save()   
 
-        if not cfg.get('watcher-enabled'):
-            raise UserlistError('watcher not enabled, use "!%s-cfg watcher-enabled 1" to enable' % os.path.basename(__file__)[:-3])
         try:
             users = userlist()
             usercount = len(users)
@@ -130,7 +130,7 @@ class UserlistWatcher(TimedLoop):
                             for arrivesub in etaitem.data.arrivesubs:
                                 #tell subscribers who has just arrived
                                 logging.info('boarding: %s -> %s' % (", ".join(newusers), arrivesub))
-                                bot.say(arrivesub, 'boarding: %s' % ", ".join(newusers))
+                                bot.say(arrivesub, 'now boarding: %s' % ", ".join(newusers))
                         else:
                                 logging.info('bot undefined or not xmpp')
                     self.lastuserlist = userlist()
@@ -143,6 +143,12 @@ class UserlistWatcher(TimedLoop):
                     etaitem.save()
 
             # remove expired users
+            now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+            for user in users:
+                userfile = "%s/%s" % (userpath, user)
+                timestamps = eval(open(userfile).read())
+                if timestamps[1] - now < 0:
+                    os.remove(userfile)
 
         except UserlistError:
             logging.error("watcher error")
@@ -231,9 +237,11 @@ def handle_userlist_logout(bot, ievent):
     print user
     if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile@c-base.org aufnehmen.')
     try:
-        result = os.remove('%s/%s' % (userpath, user))
-        ievent.reply('danke, daC du dich abgemeldet hast.')
-        #ievent.reply('Du konntest nicht manuell abgemeldet werden, ich weiss nicht warum.')
+        if os.path.exists('%s/%s' % (userpath, user)):
+            result = os.remove('%s/%s' % (userpath, user))
+            ievent.reply('danke, daC du dich abgemeldet hast.')
+        else:
+            ievent.reply('du c_einst nicht angemeldet zu sein.')
     except UserlistError, e:
         ievent.reply(str(s))
 
@@ -318,6 +326,7 @@ def handle_userlist_eta(bot, ievent):
     seteta(user, eta)
     try:
         for etasub in etaitem.data.etasubs:
+            print "sending eta %s to %s" % (eta, user)
             bot.say(etasub, 'ETA %s %s' % (user, eta))
         #ievent.reply('Set eta for %s to %d' % (user, eta))
         ievent.reply('danke, daC du bescheid sagst.')
