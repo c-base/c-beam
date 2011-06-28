@@ -1,16 +1,22 @@
 import time, os, datetime
 import BaseHTTPServer
+import logging
 HOST_NAME = '10.0.1.27' # !!!REMEMBER TO CHANGE THIS!!!
 PORT_NUMBER = 8080 # Maybe set this to 9000.
 
 usermap = '/home/c-beam/usermap'
 scriptdir = '/home/smile/projects/c-beam/tageventor/tagEventor/scripts'
-
 userpath = '/home/c-beam/users'
-
+logfile = '/var/log/c-beam/c-beamhttp.log'
 logindelta = 30
 timeoutdelta = 600
 
+logger = logging.getLogger('c-beamhttp')
+hdlr = logging.FileHandler(logfile)
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr) 
+logger.setLevel(logging.INFO)
 
 
 class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -29,12 +35,11 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         urlcomponents = s.path.split('/')
         if len(urlcomponents) != 3:
             s.wfile.write("invalid URL.<body><html>")
+            logger.warn("invalid url: %s" % s.path)
             return 
 
         (foo, method, uuid) = urlcomponents
-        print "method: %s" % method
-        print "uuid: %s" % uuid
-
+        logger.info("method: %s uuid: %s" % (method, uuid))
    
         # lookup uuid
         userfile = '%s/%s' % (usermap, uuid)
@@ -44,11 +49,9 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             username = username.rstrip('\n')
             f.close()
             
-            print username
+            logger.info("%s: %s" % (method, username))
             if method == 'login':
-                #login
                 userloginfile = '%s/%s' % (userpath, username)
-                print userloginfile
                 logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
                 timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
                 expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
@@ -57,18 +60,14 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 f.close()
                 s.wfile.write('<h1>hallo %s, willkommen auf der c-base.</h1>' % username)
             elif method == 'logout':
-                #logout
-                os.remove('%s/%s' % (userpath, username))
+                if os.path.exists('%s/%s' % (userpath, username)):
+                    os.remove('%s/%s' % (userpath, username))
                 s.wfile.write('danke, daC du dich abgemeldet hast.')
             
         else:
+            logger.warn("invalid tocen: %s" % uuid)
             s.wfile.write("invalid tocen.")
-            
-        # login user
-        
-   
 
-        #s.wfile.write("<p>You accessed path: %s</p>" % s.path)
         s.wfile.write("</body></html>")
 
 if __name__ == '__main__':
