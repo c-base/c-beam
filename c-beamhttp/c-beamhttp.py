@@ -1,10 +1,15 @@
-import time, os
+import time, os, datetime
 import BaseHTTPServer
 HOST_NAME = '10.0.1.27' # !!!REMEMBER TO CHANGE THIS!!!
 PORT_NUMBER = 8080 # Maybe set this to 9000.
 
 usermap = '/home/c-beam/usermap'
 scriptdir = '/home/smile/projects/c-beam/tageventor/tagEventor/scripts'
+
+userpath = '/home/c-beam/users'
+
+logindelta = 30
+timeoutdelta = 600
 
 
 
@@ -36,12 +41,24 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if os.path.exists(userfile) and os.path.isfile(userfile):
             f = open(userfile, "r")
             username = f.read()
+            username = username.rstrip('\n')
+            f.close()
+            
             print username
             if method == 'login':
                 #login
-                s.wfile.write('hallo %s, willkommen auf der c-base.' % username)
+                userloginfile = '%s/%s' % (userpath, username)
+                print userloginfile
+                logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
+                timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
+                expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
+                f = open(userloginfile, 'w')
+                f.write(str(expire))
+                f.close()
+                s.wfile.write('<h1>hallo %s, willkommen auf der c-base.</h1>' % username)
             elif method == 'logout':
                 #logout
+                os.remove('%s/%s' % (userpath, username))
                 s.wfile.write('danke, daC du dich abgemeldet hast.')
             
         else:
