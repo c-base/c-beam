@@ -46,14 +46,25 @@ weekdays = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO']
 
 
 def getuser(ievent):
+    #print ievent
+    print ievent.nick
+    print ievent.stripped
+    print ievent.auth
+    print ievent.hostname
+    print ievent.ruserhost
     if ievent.channel in usermap:
         return usermap[ievent.channel]
-    elif ievent.fromm in usermap:
+    elif ievent.fromm and ievent.fromm in usermap:
         return usermap[ievent.fromm]
     elif ievent.channel.find('c-base.org') > -1:
         return ievent.channel[:-11]
-    elif ievent.fromm.find('c-base.org') > -1:
+    elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
         return ievent.fromm[:-10]
+    elif ievent.hostname.startswith('c-base/crew/'):
+        return ievent.hostname[12:]
+#    elif ievent.ruserhost
+    elif ievent.auth.endswith('@shell.c-base.org'):
+        return ievent.auth[1:-17]
     else:
         return 0
 
@@ -79,7 +90,7 @@ class UserlistWatcher(TimedLoop):
     def handle(self):
         if not cfg.get('watcher-enabled'):
             raise UserlistError('watcher not enabled, use "!%s-cfg watcher-enabled 1" to enable' % os.path.basename(__file__)[:-3])
-        print "fleet: %s - %s" % (str(fleet), str(fleet.list())) #"fleet.byname(%s)" % self.name
+        #print "fleet: %s - %s" % (str(fleet), str(fleet.list())) #"fleet.byname(%s)" % self.name
         bot = 0
         try: bot = fleet.byname(self.name)
         except: pass #print "fleet: %s" % str(fleet) #"fleet.byname(%s)" % self.name

@@ -49,16 +49,25 @@ def pizza():
 ## pizza command
 
 def getuser(ievent):
+    #print ievent
+    print ievent.nick
+    print ievent.stripped
+    print ievent.auth
+    print ievent.hostname
+    print ievent.ruserhost
     if ievent.channel in usermap:
         return usermap[ievent.channel]
-    elif ievent.fromm in usermap:
+    elif ievent.fromm and ievent.fromm in usermap:
         return usermap[ievent.fromm]
     elif ievent.channel.find('c-base.org') > -1:
-        print ievent.channel[:-10]
-        return ievent.channel[:-10]
-    elif ievent.fromm.find('c-base.org') > -1:
-        print ievent.fromm[:-10]
+        return ievent.channel[:-11]
+    elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
         return ievent.fromm[:-10]
+    elif ievent.hostname.startswith('c-base/crew/'):
+        return ievent.hostname[12:]
+#    elif ievent.ruserhost
+    elif ievent.auth.endswith('@shell.c-base.org'):
+        return ievent.auth[1:-17]
     else:
         return 0
 
