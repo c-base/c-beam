@@ -24,6 +24,7 @@ from jsb.lib.persist import PlugPersist
 import re, random
 import os, time, datetime
 import logging
+import uuid
 
 cfg = PersistConfig()
 cfg.define('watcher-interval', 5)
@@ -41,6 +42,8 @@ RE_ETA = re.compile(r'ETA (?P<item>\([^\)]+\)|\[[^\]]+\]|\w+)(?P<mod>\+\+|--)( |
 userpath = '/home/c-beam/users'
 #usermap = eval(open("/home/mirror/.erawrim/usermap").read())
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
+
+#usertocen = eval(open('%s/usermap' % cfg.get('datadir')).read())
 
 weekdays = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO']
 
@@ -141,7 +144,7 @@ class UserlistWatcher(TimedLoop):
                             for arrivesub in etaitem.data.arrivesubs:
                                 #tell subscribers who has just arrived
                                 logging.info('boarding: %s -> %s' % (", ".join(newusers), arrivesub))
-                                bot.say(arrivesub, 'now boarding: %s' % ", ".join(newusers))
+                                #bot.say(arrivesub, 'now boarding: %s' % ", ".join(newusers))
                         else:
                                 logging.info('bot undefined or not xmpp')
                     self.lastuserlist = userlist()
@@ -216,15 +219,15 @@ def handle_userlist(bot, ievent):
     reply = ''
     if len(users) > 0 or len(etaitem.data.etas) > 0:
         if len(users) > 0:
-            reply += 'an board: ' + ', '.join(users) + '\n' 
+            ievent.reply('an board: ' + ', '.join(users))
         if len(etaitem.data.etas) > 0:
             etalist = []
             for key in etaitem.data.etas.keys():
                 etalist += ['%s [%s]' % (key, etaitem.data.etas[key])]
-            reply += 'ETA: ' + ', '.join(etalist) + '\n'
+            ievent.reply('ETA: ' + ', '.join(etalist))
+            #reply += 'ETA: ' + ', '.join(etalist) + '\n'
     else:
-        reply = "es ist derceit niemand angemeldet.."
-    ievent.reply(reply)
+        ievent.reply("es ist derceit niemand angemeldet..")
 
 def handle_userlist_login(bot, ievent):
     user = getuser(ievent)
@@ -456,3 +459,29 @@ def handle_lte(bot, ievent):
         ievent.reply(str(len(ievent.rest.split(' '))))
 
 cmnds.add('lte', handle_lte, ['GUEST'])
+
+
+def handle_login_tocen(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile@c-base.org aufnehmen.')
+    presencename = 'presence.c-base.org/%s' % user
+    return ievent.reply(uuid.uuid3(uuid.NAMESPACE_DNS, presencename.encode('utf8')).hex)
+    #print uuid.uuid3(uuid.NAMESPACE_DNS, 'presence.c-base.org/%s' % user).hex
+    #return uuid.uuid3(uuid.NAMESPACE_DNS, 'presence.c-base.org/%s' % user).hex
+
+    # return tocen if one already exists
+
+    #otherwise: create new tocen, save it with the username and return it
+    try:
+        userfile = '%s/%s' % (userpath, user)
+        logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
+        timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
+        expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
+        f = open(userfile, 'w')
+        f.write(str(expire))
+        ievent.reply('hallo %s, willkommen auf der c-base.' % user)
+            #ievent.reply('du konntest nicht manuell angemeldet werden, ich weiss nicht warum. bitte contact mit smile@c-base.org aufnehmen.')
+    except UserlistError, e:
+        ievent.reply(str(s))
+
+cmnds.add('login-tocen', handle_login_tocen, ['GUEST', 'USER'])
