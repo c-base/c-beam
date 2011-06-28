@@ -53,7 +53,7 @@ def prehubelmeter(bot, event):
         # increase hubelcounter
         i.data.hubelcount += 1.0
         i.save()
-        event.reply('hubel detected from %s' % getuser(event))
+        #event.reply('hubel detected from %s' % getuser(event))
         return True
     else:
         i.save()
