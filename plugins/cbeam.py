@@ -32,7 +32,22 @@ def precbeam(bot, event):
 
     print 'c-beam for %s' % event.userhost
     if len(event.txt) > 2 and event.txt[0] not in event.chan.data.cc:
-        return True
+        if event.channel == "#c-base":
+            #if event.txt.startswith(bot.nick):
+            #    return True
+        elif event.channel == "#c-beam":
+            return False
+        else:
+            return True
+        print event.channel
+        #print str(event)
+        print event.cbtype
+        print event.origchannel
+        print event.channel
+        print event.cbtype
+        print event.type
+        print event.msg
+        return False
     return False
 
 ## cbeam callbacks
