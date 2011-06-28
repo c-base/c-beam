@@ -43,6 +43,8 @@ userpath = '/home/c-beam/users'
 #usermap = eval(open("/home/mirror/.erawrim/usermap").read())
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
 
+tocendir = '/home/c-beam/usermap'
+
 #usertocen = eval(open('%s/usermap' % cfg.get('datadir')).read())
 
 weekdays = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO']
@@ -465,23 +467,13 @@ def handle_login_tocen(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile@c-base.org aufnehmen.')
     presencename = 'presence.c-base.org/%s' % user
-    return ievent.reply(uuid.uuid3(uuid.NAMESPACE_DNS, presencename.encode('utf8')).hex)
-    #print uuid.uuid3(uuid.NAMESPACE_DNS, 'presence.c-base.org/%s' % user).hex
-    #return uuid.uuid3(uuid.NAMESPACE_DNS, 'presence.c-base.org/%s' % user).hex
-
-    # return tocen if one already exists
-
-    #otherwise: create new tocen, save it with the username and return it
-    try:
-        userfile = '%s/%s' % (userpath, user)
-        logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
-        timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
-        expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
-        f = open(userfile, 'w')
-        f.write(str(expire))
-        ievent.reply('hallo %s, willkommen auf der c-base.' % user)
-            #ievent.reply('du konntest nicht manuell angemeldet werden, ich weiss nicht warum. bitte contact mit smile@c-base.org aufnehmen.')
-    except UserlistError, e:
-        ievent.reply(str(s))
+    userid = uuid.uuid3(uuid.NAMESPACE_DNS, presencename.encode('utf8')).hex
+    tocenfile = '%s/%s' % (tocendir, userid)
+    if not os.path.exists(tocenfile):
+       f = open('%s/%s' % (tocendir, userid), 'w')
+       f.write(user)
+       f.close()
+    httpurl = "http://10.0.1.27:8080"
+    return ievent.reply('%s/login/%s' % (httpurl, userid))
 
 cmnds.add('login-tocen', handle_login_tocen, ['GUEST', 'USER'])
