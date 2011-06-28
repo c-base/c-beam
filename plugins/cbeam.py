@@ -10,7 +10,6 @@ from jsb.lib.examples import examples
 from jsb.lib.persist import PlugPersist
 from jsb.utils.statdict import StatDict
 from jsb.lib.datadir import getdatadir
-from jsb.utils.thomas import Bayes
 
 ## basic imports
 
@@ -33,8 +32,7 @@ def precbeam(bot, event):
     print 'c-beam for %s' % event.userhost
     if len(event.txt) > 2 and event.txt[0] not in event.chan.data.cc:
         if event.channel == "#c-base":
-            #if event.txt.startswith(bot.nick):
-            #    return True
+            return False
         elif event.channel == "#c-beam":
             return False
         else:
