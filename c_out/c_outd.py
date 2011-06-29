@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import httplib, urllib, random, re, os, sys, time, subprocess
+import logging
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 player = 'mpg123'
@@ -27,6 +28,15 @@ txt2phovoices = ['de5']
 coutcount = 0
 suppressuntil = 0
 lastcpamcheck = 0
+
+logfile = '/var/log/c_out.log'
+
+logger = logging.getLogger('c_out')
+hdlr = logging.FileHandler(logfile)
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr) 
+logger.setLevel(logging.INFO)
 
 def main():
 
@@ -160,8 +170,6 @@ def r2d2(text):
         char = char.replace(unicode('\xc3\x9c', 'utf8'), "UE")
 
         mp3s.append("%s/%s.mp3" % (r2d2path, char))
-    print mp3s
-    #return play(mergemp3(mp3s, "r2d2.mp3"))
     return playfile(" ".join(mp3s))
 
 def txt2pho(voice, text):
