@@ -26,18 +26,12 @@ import os, time, datetime
 import logging
 import uuid
 
+
 cfg = PersistConfig()
-cfg.define('watcher-interval', 5)
-cfg.define('watcher-enabled', 0)
-cfg.define('eta-timeout', 72000)
+# CONFIG SECTION #######################################################################
 
 logindelta = 30
 timeoutdelta = 600
-
-
-## defines
-
-RE_ETA = re.compile(r'ETA (?P<item>\([^\)]+\)|\[[^\]]+\]|\w+)(?P<mod>\+\+|--)( |$)')
 
 userpath = '/home/c-beam/users'
 #usermap = eval(open("/home/mirror/.erawrim/usermap").read())
@@ -45,10 +39,30 @@ usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
 
 tocendir = '/home/c-beam/usermap'
 
+# load i18n for messages ;)
+
+messagefile = '%s/userlist_messages' % cfg.get('datadir')
+
+if os.path.exists(messagefile):
+    #eval(open(messagefile).read())
+    foo = "54"
+else:
+    foo = "42"
+
+
 #usertocen = eval(open('%s/usermap' % cfg.get('datadir')).read())
+
+cfg.define('watcher-interval', 5)
+cfg.define('watcher-enabled', 0)
+cfg.define('eta-timeout', 72000)
+
+## defines
+
+RE_ETA = re.compile(r'ETA (?P<item>\([^\)]+\)|\[[^\]]+\]|\w+)(?P<mod>\+\+|--)( |$)')
 
 weekdays = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO']
 
+##
 
 def getuser(ievent):
     #print ievent
@@ -67,7 +81,6 @@ def getuser(ievent):
         return ievent.fromm[:-10]
     elif ievent.hostname.startswith('c-base/crew/'):
         return ievent.hostname[12:]
-#    elif ievent.ruserhost
     elif ievent.auth.endswith('@shell.c-base.org'):
         return ievent.auth[1:-17]
     else:
@@ -217,6 +230,7 @@ def userlist():
 
 def handle_userlist(bot, ievent):
     """list all user that have logged in on the mirror."""
+    print foo
     users = userlist()
     reply = ''
     if len(users) > 0 or len(etaitem.data.etas) > 0:
@@ -329,9 +343,9 @@ def handle_userlist_eta(bot, ievent):
     if ievent.args[0].upper() in weekdays:
         return handle_lte(bot, ievent)
     if ievent.args[0] in ('gleich', 'bald'):
-        foo = datetime.datetime.now() + datetime.timedelta(minutes=30)
-        print foo
-        eta = int(foo.strftime("%H%M"))
+        etaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
+        print etaval
+        eta = int(etaval.strftime("%H%M"))
     else:
         eta = ievent.rest
         
