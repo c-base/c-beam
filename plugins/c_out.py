@@ -52,7 +52,7 @@ def handle_c_out(bot, ievent):
     else:
         sound = ievent.rest
     try:
-        server.play(sound)
+        ievent.reply(server.play(sound))
         #f = open(c_outlog, 'a')
         #f.write('%s: %s: %s (%s)\n' % (datetime.datetime.now(), getuser(ievent), sound))
         #f.close()
@@ -62,7 +62,7 @@ def handle_c_out(bot, ievent):
 cmnds.add('c_out', handle_c_out, ['USER', 'GUEST'])
 
 def handle_c_out_list(bot, ievent):
-    return ievent.reply("\n".join(server.sounds()))
+    return ievent.reply(" ".join(server.sounds()))
 
 cmnds.add('c_out-list', handle_c_out_list, ['USER', 'GUEST'])
 
