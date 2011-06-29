@@ -1,5 +1,19 @@
-#! /bin/bash
+#! /usr/bin/python
+
+import login
+import datetime
+import os.path
 
 user="keyboardsurfer"
-touch /home/c-beam/users/$user
-/home/smile/projects/c-beam/c_out/ttsclient.py hallo keyboard surfer
+nickspell = "keyboard surfer"
+
+timeoutdelta = 600
+
+
+result = login.login(user, timeoutdelta)
+if result == "login":
+    login.tts("julia", "hallo %s, willkommen an bord" % nickspell)
+elif result == "logout":
+    login.tts("julia", "guten heimflug %s" % nickspell)
+else:
+    print "ignore"
