@@ -118,6 +118,8 @@ class UserlistWatcher(TimedLoop):
         try: bot = fleet.byname(self.name)
         except: pass #print "fleet: %s" % str(fleet) #"fleet.byname(%s)" % self.name
 
+        bot.connectok.wait()
+
         # LTE conversion to ETA
         day = weekdays[datetime.datetime.now().weekday()]
         if day != self.oldday:
