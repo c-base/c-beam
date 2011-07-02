@@ -382,6 +382,7 @@ def handle_userlist_eta(bot, ievent):
         eta = int(etaval.strftime("%H%M"))
     else:
         eta = ievent.rest
+    eta = re.sub(r'(\d\d):(\d\d)',r'\1\2',eta)
         
         #try:    eta = int(ievent.args[0])
         #except: return ievent.reply('Please set your ETA like this: !eta 1800')
