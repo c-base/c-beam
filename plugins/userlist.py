@@ -34,9 +34,6 @@ cfg = PersistConfig()
 logindelta = 30
 timeoutdelta = 600
 
-userpath = '/home/c-beam/users'
-tocendir = '/home/c-beam/usermap'
-#usermap = eval(open("/home/mirror/.erawrim/usermap").read())
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
 
 # load i18n for messages ;)
@@ -48,9 +45,6 @@ if os.path.exists(messagefile):
     foo = "54"
 else:
     foo = "42"
-
-
-#usertocen = eval(open('%s/usermap' % cfg.get('datadir')).read())
 
 cfg.define('watcher-interval', 5)
 cfg.define('watcher-enabled', 0)
@@ -189,7 +183,7 @@ class UserlistWatcher(TimedLoop):
             # remove expired users
             now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
             for user in users:
-                userfile = "%s/%s" % (userpath, user)
+                userfile = "%s/%s" % (cfg.get('userpath'), user)
                 timestamps = eval(open(userfile).read())
                 if timestamps[1] - now < 0:
                     os.remove(userfile)
@@ -239,7 +233,7 @@ def shutdown():
     return 1
 
 def userlist():
-    return os.listdir(userpath)
+    return os.listdir(cfg.get('userpath'))
 
 ## userlist command
 
@@ -263,7 +257,7 @@ def handle_userlist_login(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
     try:
-        userfile = '%s/%s' % (userpath, user)
+        userfile = '%s/%s' % (cfg.get('userpath'), user)
 #        timestamps = eval(open(userfile).read())
 #        if timestamps[0] - now > 0:
         logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
@@ -280,11 +274,11 @@ def handle_userlist_logout(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
     try:
-        if os.path.exists('%s/%s' % (userpath, user)):
-            result = os.remove('%s/%s' % (userpath, user))
-            ievent.reply('danke, daC du dich abgemeldet hast.')
+        if os.path.exists('%s/%s' % (cfg.get('userpath'), user)):
+            result = os.remove('%s/%s' % (cfg.get('userpath'), user))
+            ievent.reply('danke, daC du dich abgemeldet hast %s.' % user)
         else:
-            ievent.reply('du c_einst nicht angemeldet zu sein.')
+            ievent.reply('du c_einst nicht angemeldet zu sein %s.' % user)
     except UserlistError, e:
         ievent.reply(str(s))
 
@@ -397,7 +391,7 @@ def handle_userlist_eta(bot, ievent):
             print "sending eta %s to %s" % (eta, user)
             bot.say(etasub, 'ETA %s %s' % (user, eta))
         #ievent.reply('Set eta for %s to %d' % (user, eta))
-        ievent.reply('danke, daC du bescheid sagst. [ETA: %s]' % eta)
+        ievent.reply('danke, daC du bescheid sagst %s. [ETA: %s]' % (user, eta))
  
     except UserlistError, e:
         ievent.reply(str(s))
@@ -518,6 +512,7 @@ cmnds.add('lte', handle_lte, ['GUEST'])
 
 
 def handle_login_tocen(bot, ievent):
+    tocendir = cfg.get('tocendir')
     user = getuser(ievent)
     if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
     presencename = 'presence.c-base.org/%s' % user
