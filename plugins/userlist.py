@@ -28,16 +28,16 @@ import uuid
 
 
 cfg = PersistConfig()
+
 # CONFIG SECTION #######################################################################
 
 logindelta = 30
 timeoutdelta = 600
 
 userpath = '/home/c-beam/users'
+tocendir = '/home/c-beam/usermap'
 #usermap = eval(open("/home/mirror/.erawrim/usermap").read())
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
-
-tocendir = '/home/c-beam/usermap'
 
 # load i18n for messages ;)
 
@@ -55,6 +55,12 @@ else:
 cfg.define('watcher-interval', 5)
 cfg.define('watcher-enabled', 0)
 cfg.define('eta-timeout', 72000)
+
+cfg.define('userpath', '/home/c-beam/users')
+cfg.define('tocendir', '/home/c-beam/usermap')
+
+cfg.define('logindelta', 30)
+cfg.define('timeoutdelta', 600)
 
 ## defines
 
@@ -97,6 +103,7 @@ class EtaItem(PlugPersist):
          self.data.etas = self.data.etas or {}
          self.data.etatimestamps = self.data.etatimestamps or {}
          self.data.etasubs = self.data.etasubs or []
+         self.data.opensubs = self.data.opensubs or []
          self.data.arrivesubs = self.data.arrivesubs or []
 
 etaitem = EtaItem('eta')
@@ -132,7 +139,6 @@ class UserlistWatcher(TimedLoop):
             # clear LTEs for current day
             dayitem.data.ltes = {}
             dayitem.save()   
-
         try:
             users = userlist()
             usercount = len(users)
@@ -144,7 +150,7 @@ class UserlistWatcher(TimedLoop):
 
                 logging.debug("Usercount: %s" % usercount)
                 if usercount > 0:
-                    #self.announce('open', 'chat')
+                    self.announce('open', 'chat')
                     # check if someone arrived who set an ETA
                     for user in users:
                         try: 
@@ -167,6 +173,11 @@ class UserlistWatcher(TimedLoop):
                         else:
                                 logging.info('bot undefined or not xmpp')
                     self.lastuserlist = userlist()
+                else:
+                    if len(etaitem.data.etas) > 0:
+                        self.announce('incoming', 'dnd')
+                    else:
+                        self.announce('closed', 'xa')
 
             # remove expired ETAs
             for user in etaitem.data.etas.keys():
@@ -234,7 +245,6 @@ def userlist():
 
 def handle_userlist(bot, ievent):
     """list all user that have logged in on the mirror."""
-    print foo
     users = userlist()
     reply = ''
     if len(users) > 0 or len(etaitem.data.etas) > 0:
@@ -247,11 +257,11 @@ def handle_userlist(bot, ievent):
             ievent.reply('ETA: ' + ', '.join(etalist))
             #reply += 'ETA: ' + ', '.join(etalist) + '\n'
     else:
-        ievent.reply("es ist derceit niemand angemeldet..")
+        ievent.reply("es ist derceit niemand angemeldet.")
 
 def handle_userlist_login(bot, ievent):
     user = getuser(ievent)
-    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile@c-base.org aufnehmen.')
+    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
     try:
         userfile = '%s/%s' % (userpath, user)
 #        timestamps = eval(open(userfile).read())
@@ -262,14 +272,13 @@ def handle_userlist_login(bot, ievent):
         f = open(userfile, 'w')
         f.write(str(expire))
         ievent.reply('hallo %s, willkommen auf der c-base.' % user)
-            #ievent.reply('du konntest nicht manuell angemeldet werden, ich weiss nicht warum. bitte contact mit smile@c-base.org aufnehmen.')
+            #ievent.reply('du konntest nicht manuell angemeldet werden, ich weiss nicht warum. bitte contact mit smile aufnehmen.')
     except UserlistError, e:
         ievent.reply(str(s))
 
 def handle_userlist_logout(bot, ievent):
     user = getuser(ievent)
-    print user
-    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile@c-base.org aufnehmen.')
+    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
     try:
         if os.path.exists('%s/%s' % (userpath, user)):
             result = os.remove('%s/%s' % (userpath, user))
@@ -298,6 +307,15 @@ def handle_userlist_unsubeta(bot, ievent):
     except UserlistError, e:
         ievent.reply(str(s))
    
+def handle_userlist_subopen(bot, ievent):
+    try:
+        if ievent.channel not in etaitem.data.opensubs:
+            etaitem.data.opensubs.append(ievent.channel)
+            etaitem.save()
+        ievent.reply('thank you for your opening notification subscription')
+    except UserlistError, e:
+        ievent.reply(str(s))
+
 def handle_userlist_subarrive(bot, ievent):
     try:
         if ievent.channel not in etaitem.data.arrivesubs:
@@ -313,9 +331,20 @@ def handle_userlist_unsubarrive(bot, ievent):
             print 'remove %s from %s' % (ievent.channel, str(etaitem.data.arrivesubs))
             etaitem.data.arrivesubs.remove(ievent.channel)
             etaitem.save()
+        ievent.reply('you have been unsubscribed from boarding notifications')
+    except UserlistError, e:
+        ievent.reply(str(s))
+
+def handle_userlist_unsubopen(bot, ievent):
+    try:
+        if ievent.channel in etaitem.data.opensubs:
+            print 'remove %s from %s' % (ievent.channel, str(etaitem.data.opensubs))
+            etaitem.data.opensubs.remove(ievent.channel)
+            etaitem.save()
         ievent.reply('you have been unsubscribed from opening notifications')
     except UserlistError, e:
         ievent.reply(str(s))
+    
     
 def handle_userlist_lssub(bot, ievent):
     try:
@@ -350,20 +379,25 @@ def handle_userlist_eta(bot, ievent):
         etaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
         print etaval
         eta = int(etaval.strftime("%H%M"))
+    elif ievent.args[0].startswith('+'):
+        foo = int(ievent.args[0][1:])
+        etaval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
+        print etaval
+        eta = int(etaval.strftime("%H%M"))
     else:
         eta = ievent.rest
         
         #try:    eta = int(ievent.args[0])
         #except: return ievent.reply('Please set your ETA like this: !eta 1800')
     user = getuser(ievent)
-    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile@c-base.org aufnehmen.')
+    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
     seteta(user, eta)
     try:
         for etasub in etaitem.data.etasubs:
             print "sending eta %s to %s" % (eta, user)
             bot.say(etasub, 'ETA %s %s' % (user, eta))
         #ievent.reply('Set eta for %s to %d' % (user, eta))
-        ievent.reply('danke, daC du bescheid sagst.')
+        ievent.reply('danke, daC du bescheid sagst. [ETA: %s]' % eta)
  
     except UserlistError, e:
         ievent.reply(str(s))
@@ -409,6 +443,8 @@ cmnds.add('eta', handle_userlist_eta, ['GUEST'])
 cmnds.add('ul-subeta', handle_userlist_subeta, ['GUEST'])
 cmnds.add('ul-unsubeta', handle_userlist_unsubeta, ['GUEST'])
 cmnds.add('ul-subarrive', handle_userlist_subarrive, ['GUEST'])
+cmnds.add('ul-subopen', handle_userlist_subopen, ['USER'])
+cmnds.add('ul-unsubopen', handle_userlist_unsubopen, ['USER'])
 cmnds.add('ul-unsubarrive', handle_userlist_unsubarrive, ['GUEST'])
 cmnds.add('ul-subscribe', handle_userlist_subeta, ['GUEST'])
 cmnds.add('ul-unsubscribe', handle_userlist_unsubeta, ['GUEST'])
@@ -483,7 +519,7 @@ cmnds.add('lte', handle_lte, ['GUEST'])
 
 def handle_login_tocen(bot, ievent):
     user = getuser(ievent)
-    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile@c-base.org aufnehmen.')
+    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
     presencename = 'presence.c-base.org/%s' % user
     userid = uuid.uuid3(uuid.NAMESPACE_DNS, presencename.encode('utf8')).hex
     tocenfile = '%s/%s' % (tocendir, userid)
