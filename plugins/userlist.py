@@ -75,6 +75,10 @@ def getuser(ievent):
         return usermap[ievent.channel]
     elif ievent.fromm and ievent.fromm in usermap:
         return usermap[ievent.fromm]
+    elif ievent.nick and ievent.nick in usermap:
+        return usermap[ievent.nick]
+    elif ievent.ruserhost in usermap:
+        return usermap[ievent.ruserhost]
     elif ievent.channel.find('c-base.org') > -1:
         return ievent.channel[:-11]
     elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
