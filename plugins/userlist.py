@@ -482,7 +482,6 @@ def handle_lte(bot, ievent):
     if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
     item = LteItem(user)
     args = ievent.rest.upper().split(' ')
-    print "LTE"
     lteusers = PlugPersist('lteusers')
     if not lteusers.data: lteusers.data = {}
 
@@ -501,18 +500,21 @@ def handle_lte(bot, ievent):
         item.data.ltes[args[0]] = args
         item.save()
         dayitem = LteItem(args[0])
-        dayitem.data.ltes[user] = args[1:]
+        eta = " ".join(args[1:])
+        eta = re.sub(r'(\d\d):(\d\d)',r'\1\2', eta)
+        dayitem.data.ltes[user] = eta
         dayitem.save()
         lteusers.data[user] = time.time()
         lteusers.save()
-        ievent.reply('dancce %s, dein LTE wurde gespeichert.' % user)
+        ievent.reply('dancce %s, dein LTE wurde gespeichert. [%s]' % (user, eta))
+
     elif len(ievent.args) == 1:
         if args[0] in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
             dayitem = LteItem(args[0])
             if len(dayitem.data.ltes.keys()) > 0:
-                reply = 'LTEs für %s: \n' % args[0]
+                reply = 'LTEs für %s: ' % args[0]
                 for user in dayitem.data.ltes.keys():
-                    reply += '%s [%s]\n' % (user, '-'.join(dayitem.data.ltes[user]))
+                    reply += '%s [%s] ' % (user, dayitem.data.ltes[user])
                 ievent.reply(reply)
         else:
             ievent.reply('ich cenne den tag %s nicht.' % args[0])
@@ -522,9 +524,10 @@ def handle_lte(bot, ievent):
         for day in weekdays:
             dayitem = LteItem(day)
             if len(dayitem.data.ltes.keys()) > 0:
-                reply += '%s: %s\n' % (day, ', '.join(dayitem.data.ltes.keys()))
+                #reply += '%s: %s ' % (day, ', '.join(dayitem.data.ltes.keys()))
+                ievent.reply('%s: %s ' % (day, ', '.join(dayitem.data.ltes.keys())))
         print reply
-        ievent.reply(reply)
+        #ievent.reply(reply)
     else:
         ievent.reply(str(len(ievent.rest.split(' '))))
 
