@@ -35,6 +35,8 @@ def precbeam(bot, event):
             return False
         elif event.channel == "#c-beam":
             return False
+        elif event.channel == "#c-base-bots":
+            return False
         else:
             return True
         print event.channel
