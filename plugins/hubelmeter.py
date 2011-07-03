@@ -20,7 +20,7 @@ import re
 ## defines
 
 RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer', re.IGNORECASE)
-RE_CONJUNCTIVE = re.compile(r'sollte|m.sste|muesste|k.nnte|koennte|h.tte|haette|br.uchte|braeuchte|m.chte|moechte', re.IGNORECASE)
+RE_CONJUNCTIVE = re.compile(r'sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte|m\xf6chte|moechte', re.IGNORECASE)
 
 ## HubelItem class
 
@@ -54,6 +54,7 @@ def prehubelmeter(bot, event):
         i.data.hubelcount += 1.0
         i.save()
         #event.reply('hubel detected from %s' % getuser(event))
+        print 'hubel detected from %s' % getuser(event)
         return True
     else:
         i.save()
