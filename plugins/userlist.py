@@ -136,7 +136,12 @@ class UserlistWatcher(TimedLoop):
             users = userlist()
             usercount = len(users)
             if usercount != self.lastcount or self.lasteta != len(etaitem.data.etas):
-                #if self.lastcount == 0 and usercount > 0:
+                if self.lastcount == 0 and usercount > 0:
+                    if bot and bot.type == "sxmpp":
+                        for opensub in etaitem.data.opensubs:
+                            bot.say(opensub, 'c3pO is awake')
+                    else:
+                        logging.error("bot undefined or not xmpp")
 
                 self.lastcount = usercount
                 self.lasteta = len(etaitem.data.etas)
