@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # jsb.plugs.common/userlist.py
 #
 #
@@ -85,6 +86,8 @@ def getuser(ievent):
         return ievent.fromm[:-10]
     elif ievent.hostname.startswith('c-base/crew/'):
         return ievent.hostname[12:]
+    elif ievent.hostname.startswith('pdpc/supporter/professional/'):
+        return ievent.hostname[28:]
     elif ievent.auth.endswith('@shell.c-base.org'):
         return ievent.auth[1:-17]
     else:
@@ -209,7 +212,7 @@ class UserlistWatcher(TimedLoop):
             try: bot = fleet.byname(self.name)
             except: pass
             if bot and bot.type == "sxmpp":
-                print '%s[%s].setstatus(%s, %s)' % (bot.name, bot.type, status, show)
+                logging.info('%s[%s].setstatus(%s, %s)' % (bot.name, bot.type, status, show))
                 bot.setstatus(status, show)
 
 #watcher = ''
@@ -220,7 +223,6 @@ watcher = UserlistWatcher('default-sxmpp', cfg.get('watcher-interval'))
 #    watcher = UserlistWatcher()
 
 def init():
-    print "init"
     watcher.start()
     return 1 
 #    if cfg.get('watcher-enabled'):
@@ -229,7 +231,6 @@ def init():
 #    return 1
 
 def shutdown():
-    print "shutdown"
     #if watcher.running:
     watcher.stop()
     return 1
@@ -296,7 +297,7 @@ def handle_userlist_subeta(bot, ievent):
 def handle_userlist_unsubeta(bot, ievent):
     try:
         if ievent.channel in etaitem.data.etasubs:
-            print 'remove %s from %s' % (ievent.channel, str(etaitem.data.etasubs))
+            logging.info('remove %s from %s' % (ievent.channel, str(etaitem.data.etasubs)))
             etaitem.data.etasubs.remove(ievent.channel)
             etaitem.save()
         ievent.reply('du wirst erfolgreich von den ETA notificationen entsubscribiert worden sein.')
@@ -324,7 +325,7 @@ def handle_userlist_subarrive(bot, ievent):
 def handle_userlist_unsubarrive(bot, ievent):
     try:
         if ievent.channel in etaitem.data.arrivesubs:
-            print 'remove %s from %s' % (ievent.channel, str(etaitem.data.arrivesubs))
+            logging.info('remove %s from %s' % (ievent.channel, str(etaitem.data.arrivesubs)))
             etaitem.data.arrivesubs.remove(ievent.channel)
             etaitem.save()
         ievent.reply('you have been unsubscribed from boarding notifications')
@@ -334,7 +335,7 @@ def handle_userlist_unsubarrive(bot, ievent):
 def handle_userlist_unsubopen(bot, ievent):
     try:
         if ievent.channel in etaitem.data.opensubs:
-            print 'remove %s from %s' % (ievent.channel, str(etaitem.data.opensubs))
+            logging.info('remove %s from %s' % (ievent.channel, str(etaitem.data.opensubs)))
             etaitem.data.opensubs.remove(ievent.channel)
             etaitem.save()
         ievent.reply('you have been unsubscribed from opening notifications')
@@ -368,33 +369,38 @@ def seteta(user, eta):
 
 
 def handle_userlist_eta(bot, ievent):
+
+    user = getuser(ievent)
+    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
+
     eta = 0
     if ievent.args[0].upper() in weekdays:
         return handle_lte(bot, ievent)
     if ievent.args[0] in ('gleich', 'bald'):
         etaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
-        print etaval
         eta = int(etaval.strftime("%H%M"))
     elif ievent.args[0].startswith('+'):
         foo = int(ievent.args[0][1:])
         etaval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
-        print etaval
-        eta = int(etaval.strftime("%H%M"))
+        eta = etaval.strftime("%H%M")
     else:
         eta = ievent.rest
+
     eta = re.sub(r'(\d\d):(\d\d)',r'\1\2',eta)
+    print "ETA: %s" % eta
+    logging.info("ETA: %s" % eta)
         
-        #try:    eta = int(ievent.args[0])
-        #except: return ievent.reply('Please set your ETA like this: !eta 1800')
-    user = getuser(ievent)
-    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
     seteta(user, eta)
+
     try:
         for etasub in etaitem.data.etasubs:
-            print "sending eta %s to %s" % (eta, user)
+            logging.info( "sending eta %s to %s" % (eta, user))
             bot.say(etasub, 'ETA %s %s' % (user, eta))
         #ievent.reply('Set eta for %s to %d' % (user, eta))
-        ievent.reply('danke, daC du bescheid sagst %s. [ETA: %s]' % (user, eta))
+        if eta == 0:
+            ievent.reply('c_ade, daC du doch nicht kommen cannst. [ETA: %s]' % (user, eta))
+        else:
+            ievent.reply('danke, daC du bescheid sagst %s. [ETA: %s]' % (user, eta))
  
     except UserlistError, e:
         ievent.reply(str(s))
@@ -453,6 +459,22 @@ cmnds.add('userlist-watch-start', handle_userlist_watch_start, 'ULADM')
 cmnds.add('userlist-watch-stop',  handle_userlist_watch_stop, 'ULADM')
 cmnds.add('userlist-watch-list',  handle_userlist_watch_list, 'ULADM')
 
+def handle_whoami(bot, ievent):
+    replies = [
+        'du wirst %s gewesen sein.',
+        'du c_einst ein clon von %s zu sein.',
+        'gruCfrequencen %s.',
+        '%s.',
+        '%s wars.',
+        'deine dna weist spuren von %s auf.',
+        'ich dence du bist %s.'
+    ]
+    user = getuser(ievent)
+    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
+    return ievent.reply(random.choice(replies) % user)
+    
+
+cmnds.add('whoami', handle_whoami, ['GUEST'])
 
 # MO 1900 2300
 class LteItem(PlugPersist):
@@ -463,17 +485,25 @@ class LteItem(PlugPersist):
 
 def handle_lte(bot, ievent):
     user = getuser(ievent)
-    if not user: return ievent.reply('I cannot figure out your nickname, sorry')
+    if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
     item = LteItem(user)
     args = ievent.rest.upper().split(' ')
-
+    print "LTE"
     lteusers = PlugPersist('lteusers')
     if not lteusers.data: lteusers.data = {}
-    if len(ievent.args) == 3:
-        (day, start, end) = args
+
+    if len(ievent.args) == 3 or len(ievent.args) == 2:
+        if args[1] == '0':
+            dayitem = LteItem(args[0])
+            if user in dayitem.data.ltes.keys():
+                del dayitem.data.ltes[user]            
+                dayitem.save()
+                return ievent.reply('dancce %s, dein LTE für %s wurde entfernt.' % (user, args[0]))
+            else:
+                return ievent.reply('entc_uldige %s, du hattest wohl keinen ETA für %s gesetzt.' % (user, args[0]))
         if args[0] not in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'): 
             #, 'MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'):
-            return ievent.reply('Please enter your LTE like this: !lte MO 1900 2200')
+            return ievent.reply('LTE syntax: !lte MO 1900')
         item.data.ltes[args[0]] = args
         item.save()
         dayitem = LteItem(args[0])
@@ -481,32 +511,25 @@ def handle_lte(bot, ievent):
         dayitem.save()
         lteusers.data[user] = time.time()
         lteusers.save()
-        ievent.reply('Thanks, your LTE has been saved.')
-    elif len(ievent.args) == 2:
-        if args[1] == '0':
-            dayitem = LteItem(args[0])
-            if user in dayitem.data.ltes.keys():
-                del dayitem.data.ltes[user]            
-                dayitem.save()
-                ievent.reply('Thanks, your LTE for %s has been deleted.' % args[0])
-            else:
-                ievent.reply('You have no LTE set for %s.' % args[0])
+        ievent.reply('dancce %s, dein LTE wurde gespeichert.' % user)
     elif len(ievent.args) == 1:
         if args[0] in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
             dayitem = LteItem(args[0])
             if len(dayitem.data.ltes.keys()) > 0:
-                reply = 'LTEs for %s: \n' % args[0]
+                reply = 'LTEs für %s: \n' % args[0]
                 for user in dayitem.data.ltes.keys():
                     reply += '%s [%s]\n' % (user, '-'.join(dayitem.data.ltes[user]))
                 ievent.reply(reply)
         else:
-            ievent.reply('Unknown day')
+            ievent.reply('ich cenne den tag %s nicht.' % args[0])
     elif len(ievent.args) == 0:
+        print "yeah"
         reply = ''
         for day in weekdays:
             dayitem = LteItem(day)
             if len(dayitem.data.ltes.keys()) > 0:
                 reply += '%s: %s\n' % (day, ', '.join(dayitem.data.ltes.keys()))
+        print reply
         ievent.reply(reply)
     else:
         ievent.reply(str(len(ievent.rest.split(' '))))
