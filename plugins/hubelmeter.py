@@ -11,6 +11,7 @@ from jsb.lib.commands import cmnds
 from jsb.lib.examples import examples
 from jsb.lib.persist import PlugPersist
 from jsb.utils.statdict import StatDict
+from jsb.lib.persistconfig import PersistConfig
 
 ## basic imports
 
@@ -21,6 +22,11 @@ import re
 
 RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer', re.IGNORECASE)
 RE_CONJUNCTIVE = re.compile(r'sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte|m\xf6chte|moechte', re.IGNORECASE)
+
+
+
+cfg = PersistConfig()
+usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
 
 ## HubelItem class
 
@@ -53,7 +59,8 @@ def prehubelmeter(bot, event):
         # increase hubelcounter
         i.data.hubelcount += 1.0
         i.save()
-        event.reply('hubel detected from %s' % getuser(event))
+        if event.channel != '#c-base':
+            event.reply('hubel detected from %s' % getuser(event))
         print 'hubel detected from %s' % getuser(event)
         return True
     else:
