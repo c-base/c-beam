@@ -53,7 +53,7 @@ def prehubelmeter(bot, event):
         # increase hubelcounter
         i.data.hubelcount += 1.0
         i.save()
-        #event.reply('hubel detected from %s' % getuser(event))
+        event.reply('hubel detected from %s' % getuser(event))
         print 'hubel detected from %s' % getuser(event)
         return True
     else:
@@ -70,8 +70,30 @@ callbacks.add('MESSAGE', hubelmetercb, prehubelmeter)
 callbacks.add('CONSOLE', hubelmetercb, prehubelmeter)
 callbacks.add('CONVORE', hubelmetercb, prehubelmeter)
 
-def getuser(event):
+def getuser_old(event):
     return event.nick
+
+def getuser(ievent):
+    if ievent.channel in usermap:
+        return usermap[ievent.channel]
+    elif ievent.fromm and ievent.fromm in usermap:
+        return usermap[ievent.fromm]
+    elif ievent.nick and ievent.nick in usermap:
+        return usermap[ievent.nick]
+    elif ievent.ruserhost in usermap:
+        return usermap[ievent.ruserhost]
+    elif ievent.channel.find('c-base.org') > -1:
+        return ievent.channel[:-11]
+    elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
+        return ievent.fromm[:-10]
+    elif ievent.hostname.startswith('c-base/crew/'):
+        return ievent.hostname[12:]
+    elif ievent.hostname.startswith('pdpc/supporter/professional/'):
+        return ievent.hostname[28:]
+    elif ievent.auth.endswith('@shell.c-base.org'):
+        return ievent.auth[1:-17]
+    else:
+        return ievent.nick
 
 ## hubelmeter command
 

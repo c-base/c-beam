@@ -40,10 +40,24 @@ server = jsonrpclib.Server(cfg.get('rpcurl'))
 def getuser(ievent):
     if ievent.channel in usermap:
         return usermap[ievent.channel]
-    elif ievent.fromm in usermap:
+    elif ievent.fromm and ievent.fromm in usermap:
         return usermap[ievent.fromm]
-    else:
-        return ievent.channel
+    elif ievent.nick and ievent.nick in usermap:
+        return usermap[ievent.nick]
+    elif ievent.ruserhost in usermap:
+        return usermap[ievent.ruserhost]
+    elif ievent.channel.find('c-base.org') > -1:
+        return ievent.channel[:-11]
+    elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
+        return ievent.fromm[:-10]
+    elif ievent.hostname.startswith('c-base/crew/'):
+        return ievent.hostname[12:]
+    elif ievent.hostname.startswith('pdpc/supporter/professional/'):
+        return ievent.hostname[28:]
+    elif ievent.auth.endswith('@shell.c-base.org'):
+        return ievent.auth[1:-17]
+    else:        
+        return '%s - %s' % (ievent.nick, ievent.ruserhost)
 
 ## tts command
 
