@@ -66,12 +66,6 @@ weekdays = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO']
 ##
 
 def getuser(ievent):
-    #print ievent
-    print ievent.nick
-    print ievent.stripped
-    print ievent.auth
-    print ievent.hostname
-    print ievent.ruserhost
     if ievent.channel in usermap:
         return usermap[ievent.channel]
     elif ievent.fromm and ievent.fromm in usermap:
