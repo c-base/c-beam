@@ -452,7 +452,6 @@ cmnds.add('ul-subscribe', handle_userlist_subeta, ['GUEST'])
 cmnds.add('ul-unsubscribe', handle_userlist_unsubeta, ['GUEST'])
 cmnds.add('ul-lssub', handle_userlist_lssub, ['ULADM'])
 cmnds.add('userlist', handle_userlist, ['GUEST'])
-examples.add('userlist', 'list all user that have logged in on the mirror.', 'userlist')
 
 cmnds.add('userlist-watch-start', handle_userlist_watch_start, 'ULADM')
 cmnds.add('userlist-watch-stop',  handle_userlist_watch_stop, 'ULADM')
@@ -460,9 +459,11 @@ cmnds.add('userlist-watch-list',  handle_userlist_watch_list, 'ULADM')
 
 def handle_whoami(bot, ievent):
     replies = [
+        'du wirst %s gewesen worden sein.',
         'du wirst %s gewesen sein.',
         'du c_einst ein clon von %s zu sein.',
         'gruCfrequencen %s.',
+        'das cann eigentlich nur %s sein.',
         '%s.',
         '%s wars.',
         'deine dna weist spuren von %s auf.',
