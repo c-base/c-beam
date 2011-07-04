@@ -127,7 +127,7 @@ class UserlistWatcher(TimedLoop):
                 seteta(user, dayitem.data.ltes[user][0])
                 if bot and bot.type == "sxmpp":
                     for etasub in etaitem.data.etasubs:
-                        bot.say(etasub, 'ETA %s %s' % (user, dayitem.data.ltes[user][0]))
+                        bot.say(etasub, 'ETA %s %s' % (user, dayitem.data.ltes[user]))
                 del dayitem.data.ltes[user]
             # clear LTEs for current day
             dayitem.data.ltes = {}
