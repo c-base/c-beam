@@ -8,7 +8,7 @@ from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 player = 'mpg123'
 
 c_outlimit = 5
-suppressiontimeout = 600
+suppressiontimeout = 300
 cpamdelta = 60
 
 sampledir = '/mnt/datengrab/00_audio/c_out'
