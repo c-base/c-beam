@@ -9,7 +9,7 @@ player = 'mpg123'
 
 c_outlimit = 5
 suppressiontimeout = 300
-cpamdelta = 60
+cpamdelta = 90
 
 sampledir = '/mnt/datengrab/00_audio/c_out'
 sampledir = '/usr/local/sounds/loop'
@@ -29,7 +29,7 @@ coutcount = 0
 suppressuntil = 0
 lastcpamcheck = 0
 
-logfile = '/var/log/c_out.log'
+logfile = '/home/smile/c_out.log'
 
 logger = logging.getLogger('c_out')
 hdlr = logging.FileHandler(logfile)
@@ -212,6 +212,8 @@ def iscpam():
     now = int(time.time())
     if lastcpamcheck + cpamdelta > now:
         coutcount += 1
+    else:
+        coutcount = 1
     lastcpamcheck = now
     if coutcount > c_outlimit:
         if suppressuntil == 0:
