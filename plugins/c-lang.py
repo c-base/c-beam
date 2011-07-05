@@ -1,8 +1,6 @@
 # jsb/plugs/common/c-lang.py
 # -*- coding: utf-8 -*-
 
-""" run the eight ball. """
-
 ## jsb imports
 
 from jsb.utils.exception import handle_exception
