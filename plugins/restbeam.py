@@ -42,11 +42,29 @@ cfg.define('disable', [])
 hp = "%s:%s" % (cfg.get('host'), cfg.get('port'))
 url = "http://%s" % hp
 
+usermap = '/home/c-beam/usermap'
+scriptdir = '/home/smile/projects/c-beam/tageventor/tagEventor/scripts'
+userpath = '/home/c-beam/users'
+logfile = '/var/log/c-beam/c-beamhttp.log'
+logindelta = 30
+timeoutdelta = 600
+
 ## callbacks
 
 ## server part
 
 server = None
+
+def getuserbyuuid(uuid):
+    userfile = '%s/%s' % (usermap, uuid)
+    if os.path.exists(userfile) and os.path.isfile(userfile):
+        f = open(userfile, "r")
+        username = f.read()
+        username = username.rstrip('\n')
+        f.close()
+        return username
+    else:
+        return 0
 
 def home_GET(server, request):
     try:
@@ -63,9 +81,30 @@ def topstats_GET(server, request):
 
 def playlist_GET(server, request):
     try:
-        return "playlist_GET"
+        return "playlist_GET: %s" % request
     except Exception, ex:
         handle_exception()
+
+def login_GET(server, request):
+    uuid = 42 #request.get
+    username = getuserbyuuid(uuid)
+    if username == 0:
+        return "ERR"
+    userloginfile = '%s/%s' % (userpath, username)
+    logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
+    timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
+    expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
+    f = open(userloginfile, 'w')
+    f.write(str(expire))
+    f.close()
+    return '<h1>hallo %s, willkommen auf der c-base.</h1>' % username
+
+
+def logout_GET(server, request):
+    if os.path.exists('%s/%s' % (userpath, username)):
+        os.remove('%s/%s' % (userpath, username))
+    return 'danke, daC du dich abgemeldet hast.'
+
 
 def startserver():
     global server 
@@ -78,6 +117,8 @@ def startserver():
             server.start()
             logging.warn('restbeam - running at %s' % url)
             server.addhandler('/', 'GET', playlist_GET)
+            server.addhandler('/login/*', 'GET', login_GET)
+            server.addhandler('/logout/', 'GET', logout_GET)
             server.addhandler('/top/', 'GET', topstats_GET)
             server.addhandler('/top', 'GET', topstats_GET)
             for mount in cfg.get('disable'): server.disable(mount)
@@ -88,7 +129,7 @@ def startserver():
 
 def stopserver():
     try:
-        if not server: logging.warn('noagendasrest - server is already stopped') ; return
+        if not server: logging.warn('restbeam - server is already stopped') ; return
         server.shutdown()
         time.sleep(3)
     except Exception, ex: handle_exception()
