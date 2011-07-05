@@ -245,7 +245,7 @@ def handle_userlist(bot, ievent):
     reply = ''
     if len(users) > 0 or len(etaitem.data.etas) > 0:
         if len(users) > 0:
-            ievent.reply('an board: ' + ', '.join(users))
+            ievent.reply('an bord: ' + ', '.join(users))
         if len(etaitem.data.etas) > 0:
             etalist = []
             for key in etaitem.data.etas.keys():
