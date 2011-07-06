@@ -110,7 +110,7 @@ class UserlistWatcher(TimedLoop):
     def handle(self):
         if not cfg.get('watcher-enabled'):
             raise UserlistError('watcher not enabled, use "!%s-cfg watcher-enabled 1" to enable' % os.path.basename(__file__)[:-3])
-        #print "fleet: %s - %s" % (str(fleet), str(fleet.list())) #"fleet.byname(%s)" % self.name
+        print "fleet: %s - %s" % (str(fleet), str(fleet.list())) #"fleet.byname(%s)" % self.name
         bot = 0
         try: bot = fleet.byname(self.name)
         except: pass #print "fleet: %s" % str(fleet) #"fleet.byname(%s)" % self.name
@@ -525,14 +525,12 @@ def handle_lte(bot, ievent):
         else:
             ievent.reply('ich cenne den tag %s nicht.' % args[0])
     elif len(ievent.args) == 0:
-        print "yeah"
         reply = ''
         for day in weekdays:
             dayitem = LteItem(day)
             if len(dayitem.data.ltes.keys()) > 0:
                 #reply += '%s: %s ' % (day, ', '.join(dayitem.data.ltes.keys()))
                 ievent.reply('%s: %s ' % (day, ', '.join(dayitem.data.ltes.keys())))
-        print reply
         #ievent.reply(reply)
     else:
         ievent.reply(str(len(ievent.rest.split(' '))))
