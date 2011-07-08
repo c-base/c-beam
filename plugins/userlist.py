@@ -124,7 +124,7 @@ class UserlistWatcher(TimedLoop):
             dayitem = LteItem(day)
             # convert LTEs to ETAs for current day
             for user in dayitem.data.ltes.keys():
-                seteta(user, dayitem.data.ltes[user][0])
+                seteta(user, dayitem.data.ltes[user])
                 if bot and bot.type == "sxmpp":
                     for etasub in etaitem.data.etasubs:
                         bot.say(etasub, 'ETA %s %s' % (user, dayitem.data.ltes[user]))
@@ -525,13 +525,14 @@ def handle_lte(bot, ievent):
         else:
             ievent.reply('ich cenne den tag %s nicht.' % args[0])
     elif len(ievent.args) == 0:
-        reply = ''
+        reply = []
         for day in weekdays:
             dayitem = LteItem(day)
             if len(dayitem.data.ltes.keys()) > 0:
                 #reply += '%s: %s ' % (day, ', '.join(dayitem.data.ltes.keys()))
-                ievent.reply('%s: %s ' % (day, ', '.join(dayitem.data.ltes.keys())))
-        #ievent.reply(reply)
+                reply.append('%s: %s ' % (day, ', '.join(dayitem.data.ltes.keys())))
+                #ievent.reply('%s: %s ' % (day, ', '.join(dayitem.data.ltes.keys())))
+        ievent.reply(" | ".join(reply))
     else:
         ievent.reply(str(len(ievent.rest.split(' '))))
 
