@@ -235,7 +235,7 @@ def shutdown():
     return 1
 
 def userlist():
-    return os.listdir(cfg.get('userpath'))
+    return sorted(os.listdir(cfg.get('userpath')))
 
 ## userlist command
 
@@ -248,7 +248,7 @@ def handle_userlist(bot, ievent):
             ievent.reply('an bord: ' + ', '.join(users))
         if len(etaitem.data.etas) > 0:
             etalist = []
-            for key in etaitem.data.etas.keys():
+            for key in sorted(etaitem.data.etas.keys()):
                 etalist += ['%s [%s]' % (key, etaitem.data.etas[key])]
             ievent.reply('ETA: ' + ', '.join(etalist))
             #reply += 'ETA: ' + ', '.join(etalist) + '\n'
