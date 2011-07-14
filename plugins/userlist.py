@@ -278,9 +278,9 @@ def handle_userlist_logout(bot, ievent):
     try:
         if os.path.exists('%s/%s' % (cfg.get('userpath'), user)):
             result = os.remove('%s/%s' % (cfg.get('userpath'), user))
-            ievent.reply('danke, daC du dich abgemeldet hast %s.' % user)
-        else:
-            ievent.reply('du c_einst nicht angemeldet zu sein %s.' % user)
+        ievent.reply('danke, daC du dich abgemeldet hast %s.' % user)
+        #else:
+            #ievent.reply('du c_einst nicht angemeldet zu sein %s.' % user)
     except UserlistError, e:
         ievent.reply(str(s))
 
@@ -360,7 +360,8 @@ def handle_userlist_lseta(bot, ievent):
 
 def seteta(user, eta):
     if eta == '0':
-        del etaitem.data.etas[user]
+        if etaitem.data.etas.has_key(user):
+            del etaitem.data.etas[user]
     else:
         etaitem.data.etas[user] = eta
         etaitem.data.etatimestamps[user] = time.time() + cfg.get('eta-timeout')
