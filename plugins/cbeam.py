@@ -29,7 +29,7 @@ messages=[
 def precbeam(bot, event):
     if event.userhost in bot.ignore: return False
 
-    print 'c-beam for %s' % event.userhost
+    logging.info('c-beam for %s' % event.userhost)
     if len(event.txt) > 2 and event.txt[0] not in event.chan.data.cc:
         if event.channel == "#c-base":
             return False
@@ -42,14 +42,6 @@ def precbeam(bot, event):
                 return False
         else:
             return True
-        print event.channel
-        #print str(event)
-        print event.cbtype
-        print event.origchannel
-        print event.channel
-        print event.cbtype
-        print event.type
-        print event.msg
         return False
     return False
 
