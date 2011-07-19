@@ -49,7 +49,7 @@ else:
 
 cfg.define('watcher-interval', 5)
 cfg.define('watcher-enabled', 0)
-cfg.define('eta-timeout', 72000)
+cfg.define('eta-timeout', 120)
 
 cfg.define('userpath', '/home/c-beam/users')
 cfg.define('tocendir', '/home/c-beam/usermap')
@@ -63,6 +63,8 @@ RE_ETA = re.compile(r'ETA (?P<item>\([^\)]+\)|\[[^\]]+\]|\w+)(?P<mod>\+\+|--)( |
 
 weekdays = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO']
 
+nextday = ['tomorrow', 'morgen']
+
 ##
 
 def getuser(ievent):
@@ -74,7 +76,9 @@ def getuser(ievent):
         return usermap[ievent.nick]
     elif ievent.ruserhost in usermap:
         return usermap[ievent.ruserhost]
-    elif ievent.channel.find('c-base.org') > -1:
+    elif ievent.auth.endswith('@shell.c-base.org'):
+        return ievent.auth[1:-17]
+    elif ievent.channel.find('@c-base.org') > -1:
         return ievent.channel[:-11]
     elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
         return ievent.fromm[:-10]
@@ -82,8 +86,6 @@ def getuser(ievent):
         return ievent.hostname[12:]
     elif ievent.hostname.startswith('pdpc/supporter/professional/'):
         return ievent.hostname[28:]
-    elif ievent.auth.endswith('@shell.c-base.org'):
-        return ievent.auth[1:-17]
     else:
         return 0
 
@@ -110,7 +112,7 @@ class UserlistWatcher(TimedLoop):
     def handle(self):
         if not cfg.get('watcher-enabled'):
             raise UserlistError('watcher not enabled, use "!%s-cfg watcher-enabled 1" to enable' % os.path.basename(__file__)[:-3])
-        print "fleet: %s - %s" % (str(fleet), str(fleet.list())) #"fleet.byname(%s)" % self.name
+        logging.info("fleet: %s - %s" % (str(fleet), str(fleet.list())))
         bot = 0
         try: bot = fleet.byname(self.name)
         except: pass #print "fleet: %s" % str(fleet) #"fleet.byname(%s)" % self.name
@@ -177,15 +179,16 @@ class UserlistWatcher(TimedLoop):
                     else:
                         self.announce('closed', 'xa')
 
+            now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+
             # remove expired ETAs
             for user in etaitem.data.etas.keys():
-                if time.time() > etaitem.data.etatimestamps[user]:
+                if now > etaitem.data.etatimestamps[user]:
                     del etaitem.data.etas[user]
                     del etaitem.data.etatimestamps[user]
                     etaitem.save()
 
             # remove expired users
-            now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
             for user in users:
                 userfile = "%s/%s" % (cfg.get('userpath'), user)
                 timestamps = eval(open(userfile).read())
@@ -203,7 +206,7 @@ class UserlistWatcher(TimedLoop):
   
     def announce(self, status, show):
         logging.info('announce(%s, %s)' % (status, show))
-        print 'announce(%s, %s)' % (status, show)
+        #print 'announce(%s, %s)' % (status, show)
         if not self.running or not cfg.get('watcher-enabled'):
             return
         for name in fleet.list():
@@ -213,6 +216,7 @@ class UserlistWatcher(TimedLoop):
             if bot and bot.type == "sxmpp":
                 logging.info('%s[%s].setstatus(%s, %s)' % (bot.name, bot.type, status, show))
                 bot.setstatus(status, show)
+
 
 #watcher = ''
 watcher = UserlistWatcher('default-sxmpp', cfg.get('watcher-interval'))
@@ -267,6 +271,9 @@ def handle_userlist_login(bot, ievent):
         expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
         f = open(userfile, 'w')
         f.write(str(expire))
+        if etaitem.data.etas.has_key(user):
+            del etaitem.data.etas[user]
+            etaitem.save()
         ievent.reply('hallo %s, willkommen auf der c-base.' % user)
             #ievent.reply('du konntest nicht manuell angemeldet werden, ich weiss nicht warum. bitte contact mit smile aufnehmen.')
     except UserlistError, e:
@@ -363,15 +370,39 @@ def seteta(user, eta):
         if etaitem.data.etas.has_key(user):
             del etaitem.data.etas[user]
     else:
+        arrival = extract_eta(eta)
+#        arrival = str((int(arrival) + delta) % 2400)
+        etatimestamp = datetime.datetime.now().replace(hour=int(arrival[0:2]), minute=int(arrival[3:4])) + datetime.timedelta(minutes=cfg.get('eta-timeout'))
+        if datetime.datetime.now().strftime("%H%M") > arrival: 
+            etatimestamp = etatimestamp + datetime.timedelta(day=1)
+        
         etaitem.data.etas[user] = eta
-        etaitem.data.etatimestamps[user] = time.time() + cfg.get('eta-timeout')
+        #etaitem.data.etatimestamps[user] = time.time() + cfg.get('eta-timeout')
+        etaitem.data.etatimestamps[user] = int(etatimestamp.strftime("%Y%m%d%H%M%S"))
     etaitem.save()
+
+def extract_eta(text):
+    m = re.match(r'^.*?(\d\d\d\d).*', text)
+    if m:
+        return m.group(1)
+    else:
+        return "9999"
+
+def check_eta(text, delta):
+    eta = extract_eta(text)
+    eta = str((int(eta) + delta) % 2400)
+    while len(eta) < 4: eta = "0%s" % eta
+    if eta > now:
+        return False
+    else:
+        return True
 
 
 def handle_userlist_eta(bot, ievent):
 
     user = getuser(ievent)
     if not user: return ievent.reply('ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.')
+    
 
     eta = 0
     if ievent.args[0].upper() in weekdays:
@@ -386,7 +417,12 @@ def handle_userlist_eta(bot, ievent):
     else:
         eta = ievent.rest
 
+
     eta = re.sub(r'(\d\d):(\d\d)',r'\1\2',eta)
+
+    if eta != "0" and extract_eta(eta) == "9999":
+        return ievent.reply("leider connte keine verwertbare ceitangabe aus deiner eingabe extrahiert werden.")
+
     print "ETA: %s" % eta
     logging.info("ETA: %s" % eta)
         
