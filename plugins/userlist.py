@@ -44,9 +44,10 @@ messagefile = '%s/userlist_messages' % cfg.get('datadir')
 messages = {}
 
 if os.path.exists(messagefile):
-    #eval(open(messagefile).read())
-    #foo = "54"
-#else:
+    try:
+        messages = eval(open(messagefile).read())
+    except: logging.error('error in userlist_messages')
+else:
     messages = {
         'unknown_nick': ['ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.'],
         'logged_in': ['an bord: '],
