@@ -5,7 +5,7 @@
     'logout_success': ['danke, daC du dich abgemeldet hast %s.', 'dancce und guten heimflug %s.'],
     'no_one_there': ['es ist derceit niemand angemeldet.'],
     'eta_set': ['danke, daC du bescheid sagst %s. [ETA: %s]'],
-    'eta_removed': ['c_ade, daC du doch nicht kommen cannst. [ETA: %s]'],
+    'eta_removed': ['c_ade, daC du doch nicht kommen cannst %s. [ETA: %s]'],
     'lte_set': ['dancce %s, dein LTE wurde gespeichert. [%s]'],
     'lte_removed': ['dancce %s, dein LTE für %s wurde entfernt.'],
     'subeta_success': ['danke, daC du die ETA notificationen subscribiert hast.'],
@@ -16,4 +16,6 @@
     'unsubopen_success': ['you have been unsubscribed from opening notifications'],
     'err_timeparser': ['leider connte keine verwertbare ceitangabe aus deiner eingabe extrahiert werden.'],
     'err_unknown_day': ['ich cenne den tag %s nicht.'],
+    'etd_removed': ['dein ETD wurde entfernt %s. [ETD: %s]'],
+    'etd_set': ['dein ETD wurde erfolgreich gespeichert %s. [ETD: %s]'],
 }

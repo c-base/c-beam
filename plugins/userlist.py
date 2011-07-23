@@ -55,7 +55,7 @@ else:
         'logout_success': ['danke, daC du dich abgemeldet hast %s.', 'dancce und guten heimflug %s.'],
         'no_one_there': ['es ist derceit niemand angemeldet.'],
         'eta_set': ['danke, daC du bescheid sagst %s. [ETA: %s]'],
-        'eta_removed': ['c_ade, daC du doch nicht kommen cannst. [ETA: %s]'],
+        'eta_removed': ['c_ade, daC du doch nicht kommen cannst %s. [ETA: %s]'],
         'lte_set': ['dancce %s, dein LTE wurde gespeichert. [%s]'],
         'lte_removed': ['dancce %s, dein LTE für %s wurde entfernt.'],
         'subeta_success': ['danke, daC du die ETA notificationen subscribiert hast.'],
@@ -66,11 +66,14 @@ else:
         'unsubopen_success': ['you have been unsubscribed from opening notifications'],
         'err_timeparser': ['leider connte keine verwertbare ceitangabe aus deiner eingabe extrahiert werden.'],
         'err_unknown_day': ['ich cenne den tag %s nicht.'],
+        'etd_removed': ['dein ETD wurde entfernt %s. [ETD: %s]'],
+        'etd_set': ['dein ETD wurde erfolgreich gespeichert %s. [ETD: %s]'],
     }
 
 cfg.define('watcher-interval', 5)
 cfg.define('watcher-enabled', 0)
 cfg.define('eta-timeout', 120)
+cfg.define('etd-timeout', 180)
 
 cfg.define('userpath', '/home/c-beam/users')
 cfg.define('tocendir', '/home/c-beam/usermap')
@@ -115,7 +118,9 @@ class EtaItem(PlugPersist):
          PlugPersist.__init__(self, name)
          self.data.name = name
          self.data.etas = self.data.etas or {}
+         self.data.etds = self.data.etds or {}
          self.data.etatimestamps = self.data.etatimestamps or {}
+         self.data.etdtimestamps = self.data.etdtimestamps or {}
          self.data.etasubs = self.data.etasubs or []
          self.data.opensubs = self.data.opensubs or []
          self.data.arrivesubs = self.data.arrivesubs or []
@@ -462,7 +467,10 @@ def handle_userlist_eta(bot, ievent):
             bot.say(etasub, 'ETA %s %s' % (user, eta))
         #ievent.reply('Set eta for %s to %d' % (user, eta))
         if eta == "0":
-            ievent.reply(getmessage('eta_removed') % (user, eta))
+            print user
+            print eta
+            print getmessage('eta_removed')
+            ievent.reply(getmessage('eta_removed') % (user, str(eta)))
         else:
             ievent.reply(getmessage('eta_set') % (user, eta))
  
@@ -617,3 +625,77 @@ def handle_login_tocen(bot, ievent):
     return ievent.reply('%s/login/%s' % (httpurl, userid))
 
 cmnds.add('login-tocen', handle_login_tocen, ['GUEST', 'USER'])
+
+def setetd(user, etd):
+    if etd == '0':
+        if etaitem.data.etds.has_key(user):
+            del etaitem.data.etds[user]
+    else:
+        arrival = extract_eta(etd)
+
+        arrival_hour = int(arrival[0:2]) % 24
+        arrival_minute = int(arrival[3:4]) % 60
+         
+#        arrival = str((int(arrival) + delta) % 2400)
+        etdtimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=cfg.get('etd-timeout'))
+        if datetime.datetime.now().strftime("%H%M") > arrival: 
+            etdtimestamp = etdtimestamp + datetime.timedelta(days=1)
+        
+        etaitem.data.etds[user] = etd
+        #etaitem.data.etdtimestamps[user] = time.time() + cfg.get('etd-timeout')
+        etaitem.data.etdtimestamps[user] = int(etdtimestamp.strftime("%Y%m%d%H%M%S"))
+    etaitem.save()
+
+def handle_userlist_etd(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+
+    etd = "0"
+
+    # return userlist if no arguments are provided
+    if len(ievent.args) == 0:
+        return handle_userlist(bot, ievent)
+
+    # if the first argument is a weekday, delegate to LTE
+    if ievent.args[0].upper() in weekdays:
+        return handle_lte(bot, ievent)
+
+
+    if ievent.args[0] in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
+        etdval = datetime.datetime.now() + datetime.timedelta(minutes=30)
+        etd = etdval.strftime("%H%M")
+    elif ievent.args[0].startswith('+'):
+        foo = int(ievent.args[0][1:])
+        etdval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
+        etd = etdval.strftime("%H%M")
+    elif ievent.rest == 'heute nicht mehr':
+        etd = "0"
+    else:
+        etd = ievent.rest
+
+    # remove superflous colons
+    etd = re.sub(r'(\d\d):(\d\d)',r'\1\2',etd)
+    #etd = re.sub(r'(\d\d).(\d\d)',r'\1\2',etd)
+
+    if etd != "0" and extract_eta(etd) == "9999":
+        return ievent.reply(getmessage('err_timeparser'))
+
+
+
+    logging.info("ETA: %s" % etd)
+    setetd(user, etd)
+
+    try:
+        #for etdsub in etaitem.data.etdsubs:
+            #logging.info( "sending etd %s to %s" % (etd, user))
+            #bot.say(etdsub, 'ETA %s %s' % (user, etd))
+        #ievent.reply('Set etd for %s to %d' % (user, etd))
+        if etd == "0":
+            ievent.reply(getmessage('etd_removed') % (user, etd))
+        else:
+            ievent.reply(getmessage('etd_set') % (user, etd))
+ 
+    except UserlistError, e:
+        ievent.reply(str(s))
+
+cmnds.add('etd', handle_userlist_etd, ['GUEST'])
