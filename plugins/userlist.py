@@ -396,10 +396,14 @@ def seteta(user, eta):
             del etaitem.data.etas[user]
     else:
         arrival = extract_eta(eta)
+
+        arrival_hour = int(arrival[0:2]) % 24
+        arrival_minute = int(arrival[3:4]) % 60
+         
 #        arrival = str((int(arrival) + delta) % 2400)
-        etatimestamp = datetime.datetime.now().replace(hour=int(arrival[0:2]), minute=int(arrival[3:4])) + datetime.timedelta(minutes=cfg.get('eta-timeout'))
+        etatimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=cfg.get('eta-timeout'))
         if datetime.datetime.now().strftime("%H%M") > arrival: 
-            etatimestamp = etatimestamp + datetime.timedelta(day=1)
+            etatimestamp = etatimestamp + datetime.timedelta(days=1)
         
         etaitem.data.etas[user] = eta
         #etaitem.data.etatimestamps[user] = time.time() + cfg.get('eta-timeout')
@@ -413,49 +417,43 @@ def extract_eta(text):
     else:
         return "9999"
 
-def check_eta(text, delta):
-    eta = extract_eta(text)
-    eta = str((int(eta) + delta) % 2400)
-    while len(eta) < 4: eta = "0%s" % eta
-    if eta > now:
-        return False
-    else:
-        return True
-
-
 def handle_userlist_eta(bot, ievent):
-
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
-    
 
-    eta = 0
+    eta = "0"
+
+    # return userlist if no arguments are provided
     if len(ievent.args) == 0:
         return handle_userlist(bot, ievent)
+
+    # if the first argument is a weekday, delegate to LTE
     if ievent.args[0].upper() in weekdays:
         return handle_lte(bot, ievent)
-    if ievent.args[0] in ('gleich', 'bald'):
+
+
+    if ievent.args[0] in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
         etaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
-        eta = int(etaval.strftime("%H%M"))
+        eta = etaval.strftime("%H%M")
     elif ievent.args[0].startswith('+'):
         foo = int(ievent.args[0][1:])
         etaval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
         eta = etaval.strftime("%H%M")
+    elif ievent.rest == 'heute nicht mehr':
+        eta = "0"
     else:
         eta = ievent.rest
 
-
-    if eta == 'heute nicht mehr':
-        eta = '0'
-
+    # remove superflous colons
     eta = re.sub(r'(\d\d):(\d\d)',r'\1\2',eta)
+    #eta = re.sub(r'(\d\d).(\d\d)',r'\1\2',eta)
 
     if eta != "0" and extract_eta(eta) == "9999":
         return ievent.reply(getmessage('err_timeparser'))
 
-    print "ETA: %s" % eta
+
+
     logging.info("ETA: %s" % eta)
-        
     seteta(user, eta)
 
     try:
@@ -463,7 +461,7 @@ def handle_userlist_eta(bot, ievent):
             logging.info( "sending eta %s to %s" % (eta, user))
             bot.say(etasub, 'ETA %s %s' % (user, eta))
         #ievent.reply('Set eta for %s to %d' % (user, eta))
-        if eta == 0:
+        if eta == "0":
             ievent.reply(getmessage('eta_removed') % (user, eta))
         else:
             ievent.reply(getmessage('eta_set') % (user, eta))
@@ -510,6 +508,7 @@ cmnds.add('login', handle_userlist_login, ['GUEST'])
 cmnds.add('ul-eta', handle_userlist_eta, ['GUEST'])
 cmnds.add('eta', handle_userlist_eta, ['GUEST'])
 cmnds.add('ul-subeta', handle_userlist_subeta, ['GUEST'])
+cmnds.add('eta-sub', handle_userlist_subeta, ['GUEST'])
 cmnds.add('ul-unsubeta', handle_userlist_unsubeta, ['GUEST'])
 cmnds.add('ul-subarrive', handle_userlist_subarrive, ['GUEST'])
 cmnds.add('ul-subopen', handle_userlist_subopen, ['USER'])
