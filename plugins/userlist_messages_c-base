@@ -1,4 +1,4 @@
-messages = {
+{
     'unknown_nick': ['ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.'],
     'logged_in': ['an bord: '],
     'login_success': ['hallo %s, willkommen auf der c-base', 'hallo %s, willkommen an bord!'],
