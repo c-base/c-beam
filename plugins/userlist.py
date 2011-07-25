@@ -81,6 +81,8 @@ cfg.define('tocendir', '/home/c-beam/usermap')
 cfg.define('logindelta', 30)
 cfg.define('timeoutdelta', 600)
 
+cfg.define('suppress-subs', 0)
+
 ## defines
 
 RE_ETA = re.compile(r'ETA (?P<item>\([^\)]+\)|\[[^\]]+\]|\w+)(?P<mod>\+\+|--)( |$)')
@@ -153,7 +155,7 @@ class UserlistWatcher(TimedLoop):
             # convert LTEs to ETAs for current day
             for user in dayitem.data.ltes.keys():
                 seteta(user, dayitem.data.ltes[user])
-                if bot and bot.type == "sxmpp":
+                if bot and bot.type == "sxmpp" and cfg.get('suppress-subs') == 0:
                     for etasub in etaitem.data.etasubs:
                         bot.say(etasub, 'ETA %s %s' % (user, dayitem.data.ltes[user]))
                 del dayitem.data.ltes[user]
