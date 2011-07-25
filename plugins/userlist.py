@@ -108,9 +108,9 @@ def getuser(ievent):
         return ievent.channel[:-11]
     elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
         return ievent.fromm[:-10]
-    elif ievent.hostname.startswith('c-base/crew/'):
+    elif ievent.hostname and ievent.hostname.startswith('c-base/crew/'):
         return ievent.hostname[12:]
-    elif ievent.hostname.startswith('pdpc/supporter/professional/'):
+    elif ievent.hostname and ievent.hostname.startswith('pdpc/supporter/professional/'):
         return ievent.hostname[28:]
     else:
         return 0
@@ -550,7 +550,7 @@ def handle_whoami(bot, ievent):
     return ievent.reply(random.choice(replies) % user)
     
 
-cmnds.add('whoami', handle_whoami, ['GUEST'])
+cmnds.add('whoami', handle_whoami, ['GUEST', 'USER'])
 
 # MO 1900 2300
 class LteItem(PlugPersist):
@@ -609,7 +609,7 @@ def handle_lte(bot, ievent):
     else:
         ievent.reply(str(len(ievent.rest.split(' '))))
 
-cmnds.add('lte', handle_lte, ['GUEST'])
+cmnds.add('lte', handle_lte, ['GUEST', 'USER'])
 
 
 def handle_login_tocen(bot, ievent):
