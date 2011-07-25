@@ -3,6 +3,7 @@ import jsonrpclib
 import sys
 import os
 import datetime
+import stat
 
 jsonrpclib.config.version = 1.0
 server = jsonrpclib.Server('http://10.0.1.13:1775')
@@ -45,5 +46,7 @@ def login(user, timeoutdelta):
            expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
            f = open(userfile, 'w')
            f.write(str(expire))
+           #os.chown(userfile, 11488, 11489)
+           os.chmod(userfile, stat.S_IREAD|stat.S_IWRITE|stat.S_IRGRP|stat.S_IWGRP)
            log("%s logged in" % user)
            return "login"
