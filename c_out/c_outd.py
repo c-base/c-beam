@@ -249,11 +249,12 @@ def playfile(filename):
         os.system('%s %s' % (player, filename))
     return "aye"
 
-if __name__ == "__main__":
-    main()
-
 def announce(text):
     """Plays a ringing sound, says an announcement and then repeats it."""
     playfile('announce.mp3')
     tts('julia', 
         "Achtung! Eine Durchsage: %s. Ich wiederhole: %s. Vielen Dank!" % (text, text))
+
+if __name__ == "__main__":
+    main()
+
