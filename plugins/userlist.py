@@ -26,6 +26,7 @@ import re, random
 import os, time, datetime
 import logging
 import uuid
+import jsonrpclib
 
 
 cfg = PersistConfig()
@@ -93,6 +94,8 @@ weekdays = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO']
 nextday = ['tomorrow', 'morgen']
 
 ##
+jsonrpclib.config.version = 1.0
+server = jsonrpclib.Server('http://10.0.1.27:4254')
 
 def getuser(ievent):
     if ievent.channel in usermap:
@@ -301,23 +304,24 @@ def handle_userlist_login(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
     try:
-        userfile = '%s/%s' % (cfg.get('userpath'), user)
+        #userfile = '%s/%s' % (cfg.get('userpath'), user)
 #        timestamps = eval(open(userfile).read())
 #        if timestamps[0] - now > 0:
 
             
 
-        logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
-        if user in etaitem.data.logintimeouts.keys():
-            timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=etaitem.data.logintimeouts[user])
-        else:
-            timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
-        expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
-        f = open(userfile, 'w')
-        f.write(str(expire))
-        if etaitem.data.etas.has_key(user):
-            del etaitem.data.etas[user]
-            etaitem.save()
+        #logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
+        #if user in etaitem.data.logintimeouts.keys():
+            #timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=etaitem.data.logintimeouts[user])
+        #else:
+            #timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
+        #expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
+        #f = open(userfile, 'w')
+        #f.write(str(expire))
+        #if etaitem.data.etas.has_key(user):
+            #del etaitem.data.etas[user]
+            #etaitem.save()
+        server.login(user)
         ievent.reply(getmessage('login_success') % user)
     except UserlistError, e:
         ievent.reply(str(s))
@@ -326,8 +330,9 @@ def handle_userlist_logout(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
     try:
-        if os.path.exists('%s/%s' % (cfg.get('userpath'), user)):
-            result = os.remove('%s/%s' % (cfg.get('userpath'), user))
+        server.logout(user)
+        #if os.path.exists('%s/%s' % (cfg.get('userpath'), user)):
+            #result = os.remove('%s/%s' % (cfg.get('userpath'), user))
         ievent.reply(getmessage('logout_success') % user)
     except UserlistError, e:
         ievent.reply(str(s))
