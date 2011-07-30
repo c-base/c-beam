@@ -117,6 +117,9 @@ def handle_tts_tail(bot, ievent):
     ievent.reply('\n'.join(tail(f, 5, 0)))
     f.close()
 
+def handle_tts_voices(bot, ievent):
+    return ievent.reply(" ".join(server.voices()))
+
 handle_tts_default = lambda b,i: handle_tts(b,i,'julia')
 handle_tts_julia = lambda b,i: handle_tts(b,i,'julia')
 handle_tts_sarah = lambda b,i: handle_tts(b,i,'sarah')
@@ -149,3 +152,4 @@ cmnds.add('tts-ryan', handle_tts_ryan, ['TTS', 'GUEST', 'USER'])
 cmnds.add('tts-r2d2', handle_tts_r2d2, ['TTS', 'GUEST', 'USER'])
 #cmnds.add('tts-en', handle_tts_en, ['TTS', 'GUEST', 'USER'])
 cmnds.add('tts-tail', handle_tts_tail, ['OPER'])
+cmnds.add('tts-voices', handle_tts_voices, ['TTS', 'GUEST', 'USER'])
