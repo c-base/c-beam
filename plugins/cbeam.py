@@ -50,7 +50,10 @@ def precbeam(bot, event):
 def cbeamcb(bot, event):
     event.bind(bot)
     time.sleep(1)
-    event.reply(random.choice(messages))
+    if event.txt.find('help') != -1:
+        event.reply('http://bit.ly/c-beam')
+    else:
+        event.reply(random.choice(messages))
     return 0
 
 callbacks.add('PRIVMSG', cbeamcb, precbeam)
