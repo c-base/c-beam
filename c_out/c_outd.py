@@ -252,8 +252,8 @@ def playfile(filename):
 def announce(text):
     """Plays a ringing sound, says an announcement and then repeats it."""
     playfile('announce.mp3')
-    tts('julia', 
-        "Achtung! Eine Durchsage: %s. Ich wiederhole: %s. Vielen Dank!" % (text, text))
+    tts('julia', "Achtung! Eine Durchsage: %s." % text)
+    tts('julia', 'Ich wiederhole: %s. Vielen Dank!' % text)
 
 if __name__ == "__main__":
     main()
