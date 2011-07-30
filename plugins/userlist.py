@@ -52,12 +52,12 @@ else:
         'unknown_nick': ['ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.'],
         'logged_in': ['an bord: '],
         'login_success': ['hallo %s, willkommen auf der c-base', 'hallo %s, willkommen an bord!'],
-        'logout_success': ['danke, daC du dich abgemeldet hast %s.', 'dancce und guten heimflug %s.'],
+        'logout_success': ['danke, daC du dich abgemeldet hast %s.', 'danke und guten heimflug %s.'],
         'no_one_there': ['es ist derceit niemand angemeldet.'],
         'eta_set': ['danke, daC du bescheid sagst %s. [ETA: %s]'],
         'eta_removed': ['c_ade, daC du doch nicht kommen cannst %s. [ETA: %s]'],
-        'lte_set': ['dancce %s, dein LTE wurde gespeichert. [%s]'],
-        'lte_removed': ['dancce %s, dein LTE für %s wurde entfernt.'],
+        'lte_set': ['danke %s, dein LTE wurde gespeichert. [%s]'],
+        'lte_removed': ['danke %s, dein LTE für %s wurde entfernt.'],
         'subeta_success': ['danke, daC du die ETA notificationen subscribiert hast.'],
         'unsubeta_success': ['du wirst erfolgreich von den ETA notificationen entsubscribiert worden sein.'],
         'subopen_success': ['thank you for your opening notification subscription'],
@@ -68,6 +68,7 @@ else:
         'err_unknown_day': ['ich cenne den tag %s nicht.'],
         'etd_removed': ['dein ETD wurde entfernt %s. [ETD: %s]'],
         'etd_set': ['dein ETD wurde erfolgreich gespeichert %s. [ETD: %s]'],
+        'no_etds': ['niemand hat ein ETD eingetragen %s.'],
     }
 
 cfg.define('watcher-interval', 5)
@@ -126,6 +127,7 @@ class EtaItem(PlugPersist):
          self.data.etasubs = self.data.etasubs or []
          self.data.opensubs = self.data.opensubs or []
          self.data.arrivesubs = self.data.arrivesubs or []
+         self.data.logintimeouts = self.data.logintimeouts or {}
 
 etaitem = EtaItem('eta')
 
@@ -224,10 +226,11 @@ class UserlistWatcher(TimedLoop):
                     os.remove(userfile)
 
         except UserlistError:
-            logging.error("watcher error")
+            logging.error("watcher UserList error")
             pass
         except KeyError:
-            logging.error("watcher error")
+            logging.error("watcher key error")
+            print str(KeyError)
             pass
        
         time.sleep(cfg.get('watcher-interval'))
@@ -301,8 +304,14 @@ def handle_userlist_login(bot, ievent):
         userfile = '%s/%s' % (cfg.get('userpath'), user)
 #        timestamps = eval(open(userfile).read())
 #        if timestamps[0] - now > 0:
+
+            
+
         logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
-        timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
+        if user in etaitem.data.logintimeouts.keys():
+            timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=etaitem.data.logintimeouts[user])
+        else:
+            timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
         expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
         f = open(userfile, 'w')
         f.write(str(expire))
@@ -509,25 +518,25 @@ def handle_userlist_watch_list(bot, ievent):
         ievent.reply('no watchers running')
 
 
-cmnds.add('ul', handle_userlist, ['GUEST'])
-cmnds.add('who', handle_userlist, ['GUEST'])
-cmnds.add('ul-logout', handle_userlist_logout, ['GUEST'])
-cmnds.add('logout', handle_userlist_logout, ['GUEST'])
-cmnds.add('ul-login', handle_userlist_login, ['GUEST'])
-cmnds.add('login', handle_userlist_login, ['GUEST'])
-cmnds.add('ul-eta', handle_userlist_eta, ['GUEST'])
-cmnds.add('eta', handle_userlist_eta, ['GUEST'])
-cmnds.add('ul-subeta', handle_userlist_subeta, ['GUEST'])
-cmnds.add('eta-sub', handle_userlist_subeta, ['GUEST'])
-cmnds.add('ul-unsubeta', handle_userlist_unsubeta, ['GUEST'])
-cmnds.add('ul-subarrive', handle_userlist_subarrive, ['GUEST'])
+cmnds.add('ul', handle_userlist, ['GUEST', 'USER'])
+cmnds.add('who', handle_userlist, ['GUEST', 'USER'])
+cmnds.add('ul-logout', handle_userlist_logout, ['GUEST', 'USER'])
+cmnds.add('logout', handle_userlist_logout, ['GUEST', 'USER'])
+cmnds.add('ul-login', handle_userlist_login, ['GUEST', 'USER'])
+cmnds.add('login', handle_userlist_login, ['GUEST', 'USER'])
+cmnds.add('ul-eta', handle_userlist_eta, ['GUEST', 'USER'])
+cmnds.add('eta', handle_userlist_eta, ['GUEST', 'USER'])
+cmnds.add('ul-subeta', handle_userlist_subeta, ['GUEST', 'USER'])
+cmnds.add('eta-sub', handle_userlist_subeta, ['GUEST', 'USER'])
+cmnds.add('ul-unsubeta', handle_userlist_unsubeta, ['GUEST', 'USER'])
+cmnds.add('ul-subarrive', handle_userlist_subarrive, ['GUEST', 'USER'])
 cmnds.add('ul-subopen', handle_userlist_subopen, ['USER'])
 cmnds.add('ul-unsubopen', handle_userlist_unsubopen, ['USER'])
-cmnds.add('ul-unsubarrive', handle_userlist_unsubarrive, ['GUEST'])
-cmnds.add('ul-subscribe', handle_userlist_subeta, ['GUEST'])
-cmnds.add('ul-unsubscribe', handle_userlist_unsubeta, ['GUEST'])
+cmnds.add('ul-unsubarrive', handle_userlist_unsubarrive, ['GUEST', 'USER'])
+cmnds.add('ul-subscribe', handle_userlist_subeta, ['GUEST', 'USER'])
+cmnds.add('ul-unsubscribe', handle_userlist_unsubeta, ['GUEST', 'USER'])
 cmnds.add('ul-lssub', handle_userlist_lssub, ['ULADM'])
-cmnds.add('userlist', handle_userlist, ['GUEST'])
+cmnds.add('userlist', handle_userlist, ['GUEST', 'USER'])
 
 cmnds.add('userlist-watch-start', handle_userlist_watch_start, 'ULADM')
 cmnds.add('userlist-watch-stop',  handle_userlist_watch_stop, 'ULADM')
@@ -656,12 +665,13 @@ def handle_userlist_etd(bot, ievent):
 
     # return userlist if no arguments are provided
     if len(ievent.args) == 0:
-        return handle_userlist(bot, ievent)
-
-    # if the first argument is a weekday, delegate to LTE
-    if ievent.args[0].upper() in weekdays:
-        return handle_lte(bot, ievent)
-
+        if len(etaitem.data.etds) > 0:
+            etdlist = []
+            for key in sorted(etaitem.data.etds.keys()):
+                etdlist += ['%s [%s]' % (key, etaitem.data.etds[key])]
+            return ievent.reply('ETD: ' + ', '.join(etdlist))
+        else:
+            return ievent.reply(getmessage('no_etds') % user)
 
     if ievent.args[0] in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
         etdval = datetime.datetime.now() + datetime.timedelta(minutes=30)
@@ -700,4 +710,26 @@ def handle_userlist_etd(bot, ievent):
     except UserlistError, e:
         ievent.reply(str(s))
 
-cmnds.add('etd', handle_userlist_etd, ['GUEST'])
+cmnds.add('etd', handle_userlist_etd, ['GUEST', 'USER'])
+
+
+def handle_userlist_settimeout(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+
+    if len(ievent.args) == 0:
+        return ievent.missing('timeout')
+    elif len(ievent.args) == 1:
+        timeout = int(ievent.args[0])
+    else:
+        return ievent.reply('!login-timeout <timeout>')
+
+    try:
+        etaitem.data.logintimeouts[user] = timeout
+        etaitem.save()
+#        ievent.reply(getmessage('subarrive_success'))
+
+    except UserlistError, e:
+        ievent.reply(str(s))
+
+cmnds.add('login-timeout', handle_userlist_settimeout, ['GUEST', 'USER'])
