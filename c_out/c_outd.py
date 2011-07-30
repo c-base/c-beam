@@ -52,6 +52,7 @@ def main():
     server.register_function(voices, 'voices')
     server.register_function(sounds, 'sounds')
     server.register_function(c_out, 'c_out')
+	server.register_function(announce, 'announce')
     server.serve_forever()
 
 def voices():
@@ -251,3 +252,8 @@ def playfile(filename):
 if __name__ == "__main__":
     main()
 
+def announce(text):
+	"""Plays a ringing sound, says an announcement and then repeats it."""
+	playfile('announce.mp3')
+	tts('julia', 
+		"Achtung! Eine Durchsage: %s. Ich wiederhole: %s. Vielen Dank!" % (text, text))
