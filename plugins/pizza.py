@@ -57,17 +57,17 @@ def getuser(ievent):
         return usermap[ievent.nick]
     elif ievent.ruserhost in usermap:
         return usermap[ievent.ruserhost]
-    elif ievent.channel.find('c-base.org') > -1:
+    elif ievent.auth.endswith('@shell.c-base.org'):
+        return ievent.auth[1:-17]
+    elif ievent.channel.find('@c-base.org') > -1:
         return ievent.channel[:-11]
     elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
         return ievent.fromm[:-10]
-    elif ievent.hostname.startswith('c-base/crew/'):
+    elif ievent.hostname and ievent.hostname.startswith('c-base/crew/'):
         return ievent.hostname[12:]
-    elif ievent.hostname.startswith('pdpc/supporter/professional/'):
+    elif ievent.hostname and ievent.hostname.startswith('pdpc/supporter/professional/'):
         return ievent.hostname[28:]
-    elif ievent.auth.endswith('@shell.c-base.org'):
-        return ievent.auth[1:-17]
-    else:        
+    else:
         return 0
 
 def handle_pizza(bot, ievent):
@@ -95,7 +95,7 @@ def handle_pizza(bot, ievent):
             pizzaitem.save()
             return handle_pizza_list(bot, ievent)
 
-cmnds.add('pizza', handle_pizza, ['USER'])
+cmnds.add('pizza', handle_pizza, ['USER', 'GUEST'])
 
 def handle_pizza_del(bot, ievent):
     if not ievent.args: return ievent.missing('<#>')
@@ -109,7 +109,7 @@ def handle_pizza_del(bot, ievent):
     pizzaitem.save()
     ievent.reply('#%d %s for %.2f has been removed from your order' % (index, removed[0], removed[1]))
 
-cmnds.add('pizza-del', handle_pizza_del, ['USER'])
+cmnds.add('pizza-del', handle_pizza_del, ['USER', 'GUEST'])
 
 def handle_pizza_list(bot, ievent):
     user = getuser(ievent)
@@ -141,7 +141,7 @@ def handle_pizza_list(bot, ievent):
         else:
             ievent.reply('I don\'t think you\'ve ordered anything yet.')
 
-cmnds.add('pizza-list', handle_pizza_list, ['USER'])
+cmnds.add('pizza-list', handle_pizza_list, ['USER', 'GUEST'])
 
 def handle_pizza_start(bot, ievent):
     if not ievent.args:
@@ -159,7 +159,7 @@ def handle_pizza_start(bot, ievent):
     else:
         ievent.reply('%s is already ordering pizza, you can order a pizza with !pizza <your pizza> <price>' % pizzaitem.data.orderer)
 
-cmnds.add('pizza-start', handle_pizza_start, ['USER'])
+cmnds.add('pizza-start', handle_pizza_start, ['USER', 'GUEST'])
 
 def handle_pizza_end(bot, ievent):
     user = getuser(ievent)
@@ -179,8 +179,8 @@ def handle_pizza_end(bot, ievent):
     else:
         ievent.reply('Only the orderer can end the order.')
 
-cmnds.add('pizza-end', handle_pizza_end, ['USER'])
-cmnds.add('pizza-stop', handle_pizza_end, ['USER'])
+cmnds.add('pizza-end', handle_pizza_end, ['USER', 'GUEST'])
+cmnds.add('pizza-stop', handle_pizza_end, ['USER', 'GUEST'])
 
 def handle_pizza_cancel(bot, ievent):
     pizzaitem.data.orderer = ''
@@ -197,7 +197,7 @@ def handle_pizza_status(bot, ievent):
     else:
         return handle_pizza(bot, ievent)
 
-cmnds.add('pizza-status', handle_pizza_status, ['USER'])
+cmnds.add('pizza-status', handle_pizza_status, ['USER', 'GUEST'])
 
 #def handle_pizza_help(bot, ievent):
     #ievent.reply("""
@@ -208,4 +208,4 @@ cmnds.add('pizza-status', handle_pizza_status, ['USER'])
 #!pizza-end: Beendet die Pizzabestellung'
 #""")
 #
-#cmnds.add('pizza-help', handle_pizza_help, ['USER'])
+#cmnds.add('pizza-help', handle_pizza_help, ['USER', 'GUEST'])
