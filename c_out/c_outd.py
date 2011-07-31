@@ -3,6 +3,7 @@
 
 import httplib, urllib, random, re, os, sys, time, subprocess
 import logging
+import hashlib
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 player = 'mpg123'
@@ -113,7 +114,8 @@ def acapela(voice, text):
     pitch = 100
     speed = 180
     if not text.endswith("."): text = "%s." % (text,)
-    filename = '%s/%s_%s_%d_%d.mp3' % (tmpdir, urllib.quote(text.lower()), voice, pitch, speed)
+    basename = '%s_%s_%d_%d' % (urllib.quote(text.lower()), voice, pitch, speed)
+    filename = '%s/%s.mp3' % (tmpdir, hashlib.sha256(basename).hexdigest())
     textparam = '\\vct=%d\\ \\spd=%d\\ %s' % (pitch, speed, text)
 
     # check whether we have a cached version of the the file
