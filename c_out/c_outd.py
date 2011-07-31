@@ -254,6 +254,7 @@ def announce(text):
     playfile('announce.mp3')
     tts('julia', "Achtung! Eine Durchsage: %s." % text)
     tts('julia', 'Ich wiederhole: %s. Vielen Dank!' % text)
+    return "aye"
 
 if __name__ == "__main__":
     main()
