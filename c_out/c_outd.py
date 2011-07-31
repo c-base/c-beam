@@ -52,6 +52,7 @@ def main():
     server.register_function(voices, 'voices')
     server.register_function(sounds, 'sounds')
     server.register_function(c_out, 'c_out')
+    server.register_function(announce, 'announce')
     server.serve_forever()
 
 def voices():
@@ -246,6 +247,15 @@ def playfile(filename):
         os.system('mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename)
     else:
         os.system('%s %s' % (player, filename))
+    return "aye"
+
+def announce(text):
+    """Plays a ringing sound, says an announcement and then repeats it."""
+    if iscpam(): 
+        return "cpam alarm. bitte beachten sie die sicherheitshinweise. (%d)" % (suppressuntil - int(time.time()))
+    playfile('announce.mp3')
+    tts('julia', "Achtung! Eine Durchsage: %s." % text)
+    tts('julia', 'Ich wiederhole: %s. Vielen Dank!' % text)
     return "aye"
 
 if __name__ == "__main__":
