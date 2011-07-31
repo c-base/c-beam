@@ -157,11 +157,9 @@ def acapela(voice, text):
     
 
 def r2d2(text):
-    #c_outcount += 1
     if iscpam():
         return "cpam alarm. bitte beachten sie die sicherheitshinweise. (%d)" % (suppressuntil - int(time.time()))
     mp3s = []
-    #text = text.lower()
 
     for char in text:
         char = char.replace(" ", "space")
