@@ -152,7 +152,7 @@ def acapela(voice, text):
         oFile = open('%s' % filename,'wb')
         oFile.write(fileToSave)
         oFile.close
-
+        logger.info('%s - %s' % (text, filename))
         return playfile(filename)
     
 
