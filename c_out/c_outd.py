@@ -251,6 +251,8 @@ def playfile(filename):
 
 def announce(text):
     """Plays a ringing sound, says an announcement and then repeats it."""
+    if iscpam(): 
+        return "cpam alarm. bitte beachten sie die sicherheitshinweise. (%d)" % (suppressuntil - int(time.time()))
     playfile('announce.mp3')
     tts('julia', "Achtung! Eine Durchsage: %s." % text)
     tts('julia', 'Ich wiederhole: %s. Vielen Dank!' % text)
