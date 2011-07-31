@@ -61,6 +61,9 @@ def getuser(ievent):
 
 ## tts command
 
+def handle_announce(bot, ievent):
+    return ievent.reply(server.announce(urllib.quote(ievent.rest.encode("utf-8"))))
+
 def handle_tts(bot, ievent, voice):
     """ text to speech synthesis. """
     if not ievent.args:
@@ -153,3 +156,4 @@ cmnds.add('tts-r2d2', handle_tts_r2d2, ['TTS', 'GUEST', 'USER'])
 #cmnds.add('tts-en', handle_tts_en, ['TTS', 'GUEST', 'USER'])
 cmnds.add('tts-tail', handle_tts_tail, ['OPER'])
 cmnds.add('tts-voices', handle_tts_voices, ['TTS', 'GUEST', 'USER'])
+cmnds.add('announce', handle_announce, ['TTS', 'GUEST', 'USER'])
