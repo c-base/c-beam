@@ -4,10 +4,10 @@ import login
 import datetime
 import os.path
 
-user="macro"
-nickspell = "macro"
+user="uk"
+nickspell = "u.k."
 
-logindelta = 1
+logindelta = 10
 timeoutdelta = 600
 
 
