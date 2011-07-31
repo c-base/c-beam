@@ -21,7 +21,7 @@ txt2phopath = "/var/www/c_out.c-base.org/txt2speech/txt2pho"
 
 acapelapassword = '0g7znor2aa'
 
-thevoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus', 'r2d2']
+thevoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus', 'de5', 'r2d2']
 acapelavoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus']
 txt2phovoices = ['de5']
 
@@ -44,7 +44,7 @@ def main():
 
     server = SimpleJSONRPCServer(('0.0.0.0', 1775))
 
-    server.register_function(tts, 'tts')
+    server.register_function(tts_handler, 'tts')
     server.register_function(r2d2, 'r2d2')
     server.register_function(play, 'play')
     server.register_function(setvolume, 'setvolume')
@@ -91,6 +91,11 @@ def mergemp3(mp3s, outfile):
     return "%s/%s" % (tmpdir, outfile)
 
 
+def tts_handler(voice, text):
+    if iscpam():
+        return "cpam alarm. bitte beachten sie die sicherheitshinweise. (%d)" % (suppressuntil - int(time.time()))
+    return tts(voice, text)
+    
 def tts(voice, text):
     if voice in acapelavoices:
         return acapela(voice, text)
@@ -146,7 +151,7 @@ def acapela(voice, text):
         oFile.write(fileToSave)
         oFile.close
 
-        return play(filename)
+        return playfile(filename)
     
 
 def r2d2(text):
@@ -178,7 +183,7 @@ def txt2pho(voice, text):
     filenamewav = '%s/%s_%s.wav' % (tmpdir, urllib.quote(text.lower()), voice)
     os.system('echo "%s" | %s/txt2pho | %s/mbrola -v 2.5 %s/data/%s/%s - %s' % (text, txt2phopath, txt2phopath, txt2phopath, voice, voice, filenamewav))
     os.system('lame %s %s' % (filenamewav, filenamemp3))
-    return play(filenamemp3)
+    return playfile(filenamemp3)
 
 def getvolume():
     res = subprocess.Popen(['amixer', 'get', 'Master'],  stdout=subprocess.PIPE).stdout.read()
