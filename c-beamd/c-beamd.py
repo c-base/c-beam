@@ -11,7 +11,7 @@ from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 import jsonrpclib
 
 jsonrpclib.config.version = 1.0
-c_out = jsonrpclib.Server('http://10.0.1.13:1775')
+c_outd = jsonrpclib.Server('http://10.0.1.13:1775')
 
 userdir = "/home/c-beam/users"
 datafile = "/home/c-beam/c-beam.data"
@@ -67,6 +67,16 @@ def main():
     server.register_function(available, 'available')
     server.register_function(getnickspell, 'getnickspell')
     server.register_function(setnickspell, 'setnickspell')
+
+    server.register_function(tts, 'tts')
+    server.register_function(r2d2, 'r2d2')
+    server.register_function(play, 'play')
+    server.register_function(setvolume, 'setvolume')
+    server.register_function(getvolume, 'getvolume')
+    server.register_function(voices, 'voices')
+    server.register_function(sounds, 'sounds')
+    server.register_function(c_out, 'c_out')
+    server.register_function(announce, 'announce')
     
     server.serve_forever()
 
@@ -84,6 +94,8 @@ def setnickspell(user, nickspell):
     f.close()
     return "ok"
 
+
+
 def login(user):
     userfile = '%s/%s' % (userdir, user)
     logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
@@ -98,7 +110,7 @@ def login(user):
 
 def logout(user):
     userfile = '%s/%s' % (userdir, user)
-    c_out.tts("julia", "guten heimflug %s." % getnickspell(user))
+    tts("julia", "guten heimflug %s." % getnickspell(user))
     os.rename(userfile, "%s.logout" % userfile)
     return "aye"
 
@@ -284,6 +296,35 @@ def geteta():
 def getetd():
     return data['etds']
 
+
+# c_out methods will be forwarded to c_outd running on shout
+def tts(voice, text):
+    print "shizzle"
+    return c_outd.tts(voice, text)
+
+def r2d2(text):
+    return c_outd.r2d2(text)
+
+def play(filename):
+    return c_outd.play(filename)
+
+def setvolume(voice, text):
+    return c_outd.setvolume(volume)
+
+def getvolume():
+    return c_outd.getvolume()
+
+def voices():
+    return c_outd.voices()
+
+def sounds():
+    return c_outd.sounds()
+
+def c_out():
+    return c_outd.c_out()
+
+def announce(text):
+    return c_outd.announce(text)
 
 
 if __name__ == "__main__":
