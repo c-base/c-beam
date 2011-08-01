@@ -13,6 +13,8 @@ import jsonrpclib
 jsonrpclib.config.version = 1.0
 c_outd = jsonrpclib.Server('http://10.0.1.13:1775')
 
+
+
 userdir = "/home/c-beam/users"
 datafile = "/home/c-beam/c-beam.data"
 
@@ -47,17 +49,18 @@ def init():
     try:
         nickspells = eval(open('nickspell').read())
         data = eval(open(datafile).read())
-        print nickspells
-        print data
     except: pass
     return 0
 
 def main():
+    
     init()
+    cleanup()
     server = SimpleJSONRPCServer(('0.0.0.0', 4254))
 
     server.register_function(logout, 'logout')
     server.register_function(login, 'login')
+    server.register_function(stealth_login, 'slogin')
     server.register_function(tagevent, 'tagevent')
     server.register_function(eta, 'eta')
     server.register_function(etd, 'etd')
@@ -67,6 +70,8 @@ def main():
     server.register_function(available, 'available')
     server.register_function(getnickspell, 'getnickspell')
     server.register_function(setnickspell, 'setnickspell')
+
+    server.register_function(cleanup, 'cleanup')
 
     server.register_function(tts, 'tts')
     server.register_function(r2d2, 'r2d2')
@@ -95,8 +100,12 @@ def setnickspell(user, nickspell):
     return "ok"
 
 
-
 def login(user):
+    result = stealth_login(user)
+    c_out.tts("julia", "hallo %s, willkommen an bord" % getnickspell(user))
+    return result
+
+def stealth_login(user):
     userfile = '%s/%s' % (userdir, user)
     logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
     timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
@@ -105,7 +114,6 @@ def login(user):
     f.write(str(expire))
     #os.chown(userfile, 11488, 11489)
     os.chmod(userfile, stat.S_IREAD|stat.S_IWRITE|stat.S_IRGRP|stat.S_IWGRP)
-    c_out.tts("julia", "hallo %s, willkommen an bord" % getnickspell(user))
     return "aye"
 
 def logout(user):
@@ -114,11 +122,11 @@ def logout(user):
     os.rename(userfile, "%s.logout" % userfile)
     return "aye"
 
-def log(message):
-    print "%s: %s" % (datetime.datetime.now(),message)
+#def log(message):
+    #print "%s: %s" % (datetime.datetime.now(),message)
 
 def tagevent(user):
-    log("called tagevent for %s" % user)
+    logger.info("called tagevent for %s" % user)
     if user == "unknown":
         return "login"
     userfile = '%s/%s' % (userdir, user)
@@ -127,18 +135,16 @@ def tagevent(user):
         now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
         if timestamps[0] - now > 0:
            # multiple logins, ignore
-           log("multiple logins from %s, ignoring" % user)
-           return "ignore"
+           logger.info("multiple logins from %s, ignoring" % user)
+           return "multiple logins from %s, ignoring" % user
         else:
-           #logout
            return logout(user)
-           log("%s logged out" % user)
-           return "logout"
     else:
         if os.path.isfile("%s.logout" % userfile):
-           return "ignore"
+           logger.info("multiple logouts from %s, ignoring" % user)
+           return "multiple logouts from %s, ignoring" % user
         else:
-           log("%s logged in" % user)
+           loging.info("calling login for %s" % user)
            return login(user)
 
 def seteta(user, eta):
@@ -205,6 +211,55 @@ def eta(user, text):
         return ['eta_set', user, eta]
 
 
+def lteconvert():
+    # LTE conversion to ETA
+    day = weekdays[datetime.datetime.now().weekday()]
+    if day != self.oldday:
+        self.oldday = day
+        dayitem = LteItem(day)
+        # convert LTEs to ETAs for current day
+        for user in dayitem.data.ltes.keys():
+            seteta(user, dayitem.data.ltes[user])
+            if bot and bot.type == "sxmpp" and cfg.get('suppress-subs') == 0:
+                for etasub in data['etasubs']:
+                    bot.say(etasub, 'ETA %s %s' % (user, dayitem.data.ltes[user]))
+            del dayitem.data.ltes[user]
+        # clear LTEs for current day
+        dayitem.data.ltes = {}
+        dayitem.save()   
+
+
+def cleanup():
+    users = userlist()
+    usercount = len(users)
+    now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+
+    # remove ETA if user is logged in
+    for user in data['etas'].keys():
+        print "checking %s" % user
+        if user in users:
+            print "removing %s" % user
+            del data['etas'][user]
+
+    # remove expired users
+    for user in users:
+        print user
+        userfile = "%s/%s" % (userdir, user)
+        timestamps = eval(open(userfile).read())
+        if timestamps[1] - now < 0:
+            os.remove(userfile)
+
+    # remove expired ETAs
+    for user in data['etas'].keys():
+        if now > data['etatimestamps'][user]:
+            del data['etas'][user]
+            del data['etatimestamps'][user]
+            save()
+
+    # remove expired ETDs
+
+    return 0
+
 def userlist():
     users = sorted(os.listdir(userdir))
     for user in users:
@@ -214,10 +269,12 @@ def userlist():
 
 
 def available():
+    cleanup()
     return userlist()
 
 def who():
     """list all user that have logged in on the mirror."""
+    cleanup()
     return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds']}
 
 def login_tocen(bot, ievent):
