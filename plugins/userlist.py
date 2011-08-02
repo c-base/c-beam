@@ -54,11 +54,11 @@ else:
         'logged_in': ['an bord: '],
         'login_success': ['hallo %s, willkommen auf der c-base', 'hallo %s, willkommen an bord!'],
         'logout_success': ['danke, daC du dich abgemeldet hast %s.', 'danke und guten heimflug %s.'],
-        'no_one_there': ['es ist derceit niemand angemeldet.'],
+        'no_one_there': ['derceit hat sich keine cohlenstoffeinheit bei mir angemeldet.', 'ga:hnende leere'],
         'eta_set': ['danke, daC du bescheid sagst %s. [ETA: %s]'],
         'eta_removed': ['c_ade, daC du doch nicht kommen cannst %s. [ETA: %s]'],
         'lte_set': ['danke %s, dein LTE wurde gespeichert. [%s]'],
-        'lte_removed': ['danke %s, dein LTE für %s wurde entfernt.'],
+        'lte_removed': ['danke %s, ich habe dein LTE für %s entfernt.'],
         'subeta_success': ['danke, daC du die ETA notificationen subscribiert hast.'],
         'unsubeta_success': ['du wirst erfolgreich von den ETA notificationen entsubscribiert worden sein.'],
         'subopen_success': ['thank you for your opening notification subscription'],
@@ -70,6 +70,8 @@ else:
         'etd_removed': ['dein ETD wurde entfernt %s. [ETD: %s]'],
         'etd_set': ['dein ETD wurde erfolgreich gespeichert %s. [ETD: %s]'],
         'no_etds': ['niemand hat ein ETD eingetragen %s.'],
+        'whoami': ['du wirst %s gewesen worden sein.', 'du wirst %s gewesen sein.', 'du ähnelst einem clon von %s.', 'gruCfrequencen %s.', '%s.', '%s fummelt an c-beam.', 'deine dna weist spuren von %s auf.', 'deine moleculare structur gleicht der von %s.', 'ich dence du formst ein %s.', 'deiner mudder ihr spro:Cling, %s'],
+
     }
 
 cfg.define('watcher-interval', 5)
@@ -548,20 +550,9 @@ cmnds.add('userlist-watch-stop',  handle_userlist_watch_stop, 'ULADM')
 cmnds.add('userlist-watch-list',  handle_userlist_watch_list, 'ULADM')
 
 def handle_whoami(bot, ievent):
-    replies = [
-        'du wirst %s gewesen worden sein.',
-        'du wirst %s gewesen sein.',
-        'du c_einst ein clon von %s zu sein.',
-        'gruCfrequencen %s.',
-        'das cann eigentlich nur %s sein.',
-        '%s.',
-        '%s wars.',
-        'deine dna weist spuren von %s auf.',
-        'ich dence du bist %s.'
-    ]
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
-    return ievent.reply(random.choice(replies) % user)
+    return ievent.reply(getmessage('whoami') % user)
     
 
 cmnds.add('whoami', handle_whoami, ['GUEST', 'USER'])
