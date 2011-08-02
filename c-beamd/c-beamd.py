@@ -102,7 +102,7 @@ def setnickspell(user, nickspell):
 
 def login(user):
     result = stealth_login(user)
-    c_out.tts("julia", "hallo %s, willkommen an bord" % getnickspell(user))
+    tts("julia", "hallo %s, willkommen an bord" % getnickspell(user))
     return result
 
 def stealth_login(user):
@@ -117,13 +117,14 @@ def stealth_login(user):
     return "aye"
 
 def logout(user):
-    userfile = '%s/%s' % (userdir, user)
+    result = stealth_logout(user)
     tts("julia", "guten heimflug %s." % getnickspell(user))
+    return result
+
+def stealth_logout(user):
+    userfile = '%s/%s' % (userdir, user)
     os.rename(userfile, "%s.logout" % userfile)
     return "aye"
-
-#def log(message):
-    #print "%s: %s" % (datetime.datetime.now(),message)
 
 def tagevent(user):
     logger.info("called tagevent for %s" % user)
@@ -151,6 +152,8 @@ def seteta(user, eta):
     if eta == '0':
         if data['etas'].has_key(user):
             del data['etas'][user]
+        save()
+        return 'eta_removed'
     else:
         arrival = extract_eta(eta)
 
@@ -163,7 +166,8 @@ def seteta(user, eta):
             etatimestamp = etatimestamp + datetime.timedelta(days=1)
         data['etas'][user] = eta
         data['etatimestamps'][user] = int(etatimestamp.strftime("%Y%m%d%H%M%S"))
-    return "aye"
+        save()
+        return 'eta_set'
 
 def save():
     f = open(datafile, 'w')
@@ -201,15 +205,9 @@ def eta(user, text):
     #eta = re.sub(r'(\d\d).(\d\d)',r'\1\2',eta)
 
     if eta != "0" and extract_eta(eta) == "9999":
-        return ['err_timeparser']
+        return 'err_timeparser'
 
     return seteta(user, eta)
-
-    if eta == "0":
-        return ['eta_removed', user, str(eta)]
-    else:
-        return ['eta_set', user, eta]
-
 
 def lteconvert():
     # LTE conversion to ETA
@@ -236,14 +234,11 @@ def cleanup():
 
     # remove ETA if user is logged in
     for user in data['etas'].keys():
-        print "checking %s" % user
         if user in users:
-            print "removing %s" % user
             del data['etas'][user]
 
     # remove expired users
     for user in users:
-        print user
         userfile = "%s/%s" % (userdir, user)
         timestamps = eval(open(userfile).read())
         if timestamps[1] - now < 0:
