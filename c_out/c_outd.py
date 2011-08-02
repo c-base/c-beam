@@ -45,7 +45,7 @@ def main():
 
     server = SimpleJSONRPCServer(('0.0.0.0', 1775))
 
-    server.register_function(tts_handler, 'tts')
+    server.register_function(tts, 'tts')
     server.register_function(r2d2, 'r2d2')
     server.register_function(play, 'play')
     server.register_function(setvolume, 'setvolume')
@@ -92,20 +92,17 @@ def mergemp3(mp3s, outfile):
     return "%s/%s" % (tmpdir, outfile)
 
 
-def tts_handler(voice, text):
+def tts(voice, text):
     if iscpam():
         return "cpam alarm. bitte beachten sie die sicherheitshinweise. (%d)" % (suppressuntil - int(time.time()))
-    return tts(voice, text)
-    
-def tts(voice, text):
     if voice in acapelavoices:
-        return acapela(voice, text)
+        return playfile(acapela(voice, text))
     if voice in txt2phovoices:
-        return txt2pho(voice, text)
+        return playfile(txt2pho(voice, text))
     elif voice == 'r2d2':
-        return r2d2(text)
+        return playfile(r2d2(text))
     else:
-        return acapela('julia', text)
+        return playfile(acapela('julia', text))
 
 def acapela(voice, text):
     if voice.find('22k') == -1:
@@ -113,14 +110,23 @@ def acapela(voice, text):
 
     pitch = 100
     speed = 180
+    
     if not text.endswith("."): text = "%s." % (text,)
+
+    text = text.replace('$','Dollar')
+    if (voice in ['julia', 'sarah', 'klaus']):
+        text = text.replace('c-base','zieh baejs')
+        text = text.replace('c-beam','zieh biem')
+        text = text.replace('c3pb', 'zeh drei p b')
+    
     basename = '%s_%s_%d_%d' % (urllib.quote(text.lower()), voice, pitch, speed)
     filename = '%s/%s.mp3' % (tmpdir, hashlib.sha256(basename).hexdigest())
     textparam = '\\vct=%d\\ \\spd=%d\\ %s' % (pitch, speed, text)
 
     # check whether we have a cached version of the the file
     if os.path.isfile(filename):
-        return play(filename)
+        logger.info('%s - %s' % (text, filename))
+        return filename
     else:
         params = urllib.urlencode({
             'cl_env': 'FLASH_AS_3.0',
@@ -153,7 +159,7 @@ def acapela(voice, text):
         oFile.write(fileToSave)
         oFile.close
         logger.info('%s - %s' % (text, filename))
-        return playfile(filename)
+        return filename
     
 
 def r2d2(text):
@@ -176,14 +182,14 @@ def r2d2(text):
         char = char.replace(unicode('\xc3\x9c', 'utf8'), "UE")
 
         mp3s.append("%s/%s.mp3" % (r2d2path, char))
-    return playfile(" ".join(mp3s))
+    return " ".join(mp3s)
 
 def txt2pho(voice, text):
     filenamemp3 = '%s/%s_%s.mp3' % (tmpdir, urllib.quote(text.lower()), voice)
     filenamewav = '%s/%s_%s.wav' % (tmpdir, urllib.quote(text.lower()), voice)
     os.system('echo "%s" | %s/txt2pho | %s/mbrola -v 2.5 %s/data/%s/%s - %s' % (text, txt2phopath, txt2phopath, txt2phopath, voice, voice, filenamewav))
     os.system('lame %s %s' % (filenamewav, filenamemp3))
-    return playfile(filenamemp3)
+    return filenamemp3
 
 def getvolume():
     res = subprocess.Popen(['amixer', 'get', 'Master'],  stdout=subprocess.PIPE).stdout.read()
@@ -258,9 +264,13 @@ def announce(text):
     """Plays a ringing sound, says an announcement and then repeats it."""
     if iscpam(): 
         return "cpam alarm. bitte beachten sie die sicherheitshinweise. (%d)" % (suppressuntil - int(time.time()))
-    playfile('announce.mp3')
-    tts('julia', "Achtung! Eine wichtige Durchsage: %s." % text)
-    tts('julia', 'Ich wiederhole: %s. Vielen Dank!' % text)
+    files = ["announce.mp3",
+        acapela('julia', "Achtung! Eine wichtige Durchsage:"),
+        acapela('julia', "%s." % text),
+        acapela('julia', 'Ich wiederhole:'),
+        acapela('julia', "%s." % text),
+        acapela('julia', 'Vielen Dank!') ]
+    playfile(" ".join(files))
     return "aye"
 
 if __name__ == "__main__":
