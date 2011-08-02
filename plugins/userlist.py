@@ -87,6 +87,8 @@ cfg.define('timeoutdelta', 600)
 
 cfg.define('suppress-subs', 0)
 
+cfg.define('use-c-beamd', 0)
+
 ## defines
 
 RE_ETA = re.compile(r'ETA (?P<item>\([^\)]+\)|\[[^\]]+\]|\w+)(?P<mod>\+\+|--)( |$)')
@@ -287,57 +289,101 @@ def getmessage(msg_name):
 ## userlist command
 
 def handle_userlist(bot, ievent):
-    """list all user that have logged in on the mirror."""
-    users = userlist()
-    reply = ''
-    if len(users) > 0 or len(etaitem.data.etas) > 0:
-        if len(users) > 0:
-            ievent.reply(getmessage('logged_in') + ', '.join(users))
-        if len(etaitem.data.etas) > 0:
-            etalist = []
-            for key in sorted(etaitem.data.etas.keys()):
-                etalist += ['%s [%s]' % (key, etaitem.data.etas[key])]
-            ievent.reply('ETA: ' + ', '.join(etalist))
-            #reply += 'ETA: ' + ', '.join(etalist) + '\n'
+    """list all user that have logged in."""
+    if cfg.get('use-c-beamd') == 1:
+        whoresult = server.who()
+        if len(whoresult['available']) > 0 or len(whoresult['eta']) > 0:
+            if len(whoresult['available']) > 0:
+                ievent.reply(getmessage('logged_in') + ', '.join(users))
+            if len(whoresult['eta']) > 0:
+                etalist = []
+                for key in sorted(whoresult['eta'].keys()):
+                   etalist += ['%s [%s]' % (key, whoresult['eta'][key])]
+                ievent.reply('ETA: ' + ', '.join(etalist))
+        else:
+            ievent.reply(getmessage('no_one_there'))
     else:
-        ievent.reply(getmessage('no_one_there'))
+        users = userlist()
+        if len(users) > 0 or len(etaitem.data.etas) > 0:
+            if len(users) > 0:
+                ievent.reply(getmessage('logged_in') + ', '.join(users))
+            if len(etaitem.data.etas) > 0:
+                etalist = []
+                for key in sorted(etaitem.data.etas.keys()):
+                    etalist += ['%s [%s]' % (key, etaitem.data.etas[key])]
+                ievent.reply('ETA: ' + ', '.join(etalist))
+                #reply += 'ETA: ' + ', '.join(etalist) + '\n'
+        else:
+            ievent.reply(getmessage('no_one_there'))
 
 def handle_userlist_login(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
-    try:
-        #userfile = '%s/%s' % (cfg.get('userpath'), user)
-#        timestamps = eval(open(userfile).read())
-#        if timestamps[0] - now > 0:
+    
+    if cfg.get('use-c-beamd') == 1:
+        result = server.login(user)
+    else:
+        try:
+            userfile = '%s/%s' % (cfg.get('userpath'), user)
+            #timestamps = eval(open(userfile).read())
+            #if timestamps[0] - now > 0:
 
-            
+            logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
+            if user in etaitem.data.logintimeouts.keys():
+                timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=etaitem.data.logintimeouts[user])
+            else:
+                timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
+            expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
+            f = open(userfile, 'w')
+            f.write(str(expire))
+            if etaitem.data.etas.has_key(user):
+                del etaitem.data.etas[user]
+                etaitem.save()
+        except UserlistError, e:
+            ievent.reply(str(s))
+    ievent.reply(getmessage('login_success') % user)
 
-        #logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
-        #if user in etaitem.data.logintimeouts.keys():
-            #timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=etaitem.data.logintimeouts[user])
-        #else:
-            #timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
-        #expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
-        #f = open(userfile, 'w')
-        #f.write(str(expire))
-        #if etaitem.data.etas.has_key(user):
-            #del etaitem.data.etas[user]
-            #etaitem.save()
-        server.login(user)
+cmnds.add('ul-login', handle_userlist_login, ['GUEST', 'USER'])
+cmnds.add('login', handle_userlist_login, ['GUEST', 'USER'])
+
+def handle_userlist_slogin(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+    
+    if cfg.get('use-c-beamd') == 1:
+        result = server.slogin(user)
         ievent.reply(getmessage('login_success') % user)
-    except UserlistError, e:
-        ievent.reply(str(s))
+    else:
+        return handle_userlist_login(bot, ievent)
+
+cmnds.add('slogin', handle_userlist_slogin, ['GUEST', 'USER'])
 
 def handle_userlist_logout(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
-    try:
+    if cfg.get('use-c-beamd') == 1:
         server.logout(user)
-        #if os.path.exists('%s/%s' % (cfg.get('userpath'), user)):
-            #result = os.remove('%s/%s' % (cfg.get('userpath'), user))
+    else:
+        try:
+            if os.path.exists('%s/%s' % (cfg.get('userpath'), user)):
+                result = os.remove('%s/%s' % (cfg.get('userpath'), user))
+        except UserlistError, e:
+            ievent.reply(str(s))
+    ievent.reply(getmessage('logout_success') % user)
+
+cmnds.add('ul-logout', handle_userlist_logout, ['GUEST', 'USER'])
+cmnds.add('logout', handle_userlist_logout, ['GUEST', 'USER'])
+
+def handle_userlist_slogout(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+    if cfg.get('use-c-beamd') == 1:
+        result = server.slogout(user)
         ievent.reply(getmessage('logout_success') % user)
-    except UserlistError, e:
-        ievent.reply(str(s))
+    else:
+        return handle_userlist_logout(bot, ievent)
+
+cmnds.add('slogout', handle_userlist_slogout, ['GUEST', 'USER'])
 
 def handle_userlist_subeta(bot, ievent):
     try:
@@ -444,7 +490,7 @@ def handle_userlist_eta(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
 
-    eta = "0"
+    eta = ievent.rest
 
     # return userlist if no arguments are provided
     if len(ievent.args) == 0:
@@ -454,46 +500,45 @@ def handle_userlist_eta(bot, ievent):
     if ievent.args[0].upper() in weekdays:
         return handle_lte(bot, ievent)
 
+    if cfg.get('use-c-beamd') == 1:
+        result = server.eta(user, eta)
+        ievent.reply(getmessage(result) % (user, eta))
 
-    if ievent.args[0] in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
-        etaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
-        eta = etaval.strftime("%H%M")
-    elif ievent.args[0].startswith('+'):
-        foo = int(ievent.args[0][1:])
-        etaval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
-        eta = etaval.strftime("%H%M")
-    elif ievent.rest == 'heute nicht mehr':
-        eta = "0"
     else:
-        eta = ievent.rest
-
-    # remove superflous colons
-    eta = re.sub(r'(\d\d):(\d\d)',r'\1\2',eta)
-    #eta = re.sub(r'(\d\d).(\d\d)',r'\1\2',eta)
-
-    if eta != "0" and extract_eta(eta) == "9999":
-        return ievent.reply(getmessage('err_timeparser'))
-
-
-
-    logging.info("ETA: %s" % eta)
-    seteta(user, eta)
-
-    try:
-        for etasub in etaitem.data.etasubs:
-            logging.info( "sending eta %s to %s" % (eta, user))
-            bot.say(etasub, 'ETA %s %s' % (user, eta))
-        #ievent.reply('Set eta for %s to %d' % (user, eta))
-        if eta == "0":
-            print user
-            print eta
-            print getmessage('eta_removed')
-            ievent.reply(getmessage('eta_removed') % (user, str(eta)))
+        if ievent.args[0] in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
+            etaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
+            eta = etaval.strftime("%H%M")
+        elif ievent.args[0].startswith('+'):
+            foo = int(ievent.args[0][1:])
+            etaval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
+            eta = etaval.strftime("%H%M")
+        elif ievent.rest == 'heute nicht mehr':
+            eta = "0"
         else:
-            ievent.reply(getmessage('eta_set') % (user, eta))
+            eta = ievent.rest
+
+        # remove superflous colons
+        eta = re.sub(r'(\d\d):(\d\d)',r'\1\2',eta)
+        #eta = re.sub(r'(\d\d).(\d\d)',r'\1\2',eta)
+
+        if eta != "0" and extract_eta(eta) == "9999":
+            return ievent.reply(getmessage('err_timeparser'))
+
+        logging.info("ETA: %s" % eta)
+        seteta(user, eta)
+
+        try:
+            for etasub in etaitem.data.etasubs:
+                logging.info( "sending eta %s to %s" % (eta, user))
+                bot.say(etasub, 'ETA %s %s' % (user, eta))
+            #ievent.reply('Set eta for %s to %d' % (user, eta))
+            if eta == "0":
+                ievent.reply(getmessage('eta_removed') % (user, str(eta)))
+            else:
+                ievent.reply(getmessage('eta_set') % (user, eta))
  
-    except UserlistError, e:
-        ievent.reply(str(s))
+        except UserlistError, e:
+            ievent.reply(str(s))
 
 def handle_userlist_watch_start(bot, ievent):
     if not cfg.get('watcher-enabled'):
@@ -527,10 +572,6 @@ def handle_userlist_watch_list(bot, ievent):
 
 cmnds.add('ul', handle_userlist, ['GUEST', 'USER'])
 cmnds.add('who', handle_userlist, ['GUEST', 'USER'])
-cmnds.add('ul-logout', handle_userlist_logout, ['GUEST', 'USER'])
-cmnds.add('logout', handle_userlist_logout, ['GUEST', 'USER'])
-cmnds.add('ul-login', handle_userlist_login, ['GUEST', 'USER'])
-cmnds.add('login', handle_userlist_login, ['GUEST', 'USER'])
 cmnds.add('ul-eta', handle_userlist_eta, ['GUEST', 'USER'])
 cmnds.add('eta', handle_userlist_eta, ['GUEST', 'USER'])
 cmnds.add('ul-subeta', handle_userlist_subeta, ['GUEST', 'USER'])
