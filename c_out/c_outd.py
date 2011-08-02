@@ -264,7 +264,7 @@ def announce(text):
     """Plays a ringing sound, says an announcement and then repeats it."""
     if iscpam(): 
         return "cpam alarm. bitte beachten sie die sicherheitshinweise. (%d)" % (suppressuntil - int(time.time()))
-    files = ["announce.mp3",
+    files = ["%s/announce.mp3" % sampledir,
         acapela('julia', "Achtung! Eine wichtige Durchsage:"),
         acapela('julia', "%s." % text),
         acapela('julia', 'Ich wiederhole:'),
