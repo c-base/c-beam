@@ -105,9 +105,6 @@ def tts(voice, text):
         return playfile(acapela('julia', text))
 
 def acapela(voice, text):
-    if voice.find('22k') == -1:
-        voice = '%s22k' % voice
-
     pitch = 100
     speed = 180
     
@@ -118,6 +115,9 @@ def acapela(voice, text):
         text = text.replace('c-base','zieh baejs')
         text = text.replace('c-beam','zieh biem')
         text = text.replace('c3pb', 'zeh drei p b')
+
+    if voice.find('22k') == -1:
+        voice = '%s22k' % voice
     
     basename = '%s_%s_%d_%d' % (urllib.quote(text.lower()), voice, pitch, speed)
     filename = '%s/%s.mp3' % (tmpdir, hashlib.sha256(basename).hexdigest())
