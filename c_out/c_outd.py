@@ -113,8 +113,8 @@ def acapela(voice, text):
     text = text.replace('$','Dollar')
     if (voice in ['julia', 'sarah', 'klaus']):
         #text = text.replace('c-base','zieh baejs')
-        text = text.replace('c-base','ssiebays')
-        text = text.replace('c-beam','ssiebiem')
+        text = text.replace('c-base','ziebays')
+        text = text.replace('c-beam','ziebiem')
         text = text.replace('c3pb', 'zeh drei p b')
 
     if voice.find('22k') == -1:
