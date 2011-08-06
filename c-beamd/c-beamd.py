@@ -13,8 +13,6 @@ import jsonrpclib
 jsonrpclib.config.version = 1.0
 c_outd = jsonrpclib.Server('http://10.0.1.13:1775')
 
-
-
 userdir = "/home/c-beam/users"
 datafile = "/home/c-beam/c-beam.data"
 
@@ -28,7 +26,12 @@ data = {
     'etas': {},
     'etds': {},
     'etatimestamps': {},
-    'etdtimestamps': {}
+    'etdtimestamps': {},
+    'etasubs': [],
+    'opensubs': [],
+    'arrivesubs': [],
+    'logintimeouts': {},
+    'ltes': {'MO': [], 'DI': [], 'MI': [], 'DO': [], 'FR': [], 'SA': [], 'SO': []}
 }
 
 eta_timeout = 120
@@ -53,7 +56,6 @@ def init():
     return 0
 
 def main():
-    
     init()
     cleanup()
     server = SimpleJSONRPCServer(('0.0.0.0', 4254))
@@ -64,12 +66,16 @@ def main():
     server.register_function(tagevent, 'tagevent')
     server.register_function(eta, 'eta')
     server.register_function(etd, 'etd')
+    server.register_function(lte, 'lte')
     server.register_function(who, 'who')
     server.register_function(geteta, 'geteta')
     server.register_function(getetd, 'getetd')
+    server.register_function(getlte, 'getlte')
+    server.register_function(getlteforday, 'getlteforday')
     server.register_function(available, 'available')
     server.register_function(getnickspell, 'getnickspell')
     server.register_function(setnickspell, 'setnickspell')
+    server.register_function(settimeout, 'settimeout')
 
     server.register_function(cleanup, 'cleanup')
 
@@ -99,10 +105,12 @@ def setnickspell(user, nickspell):
     f.close()
     return "ok"
 
-
 def login(user):
     result = stealth_login(user)
-    tts("julia", "hallo %s, willkommen an bord" % getnickspell(user))
+    if user == "kristall":
+        tts("julia", "a loa crew")
+    else:
+        tts("julia", "hallo %s, willkommen an bord" % getnickspell(user))
     return result
 
 def stealth_login(user):
@@ -160,7 +168,6 @@ def seteta(user, eta):
         arrival_hour = int(arrival[0:2]) % 24
         arrival_minute = int(arrival[3:4]) % 60
          
-#        arrival = str((int(arrival) + delta) % 2400)
         etatimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=eta_timeout)
         if datetime.datetime.now().strftime("%H%M") > arrival: 
             etatimestamp = etatimestamp + datetime.timedelta(days=1)
@@ -185,8 +192,8 @@ def eta(user, text):
     eta = "0"
 
     # if the first argument is a weekday, delegate to LTE
-    #if args[0].upper() in weekdays:
-    #    return handle_lte(bot, ievent)
+    if args[0].upper() in weekdays:
+        return lte(bot, ievent)
 
     if text in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
         etaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
@@ -226,7 +233,6 @@ def lteconvert():
         dayitem.data.ltes = {}
         dayitem.save()   
 
-
 def cleanup():
     users = userlist()
     usercount = len(users)
@@ -261,7 +267,6 @@ def userlist():
         if user.endswith(".logout"):
             users.remove(user)
     return users
-
 
 def available():
     cleanup()
@@ -337,46 +342,64 @@ def etd(user, etdtext):
     else:
         return 'etd_set'
  
-def settimeout(user, timeout):
-    data['logintimeouts'][user] = timeout
-    save()
-
-
 def geteta():
     return data['etas']
 
 def getetd():
     return data['etds']
 
+def settimeout(user, timeout):
+    data['logintimeouts'][user] = timeout
+    save()
+    return "aye"
+
+
+
+
+
+# MO 1900 2300
+def lte(user, args):
+
+    args = args.split(' ')
+
+    if len(args) >= 2:
+        if args[1] == '0':
+            dayitem = data['ltes'][args[0]]
+            if user in dayitem.keys():
+                del dayitem[user]
+                save()
+            return 'lte_removed'
+        if args[0] not in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
+            #, 'MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'):
+            return 'err_unknown_day'
+        dayitem = data['ltes'][args[0]]
+        eta = " ".join(args[1:])
+        eta = re.sub(r'(\d\d):(\d\d)',r'\1\2', eta)
+        dayitem[user] = eta
+        save()
+        return 'lte_set'
+
+def getlteforday(day):
+    if day in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
+        return data['ltes'][day]
+    else:
+        return 'err_unknown_day'
+
+def getlte():
+    return data['ltes']
+
+
 
 # c_out methods will be forwarded to c_outd running on shout
-def tts(voice, text):
-    print "shizzle"
-    return c_outd.tts(voice, text)
-
-def r2d2(text):
-    return c_outd.r2d2(text)
-
-def play(filename):
-    return c_outd.play(filename)
-
-def setvolume(voice, text):
-    return c_outd.setvolume(volume)
-
-def getvolume():
-    return c_outd.getvolume()
-
-def voices():
-    return c_outd.voices()
-
-def sounds():
-    return c_outd.sounds()
-
-def c_out():
-    return c_outd.c_out()
-
-def announce(text):
-    return c_outd.announce(text)
+def tts(voice, text): return c_outd.tts(voice, text)
+def r2d2(text): return c_outd.r2d2(text)
+def play(filename): return c_outd.play(filename)
+def setvolume(voice, text): return c_outd.setvolume(volume)
+def getvolume(): return c_outd.getvolume()
+def voices(): return c_outd.voices()
+def sounds(): return c_outd.sounds()
+def c_out(): return c_outd.c_out()
+def announce(text): return c_outd.announce(text)
 
 
 if __name__ == "__main__":
