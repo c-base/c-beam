@@ -290,7 +290,7 @@ def getmessage(msg_name):
 
 def handle_userlist(bot, ievent):
     """list all user that have logged in."""
-    if cfg.get('use-c-beamd') == 1:
+    if cfg.get('use-c-beamd') > 1:
         whoresult = server.who()
         if len(whoresult['available']) > 0 or len(whoresult['eta']) > 0:
             if len(whoresult['available']) > 0:
@@ -320,7 +320,7 @@ def handle_userlist_login(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
     
-    if cfg.get('use-c-beamd') == 1:
+    if cfg.get('use-c-beamd') > 0:
         result = server.login(user)
     else:
         try:
@@ -350,7 +350,7 @@ def handle_userlist_slogin(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
     
-    if cfg.get('use-c-beamd') == 1:
+    if cfg.get('use-c-beamd') > 0:
         result = server.slogin(user)
         ievent.reply(getmessage('login_success') % user)
     else:
@@ -361,7 +361,7 @@ cmnds.add('slogin', handle_userlist_slogin, ['GUEST', 'USER'])
 def handle_userlist_logout(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
-    if cfg.get('use-c-beamd') == 1:
+    if cfg.get('use-c-beamd') > 0:
         server.logout(user)
     else:
         try:
@@ -377,7 +377,7 @@ cmnds.add('logout', handle_userlist_logout, ['GUEST', 'USER'])
 def handle_userlist_slogout(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
-    if cfg.get('use-c-beamd') == 1:
+    if cfg.get('use-c-beamd') > 0:
         result = server.slogout(user)
         ievent.reply(getmessage('logout_success') % user)
     else:
@@ -500,7 +500,7 @@ def handle_userlist_eta(bot, ievent):
     if ievent.args[0].upper() in weekdays:
         return handle_lte(bot, ievent)
 
-    if cfg.get('use-c-beamd') == 1:
+    if cfg.get('use-c-beamd') > 1:
         result = server.eta(user, eta)
         ievent.reply(getmessage(result) % (user, eta))
 
