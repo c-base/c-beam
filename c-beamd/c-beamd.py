@@ -14,6 +14,7 @@ jsonrpclib.config.version = 1.0
 c_outd = jsonrpclib.Server('http://10.0.1.13:1775')
 
 userdir = "/home/c-beam/users"
+vuserdir = "/home/c-beam/vusers"
 datafile = "/home/c-beam/c-beam.data"
 
 logindelta = 30
@@ -31,7 +32,9 @@ data = {
     'opensubs': [],
     'arrivesubs': [],
     'logintimeouts': {},
-    'ltes': {'MO': [], 'DI': [], 'MI': [], 'DO': [], 'FR': [], 'SA': [], 'SO': []}
+    'ltes': {'MO': [], 'DI': [], 'MI': [], 'DO': [], 'FR': [], 'SA': [], 'SO': []},
+    'vetas': {},
+    'vetatimestamps': {},
 }
 
 eta_timeout = 120
@@ -63,11 +66,12 @@ def main():
     server.register_function(logout, 'logout')
     server.register_function(login, 'login')
     server.register_function(stealth_login, 'slogin')
+    server.register_function(stealth_logout, 'slogout')
     server.register_function(tagevent, 'tagevent')
     server.register_function(eta, 'eta')
     server.register_function(etd, 'etd')
     server.register_function(lte, 'lte')
-    server.register_function(who, 'who')
+    server.register_function(vwho, 'who')
     server.register_function(geteta, 'geteta')
     server.register_function(getetd, 'getetd')
     server.register_function(getlte, 'getlte')
@@ -76,6 +80,10 @@ def main():
     server.register_function(getnickspell, 'getnickspell')
     server.register_function(setnickspell, 'setnickspell')
     server.register_function(settimeout, 'settimeout')
+
+    server.register_function(vlogout, 'vlogout')
+    server.register_function(vlogin, 'vlogin')
+    server.register_function(veta, 'veta')
 
     server.register_function(cleanup, 'cleanup')
 
@@ -234,6 +242,7 @@ def lteconvert():
         dayitem.save()   
 
 def cleanup():
+    vcleanup()
     users = userlist()
     usercount = len(users)
     now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
@@ -401,6 +410,123 @@ def sounds(): return c_outd.sounds()
 def c_out(): return c_outd.c_out()
 def announce(text): return c_outd.announce(text)
 
+
+
+
+
+def vlogin(user):
+    userfile = '%s/%s' % (vuserdir, user)
+    logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
+    timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
+    expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
+    f = open(userfile, 'w')
+    f.write(str(expire))
+    #os.chown(userfile, 11488, 11489)
+    os.chmod(userfile, stat.S_IREAD|stat.S_IWRITE|stat.S_IRGRP|stat.S_IWGRP)
+    tts("julia", "hallo %s, willkommen an bord" % getnickspell(user))
+    return "aye"
+
+def logout(user):
+    result = stealth_logout(user)
+    tts("julia", "guten heimflug %s." % getnickspell(user))
+    return result
+
+def vlogout(user):
+    userfile = '%s/%s' % (vuserdir, user)
+    os.rename(userfile, "%s.logout" % userfile)
+    return "aye"
+
+def setveta(user, veta):
+    if veta == '0':
+        if data['vetas'].has_key(user):
+            del data['vetas'][user]
+        save()
+        return 'eta_removed'
+    else:
+        arrival = extract_eta(veta)
+
+        arrival_hour = int(arrival[0:2]) % 24
+        arrival_minute = int(arrival[3:4]) % 60
+         
+        vetatimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=eta_timeout)
+        if datetime.datetime.now().strftime("%H%M") > arrival: 
+            vetatimestamp = vetatimestamp + datetime.timedelta(days=1)
+        data['vetas'][user] = veta
+        data['vetatimestamps'][user] = int(vetatimestamp.strftime("%Y%m%d%H%M%S"))
+        save()
+        return 'eta_set'
+
+def veta(user, text):
+    veta = "0"
+
+    # if the first argument is a weekday, delegate to LTE
+    if args[0].upper() in weekdays:
+        return lte(bot, ievent)
+
+    if text in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
+        vetaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
+        veta = vetaval.strftime("%H%M")
+    elif text.startswith('+'):
+        foo = int(text[1:])
+        vetaval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
+        veta = vetaval.strftime("%H%M")
+    #elif ievent.rest == 'heute nicht mehr':
+     #   veta = "0"
+    else:
+        veta = text
+
+    # remove superflous colons
+    veta = re.sub(r'(\d\d):(\d\d)',r'\1\2',veta)
+    #veta = re.sub(r'(\d\d).(\d\d)',r'\1\2',veta)
+
+    if veta != "0" and extract_eta(veta) == "9999":
+        return 'err_timeparser'
+
+    return setveta(user, veta)
+
+def vcleanup():
+    vusers = vuserlist()
+    vusercount = len(vusers)
+    now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+
+    # remove vETA if user is logged in
+    for user in data['vetas'].keys():
+        if user in users:
+            del data['vetas'][user]
+
+    # remove expired users
+    for user in vusers:
+        vuserfile = "%s/%s" % (vuserdir, user)
+        timestamps = eval(open(vuserfile).read())
+        if timestamps[1] - now < 0:
+            os.remove(vuserfile)
+
+    # remove expired vETAs
+    for user in data['vetas'].keys():
+        if now > data['vetatimestamps'][user]:
+            del data['vetas'][user]
+            del data['vetatimestamps'][user]
+            save()
+
+    # remove expired ETDs
+
+    return 0
+
+def vuserlist():
+    vusers = sorted(os.listdir(vuserdir))
+    for user in vusers:
+        if user.endswith(".logout"):
+            vusers.remove(user)
+    return vusers
+
+def vavailable():
+    cleanup()
+    return vuserlist()
+
+def vwho():
+    """list all user that have logged in on the mirror."""
+    cleanup()
+    return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'vavailable': vuserlist(), 'veta': data['vetas']}
 
 if __name__ == "__main__":
     main()
