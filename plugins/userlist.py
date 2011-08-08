@@ -71,6 +71,9 @@ else:
         'etd_set': ['dein ETD wurde erfolgreich gespeichert %s. [ETD: %s]'],
         'no_etds': ['niemand hat ein ETD eingetragen %s.'],
         'whoami': ['du wirst %s gewesen worden sein.', 'du wirst %s gewesen sein.', 'du ähnelst einem clon von %s.', 'gruCfrequencen %s.', '%s.', '%s fummelt an c-beam.', 'deine dna weist spuren von %s auf.', 'deine moleculare structur gleicht der von %s.', 'ich dence du formst ein %s.', 'deiner mudder ihr spro:Cling, %s'],
+        'vlogged_in': ['im c-base village: '],
+        'vlogin_success': ['hallo %s, willkommen im c-base village!'],
+        'vlogout_success': ['scho:n daC du im c-base village vorbeigeschaut hast %s.'],
 
     }
 
@@ -770,3 +773,59 @@ def handle_userlist_settimeout(bot, ievent):
         ievent.reply(str(s))
 
 cmnds.add('login-timeout', handle_userlist_settimeout, ['GUEST', 'USER'])
+
+
+def handle_userlist_veta(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+
+    eta = ievent.rest
+
+    # return userlist if no arguments are provided
+    if len(ievent.args) == 0:
+        return handle_userlist(bot, ievent)
+
+    result = server.eta(user, eta)
+    ievent.reply(getmessage(result) % (user, eta))
+
+cmnds.add('veta', handle_userlist_veta, ['GUEST', 'USER'])
+
+def handle_userlist_vlogin(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+    
+    result = server.vlogin(user)
+    ievent.reply(getmessage('vlogin_success') % user)
+
+cmnds.add('vlogin', handle_userlist_vlogin, ['GUEST', 'USER'])
+
+def handle_userlist_vlogout(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+    server.vlogout(user)
+    ievent.reply(getmessage('vlogout_success') % user)
+
+cmnds.add('vlogout', handle_userlist_vlogout, ['GUEST', 'USER'])
+
+def handle_vuserlist(bot, ievent):
+    """list all user that have logged in."""
+    whoresult = server.who()
+    reply = ""
+    if len(whoresult['available']) > 0 or len(whoresult['eta']) > 0 or len(whoresult['available']) > 0 or len(whoresult['veta']) > 0:
+        if len(whoresult['available']) > 0:
+            reply += getmessage('logged_in') + ', '.join(users) + " | "
+        if len(whoresult['vavailable']) > 0:
+            reply += getmessage('vlogged_in') + ', '.join(users) + " | "
+        if len(whoresult['eta']) > 0:
+            etalist = []
+            for key in sorted(whoresult['eta'].keys()):
+               etalist += ['%s [%s]' % (key, whoresult['eta'][key])]
+            reply += 'ETA: ' + ', '.join(etalist) + " | "
+        if len(whoresult['veta']) > 0:
+            etalist = []
+            for key in sorted(whoresult['veta'].keys()):
+               vetalist += ['%s [%s]' % (key, whoresult['veta'][key])]
+            reply += 'villageETA: ' + ', '.join(vetalist)
+        ievent.reply(reply)
+    else:
+        ievent.reply(getmessage('no_one_there'))
