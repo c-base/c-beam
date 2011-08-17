@@ -293,7 +293,7 @@ def getmessage(msg_name):
 
 def handle_userlist(bot, ievent):
     """list all user that have logged in."""
-    if cfg.get('use-c-beamd') > 1:
+    if cfg.get('use-c-beamd') > 0:
         whoresult = server.who()
         if len(whoresult['available']) > 0 or len(whoresult['eta']) > 0:
             if len(whoresult['available']) > 0:
@@ -573,8 +573,6 @@ def handle_userlist_watch_list(bot, ievent):
         ievent.reply('no watchers running')
 
 
-cmnds.add('ul', handle_userlist, ['GUEST', 'USER'])
-cmnds.add('who', handle_userlist, ['GUEST', 'USER'])
 cmnds.add('ul-eta', handle_userlist_eta, ['GUEST', 'USER'])
 cmnds.add('eta', handle_userlist_eta, ['GUEST', 'USER'])
 cmnds.add('ul-subeta', handle_userlist_subeta, ['GUEST', 'USER'])
@@ -785,7 +783,7 @@ def handle_userlist_veta(bot, ievent):
     if len(ievent.args) == 0:
         return handle_userlist(bot, ievent)
 
-    result = server.eta(user, eta)
+    result = server.veta(user, eta)
     ievent.reply(getmessage(result) % (user, eta))
 
 cmnds.add('veta', handle_userlist_veta, ['GUEST', 'USER'])
@@ -811,21 +809,26 @@ def handle_vuserlist(bot, ievent):
     """list all user that have logged in."""
     whoresult = server.who()
     reply = ""
-    if len(whoresult['available']) > 0 or len(whoresult['eta']) > 0 or len(whoresult['available']) > 0 or len(whoresult['veta']) > 0:
+    if len(whoresult['available']) > 0 or len(whoresult['eta']) > 0 or len(whoresult['vavailable']) > 0 or len(whoresult['veta']) > 0:
         if len(whoresult['available']) > 0:
-            reply += getmessage('logged_in') + ', '.join(users) + " | "
+            reply += getmessage('logged_in') + ', '.join(whoresult['available']) + " | "
         if len(whoresult['vavailable']) > 0:
-            reply += getmessage('vlogged_in') + ', '.join(users) + " | "
+            reply += getmessage('vlogged_in') + ', '.join(whoresult['vavailable']) + " | "
         if len(whoresult['eta']) > 0:
             etalist = []
             for key in sorted(whoresult['eta'].keys()):
                etalist += ['%s [%s]' % (key, whoresult['eta'][key])]
             reply += 'ETA: ' + ', '.join(etalist) + " | "
         if len(whoresult['veta']) > 0:
-            etalist = []
+            vetalist = []
             for key in sorted(whoresult['veta'].keys()):
                vetalist += ['%s [%s]' % (key, whoresult['veta'][key])]
             reply += 'villageETA: ' + ', '.join(vetalist)
+        if reply.endswith(" | "):
+            reply = reply[:-3]
         ievent.reply(reply)
     else:
         ievent.reply(getmessage('no_one_there'))
+
+cmnds.add('ul', handle_userlist, ['GUEST', 'USER'])
+cmnds.add('who', handle_userlist, ['GUEST', 'USER'])
