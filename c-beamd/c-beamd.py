@@ -139,7 +139,8 @@ def logout(user):
 
 def stealth_logout(user):
     userfile = '%s/%s' % (userdir, user)
-    os.rename(userfile, "%s.logout" % userfile)
+    if os.path.isfile(userfile):
+        os.rename(userfile, "%s.logout" % userfile)
     return "aye"
 
 def tagevent(user):
@@ -200,8 +201,9 @@ def eta(user, text):
     eta = "0"
 
     # if the first argument is a weekday, delegate to LTE
-    if args[0].upper() in weekdays:
-        return lte(bot, ievent)
+    #TODO
+    #if text[:2].upper() in weekdays:
+        #return lte(bot, ievent)
 
     if text in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
         etaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
@@ -272,9 +274,11 @@ def cleanup():
 
 def userlist():
     users = sorted(os.listdir(userdir))
+    print users
     for user in users:
         if user.endswith(".logout"):
             users.remove(user)
+            print "removed %s" % user 
     return users
 
 def available():
@@ -423,17 +427,14 @@ def vlogin(user):
     f.write(str(expire))
     #os.chown(userfile, 11488, 11489)
     os.chmod(userfile, stat.S_IREAD|stat.S_IWRITE|stat.S_IRGRP|stat.S_IWGRP)
-    tts("julia", "hallo %s, willkommen an bord" % getnickspell(user))
+    tts("julia", "hallo %s, willkommen im c-base village" % getnickspell(user))
     return "aye"
-
-def logout(user):
-    result = stealth_logout(user)
-    tts("julia", "guten heimflug %s." % getnickspell(user))
-    return result
 
 def vlogout(user):
     userfile = '%s/%s' % (vuserdir, user)
-    os.rename(userfile, "%s.logout" % userfile)
+    if os.path.isfile(userfile):
+        os.rename(userfile, "%s.logout" % userfile)
+    tts("julia", "guten heimflug %s." % getnickspell(user))
     return "aye"
 
 def setveta(user, veta):
@@ -458,10 +459,6 @@ def setveta(user, veta):
 
 def veta(user, text):
     veta = "0"
-
-    # if the first argument is a weekday, delegate to LTE
-    if args[0].upper() in weekdays:
-        return lte(bot, ievent)
 
     if text in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
         vetaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
@@ -491,15 +488,15 @@ def vcleanup():
 
     # remove vETA if user is logged in
     for user in data['vetas'].keys():
-        if user in users:
+        if user in vusers:
             del data['vetas'][user]
 
     # remove expired users
-    for user in vusers:
-        vuserfile = "%s/%s" % (vuserdir, user)
-        timestamps = eval(open(vuserfile).read())
-        if timestamps[1] - now < 0:
-            os.remove(vuserfile)
+    #for user in vusers:
+        #vuserfile = "%s/%s" % (vuserdir, user)
+        #timestamps = eval(open(vuserfile).read())
+        #if timestamps[1] - now < 0:
+            #os.remove(vuserfile)
 
     # remove expired vETAs
     for user in data['vetas'].keys():
@@ -526,7 +523,8 @@ def vavailable():
 def vwho():
     """list all user that have logged in on the mirror."""
     cleanup()
-    return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'vavailable': vuserlist(), 'veta': data['vetas']}
+    print data['vetas']
+    return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'vavailable': vavailable(), 'veta': data['vetas']}
 
 if __name__ == "__main__":
     main()
