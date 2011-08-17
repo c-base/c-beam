@@ -19,5 +19,8 @@
     'etd_removed': ['dein ETD wurde entfernt %s. [ETD: %s]'],
     'etd_set': ['dein ETD wurde erfolgreich gespeichert %s. [ETD: %s]'],
     'no_etds': ['niemand hat ein ETD eingetragen %s.'],
-    'whoami': ['du wirst %s gewesen worden sein.', 'du wirst %s gewesen sein.', 'du ähnelst einem clon von %s.', 'gruCfrequencen %s.', '%s.', '%s fummelt an c-beam.', 'deine dna weist spuren von %s auf.', 'deine moleculare structur gleicht der von %s.', 'ich dence du formst ein %s.', 'deiner mudder ihr spro:Cling, %s'],
+    'whoami': ['du wirst %s gewesen worden sein.', 'du wirst %s gewesen sein.', 'du ähnelst einem clon von %s.', 'gruCfrequencen %s.', '%s.', '%s fummelt an c-beam.', 'deine dna weist spuren von %s auf.', 'deine moleculare structur gleicht der von %s.', 'ich dence du formst ein %s.', 'deiner mudder ihr spro:Cling, %s', 'dein identita:tsbeceichner erster ordnung lautet %s.'],
+    'vlogged_in': ['im c-base village: '],
+    'vlogin_success': ['hallo %s, willkommen im c-base village!'],
+    'vlogout_success': ['scho:n daC du im c-base village vorbeigeschaut hast %s.'],
 }
