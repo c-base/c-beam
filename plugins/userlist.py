@@ -293,11 +293,12 @@ def getmessage(msg_name):
 
 def handle_userlist(bot, ievent):
     """list all user that have logged in."""
-    if cfg.get('use-c-beamd') > 0:
+    if cfg.get('use-c-beamd') > 1:
         whoresult = server.who()
+        print whoresult['eta']
         if len(whoresult['available']) > 0 or len(whoresult['eta']) > 0:
             if len(whoresult['available']) > 0:
-                ievent.reply(getmessage('logged_in') + ', '.join(users))
+                ievent.reply(getmessage('logged_in') + ', '.join(whoresult['available']))
             if len(whoresult['eta']) > 0:
                 etalist = []
                 for key in sorted(whoresult['eta'].keys()):
@@ -309,6 +310,9 @@ def handle_userlist(bot, ievent):
         users = userlist()
         if len(users) > 0 or len(etaitem.data.etas) > 0:
             if len(users) > 0:
+                for user in users:
+                    if user.endswith(".logout"):
+                        users.remove(user)
                 ievent.reply(getmessage('logged_in') + ', '.join(users))
             if len(etaitem.data.etas) > 0:
                 etalist = []
@@ -348,6 +352,7 @@ def handle_userlist_login(bot, ievent):
 
 cmnds.add('ul-login', handle_userlist_login, ['GUEST', 'USER'])
 cmnds.add('login', handle_userlist_login, ['GUEST', 'USER'])
+cmnds.add('da', handle_userlist_login, ['GUEST', 'USER'])
 
 def handle_userlist_slogin(bot, ievent):
     user = getuser(ievent)
@@ -376,6 +381,7 @@ def handle_userlist_logout(bot, ievent):
 
 cmnds.add('ul-logout', handle_userlist_logout, ['GUEST', 'USER'])
 cmnds.add('logout', handle_userlist_logout, ['GUEST', 'USER'])
+cmnds.add('weg', handle_userlist_logout, ['GUEST', 'USER'])
 
 def handle_userlist_slogout(bot, ievent):
     user = getuser(ievent)
