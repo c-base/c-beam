@@ -35,6 +35,7 @@ data = {
     'ltes': {'MO': [], 'DI': [], 'MI': [], 'DO': [], 'FR': [], 'SA': [], 'SO': []},
     'vetas': {},
     'vetatimestamps': {},
+    'newetas': {},
 }
 
 eta_timeout = 120
@@ -69,9 +70,11 @@ def main():
     server.register_function(stealth_logout, 'slogout')
     server.register_function(tagevent, 'tagevent')
     server.register_function(eta, 'eta')
+    server.register_function(seteta, 'seteta')
     server.register_function(etd, 'etd')
     server.register_function(lte, 'lte')
     server.register_function(vwho, 'who')
+    server.register_function(newetas, 'newetas')
     server.register_function(geteta, 'geteta')
     server.register_function(getetd, 'getetd')
     server.register_function(getlte, 'getlte')
@@ -166,6 +169,7 @@ def tagevent(user):
            return login(user)
 
 def seteta(user, eta):
+    data['newetas'][user] = eta
     if eta == '0':
         if data['etas'].has_key(user):
             del data['etas'][user]
@@ -289,6 +293,12 @@ def who():
     """list all user that have logged in on the mirror."""
     cleanup()
     return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds']}
+
+def newetas():
+    tmp = data['newetas']
+    data['newetas'] = {}
+    save()
+    return tmp
 
 def login_tocen(bot, ievent):
     tocendir = cfg.get('tocendir')
