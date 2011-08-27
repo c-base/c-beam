@@ -166,7 +166,10 @@ class UserlistWatcher(TimedLoop):
             dayitem = LteItem(day)
             # convert LTEs to ETAs for current day
             for user in dayitem.data.ltes.keys():
-                seteta(user, dayitem.data.ltes[user])
+                if cfg.get('use-c-beamd') > 1:
+                    server.seteta(user, dayitem.data.ltes[user])
+                else:
+                    seteta(user, dayitem.data.ltes[user])
                 if bot and bot.type == "sxmpp" and cfg.get('suppress-subs') == 0:
                     for etasub in etaitem.data.etasubs:
                         bot.say(etasub, 'ETA %s %s' % (user, dayitem.data.ltes[user]))
@@ -174,74 +177,98 @@ class UserlistWatcher(TimedLoop):
             # clear LTEs for current day
             dayitem.data.ltes = {}
             dayitem.save()   
-        try:
-            users = userlist()
-            usercount = len(users)
-            if usercount != self.lastcount or self.lasteta != len(etaitem.data.etas):
-                if self.lastcount == 0 and usercount > 0:
-                    if bot and bot.type == "sxmpp":
-                        for opensub in etaitem.data.opensubs:
-                            bot.say(opensub, 'c3pO is awake')
-                    else:
-                        logging.error("bot undefined or not xmpp")
+        
+        if cfg.get('use-c-beamd') > 1:
+            whoresult = server.who()
+            
+            # check if new ETAs have been added
+            newetas = server.newetas()
+            if len(newetas) > 0:
+                etalist = []
+                for key in sorted(newetas.keys()):
+                    etalist += ['%s [%s]' % (key, newetas[key])]
+                if bot and bot.type == "sxmpp":
+                    for etasub in etaitem.data.etasubs:
+                        bot.say(etasub, 'ETA: ' + ', '.join(etalist))
 
-                self.lastcount = usercount
-                self.lasteta = len(etaitem.data.etas)
-
-                logging.debug("Usercount: %s" % usercount)
-                if usercount > 0:
-                    self.announce('open', 'chat')
-                    # check if someone arrived who set an ETA
-                    for user in users:
-                        try: 
-                            del etaitem.data.etas[user]
-                            etaitem.save()
-                        except: pass
-
-                    # find out who just arrived
-                    newusers = []
-                    for user in users:
-                        if user not in self.lastuserlist and not user.endswith('.logout'):
-                            newusers.append(user)
-                    if len(newusers) > 0:
-                        logging.info('newusers: %s' % ", ".join(newusers))
+            # check if new users have arrived
+            # TODO
+ 
+            #if len(whoresult['available'] > 0:
+                #self.announce('open', 'chat')
+            #elif len(whoresult['eta']) > 0:
+                #self.announce('incoming', 'dnd')
+            #else:
+                #self.announce('closed', 'xa')
+        else:
+            try:
+                users = userlist()
+                usercount = len(users)
+                if usercount != self.lastcount or self.lasteta != len(etaitem.data.etas):
+                    if self.lastcount == 0 and usercount > 0:
                         if bot and bot.type == "sxmpp":
-                            for arrivesub in etaitem.data.arrivesubs:
-                                #tell subscribers who has just arrived
-                                logging.info('boarding: %s -> %s' % (", ".join(newusers), arrivesub))
-                                #bot.say(arrivesub, 'now boarding: %s' % ", ".join(newusers))
+                            for opensub in etaitem.data.opensubs:
+                                bot.say(opensub, 'c3pO is awake')
                         else:
-                                logging.info('bot undefined or not xmpp')
-                    self.lastuserlist = userlist()
-                else:
-                    if len(etaitem.data.etas) > 0:
-                        self.announce('incoming', 'dnd')
-                    else:
-                        self.announce('closed', 'xa')
+                            logging.error("bot undefined or not xmpp")
+    
+                    self.lastcount = usercount
+                    self.lasteta = len(etaitem.data.etas)
+    
+                    logging.debug("Usercount: %s" % usercount)
+                    if usercount > 0:
+                        self.announce('open', 'chat')
+                        # check if someone arrived who set an ETA
+                        for user in users:
+                            try: 
+                                del etaitem.data.etas[user]
+                                etaitem.save()
+                            except: pass
+    
+                        # find out who just arrived
+                        newusers = []
+                        for user in users:
+                            if user not in self.lastuserlist and not user.endswith('.logout'):
+                                newusers.append(user)
+                        if len(newusers) > 0:
+                            logging.info('newusers: %s' % ", ".join(newusers))
+                            if bot and bot.type == "sxmpp":
+                                for arrivesub in etaitem.data.arrivesubs:
+                                    #tell subscribers who has just arrived
+                                    logging.info('boarding: %s -> %s' % (", ".join(newusers), arrivesub))
+                                    #bot.say(arrivesub, 'now boarding: %s' % ", ".join(newusers))
+                            else:
+                                    logging.info('bot undefined or not xmpp')
+                        self.lastuserlist = userlist()
+                    #else:
+                        #if len(etaitem.data.etas) > 0:
+                            #self.announce('incoming', 'dnd')
+                        #else:
+                            #self.announce('closed', 'xa')
 
-            now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+                now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
 
-            # remove expired ETAs
-            for user in etaitem.data.etas.keys():
-                if now > etaitem.data.etatimestamps[user]:
-                    del etaitem.data.etas[user]
-                    del etaitem.data.etatimestamps[user]
-                    etaitem.save()
+                # remove expired ETAs
+                for user in etaitem.data.etas.keys():
+                    if now > etaitem.data.etatimestamps[user]:
+                        del etaitem.data.etas[user]
+                        del etaitem.data.etatimestamps[user]
+                        etaitem.save()
+    
+                # remove expired users
+                for user in users:
+                    userfile = "%s/%s" % (cfg.get('userpath'), user)
+                    timestamps = eval(open(userfile).read())
+                    if timestamps[1] - now < 0:
+                        os.remove(userfile)
 
-            # remove expired users
-            for user in users:
-                userfile = "%s/%s" % (cfg.get('userpath'), user)
-                timestamps = eval(open(userfile).read())
-                if timestamps[1] - now < 0:
-                    os.remove(userfile)
-
-        except UserlistError:
-            logging.error("watcher UserList error")
-            pass
-        except KeyError:
-            logging.error("watcher key error")
-            print str(KeyError)
-            pass
+            except UserlistError:
+                logging.error("watcher UserList error")
+                pass
+            except KeyError:
+                logging.error("watcher key error")
+                print str(KeyError)
+                pass
        
         time.sleep(cfg.get('watcher-interval'))
   
