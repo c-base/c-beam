@@ -143,7 +143,7 @@ def logout(user):
 def stealth_logout(user):
     userfile = '%s/%s' % (userdir, user)
     if os.path.isfile(userfile):
-        os.rename(userfile, "%s.logout" % userfile)
+        os.remove(userfile)
     return "aye"
 
 def tagevent(user):
@@ -248,10 +248,16 @@ def lteconvert():
         dayitem.save()   
 
 def cleanup():
-    vcleanup()
+    #vcleanup()
     users = userlist()
     usercount = len(users)
     now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+
+    # 
+    for user in users:
+        if user.endswith(".logout"):
+            userfile = "%s/%s" % (userdir, user)
+            os.remove(userfile)
 
     # remove ETA if user is logged in
     for user in data['etas'].keys():
@@ -278,11 +284,6 @@ def cleanup():
 
 def userlist():
     users = sorted(os.listdir(userdir))
-    print users
-    for user in users:
-        if user.endswith(".logout"):
-            users.remove(user)
-            print "removed %s" % user 
     return users
 
 def available():
