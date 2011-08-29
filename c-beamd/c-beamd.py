@@ -159,8 +159,8 @@ def tagevent(user):
            logger.info("multiple logins from %s, ignoring" % user)
            return "multiple logins from %s, ignoring" % user
         else:
-            userfile = '%s/%s' % (userdir, user)
-            if os.path.isfile(userfile):
+           userfile = '%s/%s' % (userdir, user)
+           if os.path.isfile(userfile):
                 os.rename(userfile, "%s.logout" % userfile)
            return "aye"
     else:
