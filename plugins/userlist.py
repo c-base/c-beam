@@ -91,6 +91,7 @@ cfg.define('timeoutdelta', 600)
 cfg.define('suppress-subs', 0)
 
 cfg.define('use-c-beamd', 0)
+cfg.define('c-beam-url', 'http://127.0.0.1:4254')
 
 ## defines
 
@@ -102,7 +103,7 @@ nextday = ['tomorrow', 'morgen']
 
 ##
 jsonrpclib.config.version = 1.0
-server = jsonrpclib.Server('http://10.0.1.27:4254')
+server = jsonrpclib.Server(cfg.get('c-beam-url'))
 
 def getuser(ievent):
     if ievent.channel in usermap:
