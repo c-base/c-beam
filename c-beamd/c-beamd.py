@@ -99,7 +99,6 @@ def getnickspell(user):
         return user
 
 def setnickspell(user, nickspell):
-    print nickspell
     nickspells[user] = nickspell
     f = open('nickspell', 'w')
     f.write(str(nickspells))
@@ -532,7 +531,6 @@ def vavailable():
 def vwho():
     """list all user that have logged in on the mirror."""
     cleanup()
-    print data['vetas']
     return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'vavailable': vavailable(), 'veta': data['vetas']}
 
 if __name__ == "__main__":
