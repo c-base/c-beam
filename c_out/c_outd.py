@@ -164,8 +164,6 @@ def acapela(voice, text):
     
 
 def r2d2(text):
-    if iscpam():
-        return "cpam alarm. bitte beachten sie die sicherheitshinweise. (%d)" % (suppressuntil - int(time.time()))
     mp3s = []
 
     for char in text:
@@ -219,6 +217,7 @@ def sounds():
 
 
 def iscpam():
+    print "iscpam"
     global coutcount
     global suppressuntil
     global lastcpamcheck
@@ -258,7 +257,7 @@ def playfile(filename):
         print 'mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename
         os.system('mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename)
     else:
-        os.system('%s %s' % (player, filename))
+        os.system('%s %s &' % (player, filename))
     return "aye"
 
 def announce(text):
