@@ -324,13 +324,17 @@ def handle_userlist(bot, ievent):
         whoresult = server.who()
         print whoresult['eta']
         if len(whoresult['available']) > 0 or len(whoresult['eta']) > 0:
+            result = []
             if len(whoresult['available']) > 0:
-                ievent.reply(getmessage('logged_in') + ', '.join(whoresult['available']))
+                result.append(getmessage('logged_in') + ', '.join(whoresult['available']))
+                #ievent.reply(getmessage('logged_in') + ', '.join(whoresult['available']))
             if len(whoresult['eta']) > 0:
                 etalist = []
                 for key in sorted(whoresult['eta'].keys()):
                    etalist += ['%s [%s]' % (key, whoresult['eta'][key])]
-                ievent.reply('ETA: ' + ', '.join(etalist))
+                result.append('ETA: ' + ', '.join(etalist))
+                #ievent.reply('ETA: ' + ', '.join(etalist))
+            ievent.reply(" | ".join(result))
         else:
             ievent.reply(getmessage('no_one_there'))
     else:
