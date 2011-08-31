@@ -10,18 +10,13 @@ from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 import jsonrpclib
 
+import cbeamdcfg as cfg
+
 jsonrpclib.config.version = 1.0
-c_outd = jsonrpclib.Server('http://10.0.1.13:1775')
-
-userdir = "/home/c-beam/users"
-vuserdir = "/home/c-beam/vusers"
-datafile = "/home/c-beam/c-beam.data"
-
-logindelta = 30
-
-logfile = '/home/smile/c-beam.log'
 
 nickspells = {}
+
+c_outd = jsonrpclib.Server(cfg.c_outurl)
 
 data = {
     'etas': {},
@@ -38,24 +33,19 @@ data = {
     'newetas': {},
 }
 
-eta_timeout = 120
-etd_timeout = 120
-
 logger = logging.getLogger('c-beam')
-hdlr = logging.FileHandler(logfile)
+hdlr = logging.FileHandler(cfg.logfile)
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
 logger.setLevel(logging.INFO)
-
-timeoutdelta = 600
 
 def init():
     global nickspells
     global data
     try:
         nickspells = eval(open('nickspell').read())
-        data = eval(open(datafile).read())
+        data = eval(open(cfg.datafile).read())
     except: pass
     return 0
 
@@ -121,13 +111,13 @@ def login(user):
     if user == "kristall":
         tts("julia", "a loa crew")
     else:
-        tts("julia", "hallo %s, willkommen an bord" % getnickspell(user))
+        tts("julia", cfg.ttsgreeting % getnickspell(user))
     return result
 
 def stealth_login(user):
-    userfile = '%s/%s' % (userdir, user)
-    logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
-    timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
+    userfile = '%s/%s' % (cfg.userdir, user)
+    logints = datetime.datetime.now() + datetime.timedelta(seconds=cfg.logindelta)
+    timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=cfg.timeoutdelta)
     expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
     f = open(userfile, 'w')
     f.write(str(expire))
@@ -141,7 +131,7 @@ def logout(user):
     return result
 
 def stealth_logout(user):
-    userfile = '%s/%s' % (userdir, user)
+    userfile = '%s/%s' % (cfg.userdir, user)
     if os.path.isfile(userfile):
         os.remove(userfile)
     return "aye"
@@ -150,7 +140,7 @@ def tagevent(user):
     logger.info("called tagevent for %s" % user)
     if user == "unknown":
         return "login"
-    userfile = '%s/%s' % (userdir, user)
+    userfile = '%s/%s' % (cfg.userdir, user)
     if os.path.isfile(userfile):
         timestamps = eval(open(userfile).read())
         now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
@@ -159,7 +149,7 @@ def tagevent(user):
            logger.info("multiple logins from %s, ignoring" % user)
            return "multiple logins from %s, ignoring" % user
         else:
-           userfile = '%s/%s' % (userdir, user)
+           userfile = '%s/%s' % (cfg.userdir, user)
            if os.path.isfile(userfile):
                 os.rename(userfile, "%s.logout" % userfile)
            return "aye"
@@ -184,7 +174,7 @@ def seteta(user, eta):
         arrival_hour = int(arrival[0:2]) % 24
         arrival_minute = int(arrival[3:4]) % 60
          
-        etatimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=eta_timeout)
+        etatimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=cfg.eta_timeout)
         if datetime.datetime.now().strftime("%H%M") > arrival: 
             etatimestamp = etatimestamp + datetime.timedelta(days=1)
         data['etas'][user] = eta
@@ -193,7 +183,7 @@ def seteta(user, eta):
         return 'eta_set'
 
 def save():
-    f = open(datafile, 'w')
+    f = open(cfg.datafile, 'w')
     f.write(str(data))
     f.close()
 
@@ -259,7 +249,7 @@ def cleanup():
     # 
     for user in users:
         if user.endswith(".logout"):
-            userfile = "%s/%s" % (userdir, user)
+            userfile = "%s/%s" % (cfg.userdir, user)
             os.remove(userfile)
 
     # remove ETA if user is logged in
@@ -269,7 +259,7 @@ def cleanup():
 
     # remove expired users
     for user in users:
-        userfile = "%s/%s" % (userdir, user)
+        userfile = "%s/%s" % (cfg.userdir, user)
         timestamps = eval(open(userfile).read())
         if timestamps[1] - now < 0:
             os.remove(userfile)
@@ -286,7 +276,7 @@ def cleanup():
     return 0
 
 def userlist():
-    users = sorted(os.listdir(userdir))
+    users = sorted(os.listdir(cfg.userdir))
     return users
 
 def available():
@@ -330,7 +320,7 @@ def setetd(user, etd):
         arrival_minute = int(arrival[3:4]) % 60
          
 #        arrival = str((int(arrival) + delta) % 2400)
-        etdtimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=etd_timeout)
+        etdtimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=cfg.etd_timeout)
         if datetime.datetime.now().strftime("%H%M") > arrival: 
             etdtimestamp = etdtimestamp + datetime.timedelta(days=1)
         
@@ -418,7 +408,12 @@ def getlte():
 
 
 # c_out methods will be forwarded to c_outd running on shout
-def tts(voice, text): return c_outd.tts(voice, text)
+def tts(voice, text): 
+    if cfg.ttsenabled == 1:
+        return c_outd.tts(voice, text)
+    else:
+        return "aye"
+
 def r2d2(text): return c_outd.r2d2(text)
 def play(filename): return c_outd.play(filename)
 def setvolume(voice, text): return c_outd.setvolume(volume)
@@ -433,9 +428,9 @@ def announce(text): return c_outd.announce(text)
 
 
 def vlogin(user):
-    userfile = '%s/%s' % (vuserdir, user)
-    logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
-    timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
+    userfile = '%s/%s' % (cfg.vuserdir, user)
+    logints = datetime.datetime.now() + datetime.timedelta(seconds=cfg.logindelta)
+    timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=cfg.timeoutdelta)
     expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
     f = open(userfile, 'w')
     f.write(str(expire))
@@ -445,7 +440,7 @@ def vlogin(user):
     return "aye"
 
 def vlogout(user):
-    userfile = '%s/%s' % (vuserdir, user)
+    userfile = '%s/%s' % (cfg.vuserdir, user)
     if os.path.isfile(userfile):
         os.rename(userfile, "%s.logout" % userfile)
     tts("julia", "guten heimflug %s." % getnickspell(user))
@@ -463,7 +458,7 @@ def setveta(user, veta):
         arrival_hour = int(arrival[0:2]) % 24
         arrival_minute = int(arrival[3:4]) % 60
          
-        vetatimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=eta_timeout)
+        vetatimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=cfg.eta_timeout)
         if datetime.datetime.now().strftime("%H%M") > arrival: 
             vetatimestamp = vetatimestamp + datetime.timedelta(days=1)
         data['vetas'][user] = veta
@@ -507,7 +502,7 @@ def vcleanup():
 
     # remove expired users
     #for user in vusers:
-        #vuserfile = "%s/%s" % (vuserdir, user)
+        #vuserfile = "%s/%s" % (cfg.vuserdir, user)
         #timestamps = eval(open(vuserfile).read())
         #if timestamps[1] - now < 0:
             #os.remove(vuserfile)
@@ -524,7 +519,7 @@ def vcleanup():
     return 0
 
 def vuserlist():
-    vusers = sorted(os.listdir(vuserdir))
+    vusers = sorted(os.listdir(cfg.vuserdir))
     for user in vusers:
         if user.endswith(".logout"):
             vusers.remove(user)
