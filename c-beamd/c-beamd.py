@@ -179,7 +179,6 @@ def seteta(user, eta):
         data['etas'][user] = eta
         data['etatimestamps'][user] = int(etatimestamp.strftime("%Y%m%d%H%M%S"))
         save()
-        tts("julia", "E.T.A. %s: %s" % (getnickspell(user), eta))
         return 'eta_set'
 
 def save():
@@ -221,6 +220,7 @@ def eta(user, text):
     if eta != "0" and extract_eta(eta) == "9999":
         return 'err_timeparser'
 
+    tts("julia", "E.T.A. %s: %s" % (getnickspell(user), eta))
     return seteta(user, eta)
 
 def lteconvert():
