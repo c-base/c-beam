@@ -179,6 +179,7 @@ def seteta(user, eta):
         data['etas'][user] = eta
         data['etatimestamps'][user] = int(etatimestamp.strftime("%Y%m%d%H%M%S"))
         save()
+        tts("julia", "E.T.A. %s: %s" % (getnickspell(user), eta))
         return 'eta_set'
 
 def save():
