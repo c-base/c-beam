@@ -193,7 +193,19 @@ class UserlistWatcher(TimedLoop):
                         bot.say(etasub, 'ETA: ' + ', '.join(etalist))
 
             # check if new users have arrived
+            #newusers = server.newusers()
             # TODO
+
+            
+            usercount = len(whoresult['available'])
+            if self.lastcount == 0 and usercount > 0:
+                if bot and bot.type == "sxmpp":
+                    for opensub in etaitem.data.opensubs:
+                        bot.say(opensub, 'c3pO is awake')
+                else:
+                    logging.error("bot undefined or not xmpp")
+
+            self.lastcount = usercount
  
             #if len(whoresult['available'] > 0:
                 #self.announce('open', 'chat')
