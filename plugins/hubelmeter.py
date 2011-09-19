@@ -93,9 +93,9 @@ def getuser(ievent):
         return ievent.channel[:-11]
     elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
         return ievent.fromm[:-10]
-    elif ievent.hostname.startswith('c-base/crew/'):
+    elif ievent.hostname and ievent.hostname.startswith('c-base/crew/'):
         return ievent.hostname[12:]
-    elif ievent.hostname.startswith('pdpc/supporter/professional/'):
+    elif ievent.hostname and ievent.hostname.startswith('pdpc/supporter/professional/'):
         return ievent.hostname[28:]
     elif ievent.auth.endswith('@shell.c-base.org'):
         return ievent.auth[1:-17]
