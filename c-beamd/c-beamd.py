@@ -89,6 +89,7 @@ def main():
     server.register_function(sounds, 'sounds')
     server.register_function(c_out, 'c_out')
     server.register_function(announce, 'announce')
+    server.register_function(todo, 'todo')
     
     server.serve_forever()
 
@@ -533,6 +534,18 @@ def vwho():
     """list all user that have logged in on the mirror."""
     cleanup()
     return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'vavailable': vavailable(), 'veta': data['vetas']}
+
+def todo():
+    todoarray = []
+    try:
+        todos = eval(open(cfg.todofile).read())
+        for item in todos['list']:
+            todoarray.append(item['txt'])
+
+    except: pass
+    
+    return todoarray
+
 
 if __name__ == "__main__":
     main()
