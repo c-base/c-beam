@@ -89,6 +89,7 @@ def main():
     server.register_function(sounds, 'sounds')
     server.register_function(c_out, 'c_out')
     server.register_function(announce, 'announce')
+    server.register_function(todo, 'todo')
     
     server.serve_forever()
 
@@ -107,10 +108,14 @@ def setnickspell(user, nickspell):
 
 def login(user):
     result = stealth_login(user)
-    if user == "kristall":
-        tts("julia", "a loa crew")
+    if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
+        os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
     else:
-        tts("julia", cfg.ttsgreeting % getnickspell(user))
+        if getnickspell(user) != "NONE":
+            if user == "kristall":
+                tts("julia", "a loa crew")
+            else:
+                tts("julia", cfg.ttsgreeting % getnickspell(user))
     return result
 
 def stealth_login(user):
@@ -126,7 +131,11 @@ def stealth_login(user):
 
 def logout(user):
     result = stealth_logout(user)
-    tts("julia", "guten heimflug %s." % getnickspell(user))
+    if os.path.isfile('%s/%s/bye.mp3' % (cfg.sampledir, user)):
+        os.system('mpg123 %s/%s/bye.mp3' % (cfg.sampledir, user))
+    else:
+        if getnickspell(user) != "NONE":
+            tts("julia", "guten heimflug %s" % getnickspell(user))
     return result
 
 def stealth_logout(user):
@@ -151,13 +160,14 @@ def tagevent(user):
            userfile = '%s/%s' % (cfg.userdir, user)
            if os.path.isfile(userfile):
                 os.rename(userfile, "%s.logout" % userfile)
+                tts("julia", "guten heimflug %s." % getnickspell(user))
            return "aye"
     else:
         if os.path.isfile("%s.logout" % userfile):
            logger.info("multiple logouts from %s, ignoring" % user)
            return "multiple logouts from %s, ignoring" % user
         else:
-           loging.info("calling login for %s" % user)
+           logger.info("calling login for %s" % user)
            return login(user)
 
 def seteta(user, eta):
@@ -533,6 +543,18 @@ def vwho():
     """list all user that have logged in on the mirror."""
     cleanup()
     return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'vavailable': vavailable(), 'veta': data['vetas']}
+
+def todo():
+    todoarray = []
+    try:
+        todos = eval(open(cfg.todofile).read())
+        for item in todos['list']:
+            todoarray.append(item['txt'])
+
+    except: pass
+    
+    return todoarray
+
 
 if __name__ == "__main__":
     main()

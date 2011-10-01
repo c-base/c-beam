@@ -93,6 +93,8 @@ cfg.define('suppress-subs', 0)
 cfg.define('use-c-beamd', 0)
 cfg.define('c-beam-url', 'http://127.0.0.1:4254')
 
+cfg.define('set-xmpp-presence', 0)
+
 ## defines
 
 RE_ETA = re.compile(r'ETA (?P<item>\([^\)]+\)|\[[^\]]+\]|\w+)(?P<mod>\+\+|--)( |$)')
@@ -224,12 +226,13 @@ class UserlistWatcher(TimedLoop):
 
             self.lastcount = usercount
  
-            #if len(whoresult['available'] > 0:
-                #self.announce('open', 'chat')
-            #elif len(whoresult['eta']) > 0:
-                #self.announce('incoming', 'dnd')
-            #else:
-                #self.announce('closed', 'xa')
+            if (cfg.get('set-xmpp-presence') > 0):
+                if len(whoresult['available']) > 0:
+                    self.announce('open', 'chat')
+                elif len(whoresult['eta']) > 0:
+                    self.announce('incoming', 'dnd')
+                else:
+                    self.announce('closed', 'xa')
         else:
             try:
                 users = userlist()
@@ -309,10 +312,10 @@ class UserlistWatcher(TimedLoop):
             return
         for name in fleet.list():
             bot = 0
-            try: bot = fleet.byname(self.name)
+            try: bot = fleet.byname(name)
             except: pass
             if bot and bot.type == "sxmpp":
-                logging.info('%s[%s].setstatus(%s, %s)' % (bot.name, bot.type, status, show))
+                logging.warn('%s[%s].setstatus(%s, %s)' % (bot.name, bot.type, status, show))
                 bot.setstatus(status, show)
 
 
