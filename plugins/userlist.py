@@ -105,6 +105,20 @@ nextday = ['tomorrow', 'morgen']
 jsonrpclib.config.version = 1.0
 server = jsonrpclib.Server(cfg.get('c-beam-url'))
 
+def getuser2(user):
+    if user in usermap:
+        return usermap[user]
+    elif user.find('@c-base.org') > -1:
+        return user[:-11]
+    elif user.endswith('@shell.c-base.org'):
+        return user[1:-17]
+    elif user.startswith('c-base/crew/'):
+        return user[12:]
+    elif user.startswith('pdpc/supporter/professional/'):
+        return user[28:]
+    else:
+        return user
+
 def getuser(ievent):
     if ievent.channel in usermap:
         return usermap[ievent.channel]
@@ -185,11 +199,14 @@ class UserlistWatcher(TimedLoop):
             # check if new ETAs have been added
             newetas = server.newetas()
             if len(newetas) > 0:
-                etalist = []
-                for key in sorted(newetas.keys()):
-                    etalist += ['%s [%s]' % (key, newetas[key])]
-                if bot and bot.type == "sxmpp":
-                    for etasub in etaitem.data.etasubs:
+                for etasub in etaitem.data.etasubs:
+                    etalist = []
+                    for key in sorted(newetas.keys()):
+                        if getuser2(etasub) == key:
+                            print "skip notifying yourself"
+                        else:
+                            etalist += ['%s [%s]' % (key, newetas[key])]
+                    if bot and bot.type == "sxmpp" and len(etalist) > 0:
                         bot.say(etasub, 'ETA: ' + ', '.join(etalist))
 
             # check if new users have arrived
