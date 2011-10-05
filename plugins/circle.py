@@ -21,7 +21,7 @@ def handle_circle(bot, ievent):
     """ tell when the next circle should take place """
     circledate = datetime.datetime.now()
     circledate = circledate.replace(hour=20,minute=0, second=0)
-    if circledate.day > 1 and circledate.day < 14:
+    if circledate.day > 1 and circledate.day <= 14:
         circledate = circledate.replace(day=14)
     else:
         circledate = circledate.replace(day=1)
