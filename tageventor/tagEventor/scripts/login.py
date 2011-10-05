@@ -6,7 +6,7 @@ import datetime
 import stat
 
 jsonrpclib.config.version = 1.0
-server = jsonrpclib.Server('http://10.0.1.13:1775')
+server = jsonrpclib.Server('http://10.0.1.27:4254')
 
 userdir = "/home/c-beam/users"
 
@@ -22,6 +22,9 @@ def log(message):
 
 def login(user, timeoutdelta):
     log("called login for %s" % user)
+
+    return server.tagevent(user)
+
     if user == "unknown":
         return "login"
     userfile = '%s/%s' % (userdir, user)
