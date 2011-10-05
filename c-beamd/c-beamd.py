@@ -17,6 +17,7 @@ jsonrpclib.config.version = 1.0
 nickspells = {}
 
 c_outd = jsonrpclib.Server(cfg.c_outurl)
+monitord = jsonrpclib.Server(cfg.monitorurl)
 
 data = {
     'etas': {},
@@ -108,6 +109,7 @@ def setnickspell(user, nickspell):
 
 def login(user):
     result = stealth_login(user)
+    monitord.login(user)
     if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
         os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
     else:
@@ -136,6 +138,7 @@ def logout(user):
     else:
         if getnickspell(user) != "NONE":
             tts("julia", "guten heimflug %s" % getnickspell(user))
+    monitord.logout(user)
     return result
 
 def stealth_logout(user):
@@ -161,6 +164,7 @@ def tagevent(user):
            if os.path.isfile(userfile):
                 os.rename(userfile, "%s.logout" % userfile)
                 tts("julia", "guten heimflug %s." % getnickspell(user))
+                monitord.logout(user)
            return "aye"
     else:
         if os.path.isfile("%s.logout" % userfile):
