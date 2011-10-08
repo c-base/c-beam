@@ -108,7 +108,7 @@ def acapela(voice, text):
     pitch = 100
     speed = 180
     
-    if not text.endswith("."): text = "%s." % (text,)
+    if not text.endswith("."): text = "%s ." % (text,)
 
     text = text.replace('$','Dollar')
     if (voice in ['julia', 'sarah', 'klaus']):
