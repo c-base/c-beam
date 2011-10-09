@@ -95,6 +95,9 @@ cfg.define('c-beam-url', 'http://127.0.0.1:4254')
 
 cfg.define('set-xmpp-presence', 0)
 
+cfg.define('achievement-channel', '#c-base-bots')
+cfg.define('achievement-bot', 'default-irc')
+
 ## defines
 
 RE_ETA = re.compile(r'ETA (?P<item>\([^\)]+\)|\[[^\]]+\]|\w+)(?P<mod>\+\+|--)( |$)')
@@ -210,6 +213,18 @@ class UserlistWatcher(TimedLoop):
                             etalist += ['%s [%s]' % (key, newetas[key])]
                     if bot and bot.type == "sxmpp" and len(etalist) > 0:
                         bot.say(etasub, 'ETA: ' + ', '.join(etalist))
+
+            # check for new achievements
+            achievements = server.achievements()
+            if len(achievements) > 0:
+                for user in achievements.keys():
+                    if achievements[user] == 'ETA':
+                        print "%s++" % user
+                        tmpbot = 0
+                        try: 
+                            tmpbot = fleet.byname(cfg.get('achievement-bot'))
+                            tmpbot.say(cfg.get('achievement-channel'), '%s++' % user)
+                        except: pass
 
             # check if new users have arrived
             #newusers = server.newusers()
