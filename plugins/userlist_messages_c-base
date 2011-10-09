@@ -2,7 +2,7 @@
     'unknown_nick': ['ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.'],
     'logged_in': ['an bord: '],
     'login_success': ['hallo %s, willkommen auf der c-base', 'hallo %s, willkommen an bord!'],
-    'logout_success': ['danke, daC du dich abgemeldet hast %s.', 'danke und guten heimflug %s.'],
+    'logout_success': ['danke, daC du dich abgemeldet hast %s.', 'danke und guten flug %s.'],
     'no_one_there': ['derceit hat sich keine cohlenstoffeinheit bei mir angemeldet.', 'ga:hnende leere'],
     'eta_set': ['danke, daC du bescheid sagst %s. [ETA: %s]'],
     'eta_removed': ['c_ade, daC du doch nicht kommen cannst %s. [ETA: %s]'],
