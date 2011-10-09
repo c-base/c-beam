@@ -32,6 +32,7 @@ data = {
     'vetas': {},
     'vetatimestamps': {},
     'newetas': {},
+    'achievements': {},
 }
 
 logger = logging.getLogger('c-beam')
@@ -66,6 +67,7 @@ def main():
     server.register_function(lte, 'lte')
     server.register_function(vwho, 'who')
     server.register_function(newetas, 'newetas')
+    server.register_function(achievements, 'achievements')
     server.register_function(geteta, 'geteta')
     server.register_function(getetd, 'getetd')
     server.register_function(getlte, 'getlte')
@@ -129,6 +131,18 @@ def stealth_login(user):
     f.write(str(expire))
     #os.chown(userfile, 11488, 11489)
     os.chmod(userfile, stat.S_IREAD|stat.S_IWRITE|stat.S_IRGRP|stat.S_IWGRP)
+    if data['etas'].has_key(user):
+        # check if the user hit the ETA
+        now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+        #if (now - data['etatimestamps'][user]) > 9:
+        if extract_eta(data['etas'][user]) == datetime.datetime.now().strftime("%H%M"):
+            data['achievements'][user] = 'ETA'
+            print "YEAH"
+            save()
+        #else:
+        #    if extract_eta(data['etas'][user]) == datetime.datetime.now().strftime("%H%M"):
+        #        print "HIT"
+        #    print "bar"
     return "aye"
 
 def logout(user):
@@ -305,6 +319,12 @@ def who():
 def newetas():
     tmp = data['newetas']
     data['newetas'] = {}
+    save()
+    return tmp
+
+def achievements():
+    tmp = data['achievements']
+    data['achievements'] = {}
     save()
     return tmp
 
