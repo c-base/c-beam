@@ -39,6 +39,8 @@ hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
 logger.setLevel(logging.INFO)
 
+enabled = 1
+
 def main():
 
     #tts("julia", "c")
@@ -54,6 +56,8 @@ def main():
     server.register_function(sounds, 'sounds')
     server.register_function(c_out, 'c_out')
     server.register_function(announce, 'announce')
+    server.register_function(enable, 'enable')
+    server.register_function(disable, 'disable')
     server.serve_forever()
 
 def voices():
@@ -108,7 +112,7 @@ def acapela(voice, text):
     pitch = 100
     speed = 180
     
-    if not text.endswith("."): text = "%s ." % (text,)
+    if not text.endswith("."): text = "%s." % (text,)
 
     text = text.replace('$','Dollar')
     if (voice in ['julia', 'sarah', 'klaus']):
@@ -247,6 +251,8 @@ def play(filename):
         return playfile(filename)
 
 def playfile(filename):
+    global enabled
+    print enabled
     if filename.find(".") == -1:
         filename = "%s.mp3" % filename
     if filename.find("/") == -1:
@@ -255,9 +261,9 @@ def playfile(filename):
 #    print '%s %s' % (player, filename)
     if player == 'mplayer':
         print 'mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename
-        os.system('mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename)
+        if enabled == 1: os.system('mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename)
     else:
-        os.system('%s %s &' % (player, filename))
+        if enabled == 1: os.system('%s %s &' % (player, filename))
     return "aye"
 
 def announce(text):
@@ -272,6 +278,16 @@ def announce(text):
         acapela('julia', 'Vielen Dank!') ]
     playfile(" ".join(files))
     return "aye"
+
+def disable():
+    global enabled
+    enabled = 0
+    return "disabled"
+
+def enable():
+    global enabled
+    enabled = 1
+    return "enabled"
 
 if __name__ == "__main__":
     main()
