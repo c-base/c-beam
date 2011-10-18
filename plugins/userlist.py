@@ -134,7 +134,7 @@ def getuser(ievent):
     elif ievent.ruserhost in usermap:
         return usermap[ievent.ruserhost]
     elif ievent.auth.endswith('@shell.c-base.org'):
-        return ievent.auth[1:-17]
+        return ievent.auth[:-17]
     elif ievent.channel.find('@c-base.org') > -1:
         return ievent.channel[:-11]
     elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
