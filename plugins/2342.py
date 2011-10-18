@@ -53,7 +53,7 @@ class Announce2342Watcher(TimedLoop):
 
         bot.connectok.wait()
         now = int(datetime.datetime.now().strftime("%H%M%S"))
-        if now > 234200 and now < 234205:
+        if now > 234200 and now <= 234205:
             bot.say(channel, 'Es ist jetzt dreiundzwanzig Uhr zweiundvierzig.')
             time.sleep(2)
             bot.say(channel, 'Oh.')
