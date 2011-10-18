@@ -157,3 +157,13 @@ cmnds.add('tts-r2d2', handle_tts_r2d2, ['TTS', 'GUEST', 'USER'])
 cmnds.add('tts-tail', handle_tts_tail, ['OPER'])
 cmnds.add('tts-voices', handle_tts_voices, ['TTS', 'GUEST', 'USER'])
 cmnds.add('announce', handle_announce, ['TTS', 'GUEST', 'USER'])
+
+def handle_tts_enable(bot, ievent):
+    ievent.reply(server.enable())
+
+cmnds.add('tts-enable', handle_tts_enable, ['TTSADM'])
+
+def handle_tts_disable(bot, ievent):
+    ievent.reply(server.disable())
+
+cmnds.add('tts-disable', handle_tts_disable, ['TTSADM'])
