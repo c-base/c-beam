@@ -4,6 +4,7 @@
 import httplib, urllib, random, re, os, sys, time, subprocess
 import logging
 import hashlib
+from urllib2 import Request, urlopen
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 player = 'mpg123'
@@ -24,6 +25,7 @@ acapelapassword = '0g7znor2aa'
 
 thevoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus', 'de5', 'r2d2']
 acapelavoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus']
+googlevoices = ['goo']
 txt2phovoices = ['de5']
 
 coutcount = 0
@@ -101,6 +103,8 @@ def tts(voice, text):
         return "cpam alarm. bitte beachten sie die sicherheitshinweise. (%d)" % (suppressuntil - int(time.time()))
     if voice in acapelavoices:
         return playfile(acapela(voice, text))
+    if voice in googlevoices:
+        return playfile(googleTTS(text))
     if voice in txt2phovoices:
         return playfile(txt2pho(voice, text))
     elif voice == 'r2d2':
@@ -165,7 +169,26 @@ def acapela(voice, text):
         oFile.close
         logger.info('%s - %s' % (text, filename))
         return filename
-    
+
+
+
+def googleTTS(text, lang="de", encoding="UTF-8", useragent="firefox"):
+    basename = '%s_%s' % (urllib.quote(text.lower()), lang)
+    filename = '%s/%s.mp3' % (tmpdir, hashlib.sha256(basename).hexdigest())
+
+    logger.info('%s - %s' % (text, filename))
+    print filename
+    if os.path.isfile(filename):
+        return filename
+    else:
+	    reqObj = Request("http://translate.google.com/translate_tts?ie=" + encoding + "&tl=" + lang + "&q=" + text, headers={ 'user-agent':useragent })
+	
+	    fileObj = urlopen(reqObj)
+	    localFile = open(filename, "wb")
+	    localFile.write(fileObj.read())
+	    localFile.close()
+
+    return filename
 
 def r2d2(text):
     mp3s = []
