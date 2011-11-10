@@ -21,7 +21,7 @@ import re
 ## defines
 
 RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer', re.IGNORECASE)
-RE_CONJUNCTIVE = re.compile(r'sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte|m\xf6chte|moechte', re.IGNORECASE)
+RE_CONJUNCTIVE = re.compile(r'sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte', re.IGNORECASE)
 
 
 
