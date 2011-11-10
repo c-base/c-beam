@@ -143,6 +143,9 @@ def getuser(ievent):
         return ievent.hostname[12:]
     elif ievent.hostname and ievent.hostname.startswith('pdpc/supporter/professional/'):
         return ievent.hostname[28:]
+    elif ievent.hostname and ievent.ruserhost.find('@gateway/shell/c-base') > -1:
+        print ievent.ruserhost
+        return ievent.ruserhost[:ievent.ruserhost.find('@')]
     else:
         return 0
 
