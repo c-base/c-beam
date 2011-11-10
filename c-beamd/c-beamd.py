@@ -27,7 +27,7 @@ data = {
     'etasubs': [],
     'opensubs': [],
     'arrivesubs': [],
-    'logintimeouts': {},
+    'logouttimeouts': {},
     'ltes': {'MO': [], 'DI': [], 'MI': [], 'DO': [], 'FR': [], 'SA': [], 'SO': []},
     'vetas': {},
     'vetatimestamps': {},
@@ -76,6 +76,7 @@ def main():
     server.register_function(getnickspell, 'getnickspell')
     server.register_function(setnickspell, 'setnickspell')
     server.register_function(settimeout, 'settimeout')
+    server.register_function(gettimeout, 'gettimeout')
 
     server.register_function(vlogout, 'vlogout')
     server.register_function(vlogin, 'vlogin')
@@ -124,8 +125,12 @@ def login(user):
 
 def stealth_login(user):
     userfile = '%s/%s' % (cfg.userdir, user)
+    if data['logouttimeouts'].has_key(user):
+        delta = data['logouttimeouts'][user]
+    else:
+        delta = cfg.timeoutdelta
     logints = datetime.datetime.now() + datetime.timedelta(seconds=cfg.logindelta)
-    timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=cfg.timeoutdelta)
+    timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=delta)
     expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
     f = open(userfile, 'w')
     f.write(str(expire))
@@ -400,9 +405,15 @@ def getetd():
     return data['etds']
 
 def settimeout(user, timeout):
-    data['logintimeouts'][user] = timeout
+    data['logouttimeouts'][user] = timeout
     save()
     return "aye"
+
+def gettimeout(user, timeout):
+    if data['logouttimeouts'].has_key(user):
+        return data['logouttimeouts'][user]
+    else:
+        return "not set"
 
 
 
