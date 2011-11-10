@@ -72,7 +72,10 @@ def handle_event_topic(bot, ievent):
             events.append(event['summary'].replace("|", "/"))
     if len(events) > 0:
         what += " | heute an bord: %s" % ", ".join(events) 
-    bot.settopic(ievent.channel, what)
+    if what != result[0]:
+        bot.settopic(ievent.channel, what)
+    else:
+        ievent.reply('das topic ist bereits auf dem aktuellen stand.')
 
 cmnds.add('event-topic', handle_event_topic, ['OPER'])
 
