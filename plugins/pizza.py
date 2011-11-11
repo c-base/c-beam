@@ -2,7 +2,7 @@
 #
 #
 
-""" list all available users. """
+""" piia order helper plugin. """
 
 ## jsb imports
 
