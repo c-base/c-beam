@@ -3,7 +3,7 @@
 #
 #
 
-""" list all available users. """
+""" announce 23:42. """
 
 ## jsb imports
 
