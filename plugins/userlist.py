@@ -371,6 +371,8 @@ def getmessage(msg_name):
 
 def handle_userlist(bot, ievent):
     """list all user that have logged in."""
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+    if ievent.channel == "#hackerspaces": return
     if cfg.get('use-c-beamd') > 1:
         whoresult = server.who()
         print whoresult['eta']
