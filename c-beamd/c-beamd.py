@@ -305,6 +305,12 @@ def cleanup():
             save()
 
     # remove expired ETDs
+    #for user in data['etds'].keys():
+        #if now > data['etdtimestamps'][user]:
+            #stealth_logout(user)
+            #del data['etds'][user]
+            #del data['etdtimestamps'][user]
+            #save()
 
     return 0
 
@@ -358,7 +364,6 @@ def setetd(user, etd):
         arrival_hour = int(arrival[0:2]) % 24
         arrival_minute = int(arrival[3:4]) % 60
          
-#        arrival = str((int(arrival) + delta) % 2400)
         etdtimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=cfg.etd_timeout)
         if datetime.datetime.now().strftime("%H%M") > arrival: 
             etdtimestamp = etdtimestamp + datetime.timedelta(days=1)
@@ -376,8 +381,6 @@ def etd(user, etdtext):
         foo = int(etdtext[0][1:])
         etdval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
         etd = etdval.strftime("%H%M")
-    elif etdtext == 'heute nicht mehr':
-        etd = "0"
     else:
         etd = etdtext
 
@@ -388,9 +391,7 @@ def etd(user, etdtext):
     if etd != "0" and extract_eta(etd) == "9999":
         return 'err_timeparser'
 
-
-
-    logging.info("ETA: %s" % etd)
+    logging.info("ETD: %s" % etd)
     setetd(user, etd)
 
     if etd == "0":
