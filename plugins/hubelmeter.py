@@ -105,10 +105,9 @@ def getuser(ievent):
 ## hubelmeter command
 
 def handle_hubelmeter(bot, event):
-    """ show hubelmeter of item. """
+    """ show hubelmeter of <nick>. """
     if not event.rest:
         item = getuser(event)
-        #event.missing("<what>") ; return
     else:
         item = event.rest.lower()
 
