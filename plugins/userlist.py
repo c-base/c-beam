@@ -371,6 +371,7 @@ def getmessage(msg_name):
 
 def handle_userlist(bot, ievent):
     """list all user that have logged in."""
+    user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
     if ievent.channel == "#hackerspaces": return
     if cfg.get('use-c-beamd') > 1:
@@ -387,6 +388,11 @@ def handle_userlist(bot, ievent):
                    etalist += ['%s [%s]' % (key, whoresult['eta'][key])]
                 result.append('ETA: ' + ', '.join(etalist))
                 #ievent.reply('ETA: ' + ', '.join(etalist))
+            if len(whoresult['etd']) > 0:
+                etalist = []
+                for key in sorted(whoresult['etd'].keys()):
+                   etalist += ['%s [%s]' % (key, whoresult['etd'][key])]
+                result.append('ETD: ' + ', '.join(etalist))
             ievent.reply(" | ".join(result))
         else:
             ievent.reply(getmessage('no_one_there'))
@@ -820,9 +826,7 @@ def handle_userlist_etd(bot, ievent):
     if etd != "0" and extract_eta(etd) == "9999":
         return ievent.reply(getmessage('err_timeparser'))
 
-
-
-    logging.info("ETA: %s" % etd)
+    logging.info("ETD: %s" % etd)
     setetd(user, etd)
 
     try:
@@ -838,8 +842,24 @@ def handle_userlist_etd(bot, ievent):
     except UserlistError, e:
         ievent.reply(str(s))
 
-cmnds.add('etd', handle_userlist_etd, ['GUEST', 'USER'])
 
+def handle_userlist_etd2(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+
+    etd = ievent.rest
+
+    # return userlist if no arguments are provided
+    if len(ievent.args) == 0:
+        return handle_userlist(bot, ievent)
+
+    if cfg.get('use-c-beamd') > 1:
+        result = server.etd(user, etd)
+        ievent.reply(getmessage(result) % (user, etd))
+    else:
+        ievent.reply('ETD not supported without c-beamd')
+
+cmnds.add('etd', handle_userlist_etd2, ['GUEST', 'USER'])
 
 def handle_userlist_settimeout(bot, ievent):
     user = getuser(ievent)
