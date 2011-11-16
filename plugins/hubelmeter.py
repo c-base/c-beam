@@ -46,14 +46,13 @@ class HubelItem(PlugPersist):
 ## hubelmeter-precondition
 
 def prehubelmeter(bot, event):
-     # if not event.iscmnd(): return False
-     # we want to catch all the ++ and to avoid cheating
     if event.userhost in bot.ignore: return False
     if len(event.txt) > 0 and event.txt[0] == '!': return False
     pronoun = re.search(RE_PRONOUN, event.txt)
     conjunctive = re.search(RE_CONJUNCTIVE, event.txt)
 
-    i = HubelItem(getuser(event))
+    user = getuser(event).lower()
+    i = HubelItem(user)
     # increase linecounter only
     i.data.rowcount += 1.0
     if pronoun and conjunctive:
@@ -61,8 +60,9 @@ def prehubelmeter(bot, event):
         i.data.hubelcount += 1.0
         i.save()
         if event.channel != '#c-base':
-            event.reply('hubel detected from %s' % getuser(event))
-        print 'hubel detected from %s' % getuser(event)
+            #event.reply('hubel von %s detektiert.' % user)
+            event.reply('%s: %s (%s hat %f hubel)' % (user, random.choice(warntxt), user, i.hubel()))
+        print 'hubel detected from %s' % user
         return True
     else:
         i.save()
