@@ -237,6 +237,7 @@ def r2d2(text):
         char = char.replace(unicode('\xc3\x9c', 'utf8'), "UE")
 
         mp3s.append("%s/%s.mp3" % (r2d2path, char))
+        logger.info("%s - %s" % (text, "r2d2"))
     return " ".join(mp3s)
 
 def txt2pho(voice, text):
