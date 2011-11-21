@@ -8,6 +8,8 @@ import stat
 
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
+from daemonize import daemonize
+
 import jsonrpclib
 
 import cbeamdcfg as cfg
@@ -34,6 +36,8 @@ data = {
     'newetas': {},
     'achievements': {},
 }
+
+daemonize()
 
 logger = logging.getLogger('c-beam')
 hdlr = logging.FileHandler(cfg.logfile)
