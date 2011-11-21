@@ -1,0 +1,45 @@
+#! /bin/bash
+
+### BEGIN INIT INFO
+# Provides:          c-beam daemon
+# Required-Start:    $syslog
+# Required-Stop:     $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start c-beam daemon at boot time
+# Description:       Enable service provided by daemon.
+### END INIT INFO
+
+DAEMON=/home/smile/projects/c-beam/c-beamd/c-beamd.py
+#DAEMON=c-beamd.py
+PIDFILE=/var/run/c-beam/c-beamd.pid
+
+case "$1" in
+  start)
+    echo "Starting c-beam daemon"
+
+    # Run start-stop-daemon, the $DAEMON variable contains the path to the
+    # application to run
+    start-stop-daemon --start --pidfile $PIDFILE \
+        --user smile --group smile \
+        --chuid smile \
+        --exec "$DAEMON" \
+        --verbose
+    ;;
+  stop)
+    echo "Stopping c-beam daemon"
+
+    # Start-stop daemon can also stop the application by sending sig 15
+    # (configurable) to the process id contained in the run/pid file
+    #start-stop-daemon --stop --pidfile $PIDFILE --verbose
+    start-stop-daemon --stop --pidfile $PIDFILE --verbose 
+    ;;
+  *)
+    # Refuse to do other stuff
+    echo "Usage: /etc/init.d/c-beam {start|stop}"
+    exit 1
+    ;;
+esac
+
+exit 0
+
