@@ -6,6 +6,7 @@ import logging
 import hashlib
 from urllib2 import Request, urlopen
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
+from daemonize import daemonize
 
 player = 'mpg123'
 
@@ -26,6 +27,7 @@ acapelapassword = '0g7znor2aa'
 thevoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus', 'de5', 'r2d2']
 acapelavoices = ['lucy', 'peter', 'rachel', 'heather', 'kenny', 'laura', 'nelly', 'ryan', 'julia', 'sarah', 'klaus']
 googlevoices = ['goo']
+attvoices = ["crystal", "mike", "rich", "lauren", "claire", "rosa", "alberto", "klara", "reiner", "alain", "juliette", "arnaud", "charles", "audrey", "anjali"]
 txt2phovoices = ['de5']
 
 coutcount = 0
@@ -44,7 +46,7 @@ logger.setLevel(logging.INFO)
 enabled = 1
 
 def main():
-
+    daemonize()
     #tts("julia", "c")
 
     server = SimpleJSONRPCServer(('0.0.0.0', 1775))
@@ -190,6 +192,33 @@ def googleTTS(text, lang="de", encoding="UTF-8", useragent="firefox"):
 
     return filename
 
+def att(voice, text):
+    return
+    HOST = "192.20.225.55"
+    basename = '%s_%s' % (urllib.quote(text.lower()), lang)
+    filename = '%s/%s.mp3' % (tmpdir, hashlib.sha256(basename).hexdigest())
+    params = urllib.urlencode({'voice': voice, 'txt':text, 'speakButton': 'SPEAK'})
+    headers = {"Content-type": "application/x-www-form-urlencoded",
+            "User-Agent": "firefox",
+            "Accept": "text/plain"}
+    conn = httplib.HTTPConnection(HOST)
+    conn.request("POST", "/tts/cgi-bin/nph-talk", params, headers)
+    response = conn.getresponse()
+    if response.status != 301:
+        print "http cgi error, cant get wav url (status=%s)" % response.status
+        raise Exception
+
+    path = response.getheader('Location')
+    conn.close()
+
+    mysock = urllib.urlopen("http://%s/%s" % (HOST, path))
+    fileToSave = mysock.read()
+    oFile = open('%s' % filename,'wb')
+    oFile.write(fileToSave)
+    oFile.close
+    logger.info('%s - %s' % (text, filename))
+    return filename
+
 def r2d2(text):
     mp3s = []
 
@@ -208,6 +237,7 @@ def r2d2(text):
         char = char.replace(unicode('\xc3\x9c', 'utf8'), "UE")
 
         mp3s.append("%s/%s.mp3" % (r2d2path, char))
+    logger.info("%s - %s" % (text, "r2d2"))
     return " ".join(mp3s)
 
 def txt2pho(voice, text):

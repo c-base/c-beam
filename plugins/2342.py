@@ -3,7 +3,7 @@
 #
 #
 
-""" list all available users. """
+""" announce 23:42. """
 
 ## jsb imports
 
@@ -36,6 +36,7 @@ logindelta = 2342
 
 cfg.define('watcher-interval', 5)
 cfg.define('watcher-enabled', 0)
+cfg.define('channel', "#c-base")
 
 channel = "#c-base"
 
@@ -54,9 +55,9 @@ class Announce2342Watcher(TimedLoop):
         bot.connectok.wait()
         now = int(datetime.datetime.now().strftime("%H%M%S"))
         if now > 234200 and now <= 234205:
-            bot.say(channel, 'Es ist jetzt dreiundzwanzig Uhr zweiundvierzig.')
+            bot.say(cfg.get('channel'), 'Es ist jetzt dreiundzwanzig Uhr zweiundvierzig.')
             time.sleep(2)
-            bot.say(channel, 'Oh.')
+            bot.say(cfg.get('channel'), 'Oh.')
 
 watcher = Announce2342Watcher('default-irc', cfg.get('watcher-interval'))
 

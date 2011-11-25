@@ -17,11 +17,12 @@ from jsb.lib.persistconfig import PersistConfig
 
 import logging
 import re
+import random
 
 ## defines
 
 RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer', re.IGNORECASE)
-RE_CONJUNCTIVE = re.compile(r'sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte|m\xf6chte|moechte', re.IGNORECASE)
+RE_CONJUNCTIVE = re.compile(r'sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte', re.IGNORECASE)
 
 
 
@@ -45,14 +46,13 @@ class HubelItem(PlugPersist):
 ## hubelmeter-precondition
 
 def prehubelmeter(bot, event):
-     # if not event.iscmnd(): return False
-     # we want to catch all the ++ and to avoid cheating
     if event.userhost in bot.ignore: return False
     if len(event.txt) > 0 and event.txt[0] == '!': return False
     pronoun = re.search(RE_PRONOUN, event.txt)
     conjunctive = re.search(RE_CONJUNCTIVE, event.txt)
 
-    i = HubelItem(getuser(event))
+    user = getuser(event).lower()
+    i = HubelItem(user)
     # increase linecounter only
     i.data.rowcount += 1.0
     if pronoun and conjunctive:
@@ -60,8 +60,9 @@ def prehubelmeter(bot, event):
         i.data.hubelcount += 1.0
         i.save()
         if event.channel != '#c-base':
-            event.reply('hubel detected from %s' % getuser(event))
-        print 'hubel detected from %s' % getuser(event)
+            #event.reply('hubel von %s detektiert.' % user)
+            event.reply('%s: %s (%s hat %f hubel)' % (user, random.choice(warntxt), user, i.hubel()))
+        print 'hubel detected from %s' % user
         return True
     else:
         i.save()
@@ -105,10 +106,9 @@ def getuser(ievent):
 ## hubelmeter command
 
 def handle_hubelmeter(bot, event):
-    """ show hubelmeter of item. """
+    """ show hubelmeter of <nick>. """
     if not event.rest:
         item = getuser(event)
-        #event.missing("<what>") ; return
     else:
         item = event.rest.lower()
 
@@ -131,3 +131,26 @@ def handle_hubelmeter_reset(bot, event):
     event.reply("hubelmeter for %s has been neutralized." % item)
 
 cmnds.add('hubelmeter-reset', handle_hubelmeter_reset, ['OPER'])
+
+warntxt=[
+    "Hubeln entfernt Ihre Gesundheit.",
+    "Hubler sterben früher.",
+    "Hubeln kann tödlich sein.",
+    "Hubeln lässt ihre Haut altern.",
+    "Hubeln kann die Spermatozoen schädigen und schränkt die Fruchtbarkeit ein.",
+    "Hier finden Sie Hilfe, wenn Sie das Hubeln aufgeben möchten: Bundeszentrale für Enthubelung (BZE) https://community.c-base.org/group/c-prime",
+    "Ihr Arzt oder Apotheker (Dr. Housetier) kann Ihnen dabei helfen, das Hubeln aufzugeben.",
+    "Hubeln in der Schwangerschaft schadet Ihrem Kind.",
+    "Schützen Sie Kinder – lassen Sie sie nicht Ihr Rumgehubel hören!",
+    "Hubeln macht sehr schnell abhängig: Fangen Sie gar nicht erst an!",
+    "Wer das Hubeln aufgibt, verringert das Risiko tödlicher Prokrastination.",
+    "Hubeln kann zu einem langsamen und schmerzhaften Tod führen.",
+    "Hubeln kann die Spermatozoen schädigen und schränkt die Fruchtbarkeit ein.",
+    "Hubeln fügt ihnen und den Nerds in ihrer Umgebung erheblichen Schaden zu."
+    ]
+
+def handle_hubelwarn(bot, ievent):
+    ievent.reply(random.choice(warntxt))
+
+cmnds.add('hubelwarn', handle_hubelwarn, ['OPER', 'USER', 'GUEST'])
+

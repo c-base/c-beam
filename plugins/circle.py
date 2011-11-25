@@ -28,6 +28,6 @@ def handle_circle(bot, ievent):
         month = circledate.month + 1
         circledate = circledate.replace(month=month)
 
-    ievent.reply("der na:chste circle wird am %s um 2000 stattgefunden haben." % circledate.strftime("%Y-%m-%d"))
+    ievent.reply("der na:chste circle wird am %s um 2000 begonnen haben." % circledate.strftime("%Y-%m-%d"))
 
 cmnds.add('circle', handle_circle, ['OPER', 'USER', 'GUEST'])

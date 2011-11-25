@@ -8,6 +8,8 @@ import stat
 
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
+from daemonize import daemonize
+
 import jsonrpclib
 
 import cbeamdcfg as cfg
@@ -28,13 +30,15 @@ data = {
     'etasubs': [],
     'opensubs': [],
     'arrivesubs': [],
-    'logintimeouts': {},
+    'logouttimeouts': {},
     'ltes': {'MO': [], 'DI': [], 'MI': [], 'DO': [], 'FR': [], 'SA': [], 'SO': []},
     'vetas': {},
     'vetatimestamps': {},
     'newetas': {},
     'achievements': {},
 }
+
+daemonize()
 
 logger = logging.getLogger('c-beam')
 hdlr = logging.FileHandler(cfg.logfile)
@@ -77,6 +81,7 @@ def main():
     server.register_function(getnickspell, 'getnickspell')
     server.register_function(setnickspell, 'setnickspell')
     server.register_function(settimeout, 'settimeout')
+    server.register_function(gettimeout, 'gettimeout')
 
     server.register_function(vlogout, 'vlogout')
     server.register_function(vlogin, 'vlogin')
@@ -125,8 +130,12 @@ def login(user):
 
 def stealth_login(user):
     userfile = '%s/%s' % (cfg.userdir, user)
+    if data['logouttimeouts'].has_key(user):
+        delta = data['logouttimeouts'][user]
+    else:
+        delta = cfg.timeoutdelta
     logints = datetime.datetime.now() + datetime.timedelta(seconds=cfg.logindelta)
-    timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=cfg.timeoutdelta)
+    timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=delta)
     expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
     f = open(userfile, 'w')
     f.write(str(expire))
@@ -306,6 +315,12 @@ def cleanup():
             save()
 
     # remove expired ETDs
+    #for user in data['etds'].keys():
+        #if now > data['etdtimestamps'][user]:
+            #stealth_logout(user)
+            #del data['etds'][user]
+            #del data['etdtimestamps'][user]
+            #save()
 
     return 0
 
@@ -359,7 +374,6 @@ def setetd(user, etd):
         arrival_hour = int(arrival[0:2]) % 24
         arrival_minute = int(arrival[3:4]) % 60
          
-#        arrival = str((int(arrival) + delta) % 2400)
         etdtimestamp = datetime.datetime.now().replace(hour=arrival_hour, minute=arrival_minute) + datetime.timedelta(minutes=cfg.etd_timeout)
         if datetime.datetime.now().strftime("%H%M") > arrival: 
             etdtimestamp = etdtimestamp + datetime.timedelta(days=1)
@@ -377,8 +391,6 @@ def etd(user, etdtext):
         foo = int(etdtext[0][1:])
         etdval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
         etd = etdval.strftime("%H%M")
-    elif etdtext == 'heute nicht mehr':
-        etd = "0"
     else:
         etd = etdtext
 
@@ -389,9 +401,7 @@ def etd(user, etdtext):
     if etd != "0" and extract_eta(etd) == "9999":
         return 'err_timeparser'
 
-
-
-    logging.info("ETA: %s" % etd)
+    logging.info("ETD: %s" % etd)
     setetd(user, etd)
 
     if etd == "0":
@@ -406,9 +416,15 @@ def getetd():
     return data['etds']
 
 def settimeout(user, timeout):
-    data['logintimeouts'][user] = timeout
+    data['logouttimeouts'][user] = timeout
     save()
     return "aye"
+
+def gettimeout(user, timeout):
+    if data['logouttimeouts'].has_key(user):
+        return data['logouttimeouts'][user]
+    else:
+        return "not set"
 
 
 

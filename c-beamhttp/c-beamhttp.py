@@ -1,6 +1,9 @@
 import time, os, datetime
 import BaseHTTPServer
 import logging
+
+from daemonize import daemonize
+
 HOST_NAME = '10.0.1.27' # !!!REMEMBER TO CHANGE THIS!!!
 PORT_NUMBER = 8080 # Maybe set this to 9000.
 
@@ -71,6 +74,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         s.wfile.write("</body></html>")
 
 if __name__ == '__main__':
+    daemonize()
     server_class = BaseHTTPServer.HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), MyHandler)
     print time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER)
