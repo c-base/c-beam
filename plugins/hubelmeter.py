@@ -224,8 +224,9 @@ cmnds.add('hubel-submit', handle_hubelsubmit, ['OPER', 'USER', 'GUEST'])
 #TODO ijon cmnds.add('hubel-learn', handle_add, ['OPER', 'USER', 'GUEST'])
 
 def handle_hubelreview(bot, ievent):
-    hubellist = HubelList("Hubel")
-    sayhubel(bot, ievent, hubellist)
+    hubel = HubelList("Hubel")
+    #print hubellist.data
+    sayhubel(bot, ievent, hubel['list'])
     #if not state: ievent.reply('rss state not initialized') ; return
     #if not state['hubel'].has_key(bot.cfg.name): ievent.reply("Keine Hubel zum Review vorhanden.")
     #for hubel in state['hubel']:
@@ -245,4 +246,4 @@ def sayhubel(bot, ievent, hubellist):
         counter += 1
         res += "%s " % i.txt
         result.append(res.strip())
-    if result: ievent.reply("Hubel zum Review: %s")
+    if result: ievent.reply("Hubel zum Review: %s" % " ".join(result))
