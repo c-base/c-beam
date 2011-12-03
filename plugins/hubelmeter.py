@@ -12,22 +12,34 @@ from jsb.lib.examples import examples
 from jsb.lib.persist import PlugPersist
 from jsb.utils.statdict import StatDict
 from jsb.lib.persistconfig import PersistConfig
+from jsb.lib.persiststate import UserState
+from jsb.utils.lazydict import LazyDict
+
 
 ## basic imports
 
 import logging
 import re
 import random
+from jsb.lib.persiststate import PlugState
 
 ## defines
 
-RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer', re.IGNORECASE)
+RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer|bernd', re.IGNORECASE)
 RE_CONJUNCTIVE = re.compile(r'sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte', re.IGNORECASE)
+RE_STRIP_QUOTE = re.compile(r'("|<quote>).*?("|</quote>)', re.IGNORECASE)
 
-
+initdone = False
 
 cfg = PersistConfig()
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
+
+## Hubel class
+
+class Hubel(LazyDict):
+    def __init__(self, rating=0):
+        self.rating = rating
+    pass
 
 ## HubelItem class
 
@@ -42,19 +54,59 @@ class HubelItem(PlugPersist):
     def hubel(self):
         if self.data.rowcount == 0: return 0.0
         return float(self.data.hubelcount) / float(self.data.rowcount)
-      
+    
+class HubelList(UserState):
+
+    def __init__(self, name, *args, **kwargs):
+        UserState.__init__(self, name, "hubel", *args, **kwargs)
+        if self.data.list: self.data.list = [LazyDict(x) for x in self.data.list]
+        else: self.data.list = []
+        self.name = name
+
+    def add(self, txt):
+        """ add a hubel """
+        hubel = Hubel()
+        hubel.txt = txt
+        self.data.list.append(hubel)
+        self.save()
+        return len(self.data.list)
+
+    def delete(self, indexnr):
+        """ delete a hubel. """
+        del self.data.list[indexnr-1]
+        self.save()
+        return self
+
+    def clear(self):
+        """ clear the hubel list. """
+        self.data.list = []
+        self.save()
+        return self
+  
+
+def init():
+    global state
+    global initdone
+    state = PlugState()
+    state.define('hubel', {})
+    initdone = True
+    return 1
+
 ## hubelmeter-precondition
 
 def prehubelmeter(bot, event):
     if event.userhost in bot.ignore: return False
     if len(event.txt) > 0 and event.txt[0] == '!': return False
-    pronoun = re.search(RE_PRONOUN, event.txt)
-    conjunctive = re.search(RE_CONJUNCTIVE, event.txt)
+    stripped = re.sub(RE_STRIP_QUOTE, '', event.txt)
+    
+    pronoun = re.search(RE_PRONOUN, stripped)
+    conjunctive = re.search(RE_CONJUNCTIVE, stripped)
 
     user = getuser(event).lower()
     i = HubelItem(user)
     # increase linecounter only
     i.data.rowcount += 1.0
+    
     if pronoun and conjunctive:
         # increase hubelcounter
         i.data.hubelcount += 1.0
@@ -154,3 +206,43 @@ def handle_hubelwarn(bot, ievent):
 
 cmnds.add('hubelwarn', handle_hubelwarn, ['OPER', 'USER', 'GUEST'])
 
+def handle_hubelsubmit(bot, ievent):
+    hubel = HubelList("Hubel")
+    nr = hubel.add(ievent.rest)
+    print "foo"
+    ievent.reply("Der Hubel wurde als Nr. %d hinzugefügt. Vielen Dank." % nr)
+    #if not state: return
+    #try:
+        #if not state['hubel'].has_key(bot.cfg.name):
+            #state['hubel'][bot.cfg.name] = {}
+        #state['hubel'][bot.cfg.name].append(ievent.txt)
+    #state.save()
+    #except: pass
+
+cmnds.add('hubel-submit', handle_hubelsubmit, ['OPER', 'USER', 'GUEST'])
+
+#TODO ijon cmnds.add('hubel-learn', handle_add, ['OPER', 'USER', 'GUEST'])
+
+def handle_hubelreview(bot, ievent):
+    hubellist = HubelList("Hubel")
+    sayhubel(bot, ievent, hubellist)
+    #if not state: ievent.reply('rss state not initialized') ; return
+    #if not state['hubel'].has_key(bot.cfg.name): ievent.reply("Keine Hubel zum Review vorhanden.")
+    #for hubel in state['hubel']:
+        #reply += '%d) %s' % (i, hubel)
+    #ievent.reply()
+
+cmnds.add('hubel-review', handle_hubelreview, ['OPER', 'USER', 'GUEST'])
+
+def sayhubel(bot, ievent, hubellist):
+    """ output hubel items. """
+    if not hubellist: ievent.reply('Keine Hubel zum Review vorhanden.') ; return
+    result = []
+    counter = 1
+    for i in hubellist:
+        res = ""
+        res += "%s) " % counter
+        counter += 1
+        res += "%s " % i.txt
+        result.append(res.strip())
+    if result: ievent.reply("Hubel zum Review: %s")
