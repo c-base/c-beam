@@ -25,12 +25,12 @@ from jsb.lib.persiststate import PlugState
 
 ## defines
 
-RE_STRONGPRONOUN = re.compile(r'man|bernd', re.IGNORECASE)
-RE_WEAKPRONOUN = re.compile(r'jemand|irgendwer|einer|wer', re.IGNORECASE)
-RE_CONJUNCTIVE = re.compile(r'sollte|soLte|m\xfcsste|muesste|mu:sste|mu:Cte|k\xf6nnte|koennte|co:nnte|co:Nte|ko:nnte|ko:Nte|h\xe4tte|haette|ha:tte|ha:Te|br\xe4uchte|braeuchte|bra:uchte', re.IGNORECASE)
-RE_ADDONS = re.compile(r'mal', re.IGNORECASE)
-RE_QUESTION = re.compile(r'\?', re.IGNORECASE)
-RE_HELP = re.compile(r'helfen|erklaeren|erkl\xe4ren|erkla:ren', re.INGNORECASE)
+RE_STRONGPRONOUN = re.compile(r'\b(man|bernd)\b', re.IGNORECASE)
+RE_WEAKPRONOUN = re.compile(r'\b(jemand|irgendwer|einer|wer)\b', re.IGNORECASE)
+RE_CONJUNCTIVE = re.compile(r'\b(sollte|soLte|m\xfcsste|muesste|mu:sste|mu:Cte|k\xf6nnte|koennte|co:nnte|co:Nte|ko:nnte|ko:Nte|h\xe4tte|haette|ha:tte|ha:Te|br\xe4uchte|braeuchte|bra:uchte)\b', re.IGNORECASE)
+RE_ADDONS = re.compile(r'\b(mal)\b', re.IGNORECASE)
+RE_QUESTION = re.compile(r'\b(\?)\b', re.IGNORECASE)
+RE_HELP = re.compile(r'\b(helfen|erklaeren|erkl\xe4ren|erkla:ren)\b', re.IGNORECASE)
 RE_STRIP_QUOTE = re.compile(r'("|<quote>).*?("|</quote>)', re.IGNORECASE)
 
 initdone = False
@@ -108,12 +108,11 @@ def checkhubel(text):
     interimhubelcount = 0.0
     if conjunctive: interimhubelcount += 0.4
     if strongpronoun: interimhubelcount += 0.4
-    if weakpronoun: interimhubelcount += 0.2
+    elif weakpronoun: interimhubelcount += 0.2
     if addons: interimhubelcount += 0.1
     if question: interimhubelcount -= 0.2
 
     if interimhubelcount > 1.0: interimhubelcount = 1.0
-    if interimhubelcount < 0.0: interimhubelcount = 0.0
 
     return interimhubelcount
 
@@ -122,28 +121,13 @@ def checkhubel(text):
 def prehubelmeter(bot, event):
     if event.userhost in bot.ignore: return False
     if len(event.txt) > 0 and event.txt[0] == '!': return False
-    stripped = re.sub(RE_STRIP_QUOTE, '', event.txt)
-    
-    strongpronoun = re.search(RE_STRONGPRONOUN, stripped)
-    weakpronoun = re.search(RE_WEAKPRONOUN, stripped)
-    conjunctive = re.search(RE_CONJUNCTIVE, stripped)
-    addons = re.search(RE_ADDONS, stripped)
-    question = re.search(RE_QUESTION, stripped)
+
+    interimhubelcount = checkhubel(event.txt)
 
     user = getuser(event).lower()
     i = HubelItem(user)
     # increase linecounter only
     i.data.rowcount += 1.0
-
-    interimhubelcount = 0.0
-    if conjunctive: interimhubelcount += 0.4
-    if strongpronoun: interimhubelcount += 0.4
-    if weakpronoun: interimhubelcount += 0.2
-    if addons: interimhubelcount += 0.1
-    if question: interimhubelcount -= 0.2
-
-    if interimhubelcount > 1.0: interimhubelcount = 1.0
-    if interimhubelcount < 0.0: interimhubelcount = 0.0
 
     if interimhubelcount >= 0.6:
         i.data.hubelcount += interimhubelcount
