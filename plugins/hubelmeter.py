@@ -25,7 +25,7 @@ from jsb.lib.persiststate import PlugState
 
 ## defines
 
-RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer|bernd', re.IGNORECASE)
+RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer|bernd|wer', re.IGNORECASE)
 RE_CONJUNCTIVE = re.compile(r'sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte', re.IGNORECASE)
 RE_STRIP_QUOTE = re.compile(r'("|<quote>).*?("|</quote>)', re.IGNORECASE)
 
@@ -209,31 +209,35 @@ cmnds.add('hubelwarn', handle_hubelwarn, ['OPER', 'USER', 'GUEST'])
 def handle_hubelsubmit(bot, ievent):
     hubel = HubelList("Hubel")
     nr = hubel.add(ievent.rest)
-    print "foo"
     ievent.reply("Der Hubel wurde als Nr. %d hinzugefügt. Vielen Dank." % nr)
-    #if not state: return
-    #try:
-        #if not state['hubel'].has_key(bot.cfg.name):
-            #state['hubel'][bot.cfg.name] = {}
-        #state['hubel'][bot.cfg.name].append(ievent.txt)
-    #state.save()
-    #except: pass
 
 cmnds.add('hubel-submit', handle_hubelsubmit, ['OPER', 'USER', 'GUEST'])
+
+def handle_hubeldelete(bot, ievent):
+    hubel = HubelList("Hubel")
+    nr = int(ievent.rest)
+    hubel.delete(nr)
+    ievent.reply("Hubel Nr. %d wurde entfernt." % nr)
+
+cmnds.add('hubel-delete', handle_hubeldelete, ['OPER', 'HUBELOPER'])
 
 #TODO ijon cmnds.add('hubel-learn', handle_add, ['OPER', 'USER', 'GUEST'])
 
 def handle_hubelreview(bot, ievent):
     hubel = HubelList("Hubel")
-    #print hubellist.data
     sayhubel(bot, ievent, hubel['list'])
-    #if not state: ievent.reply('rss state not initialized') ; return
-    #if not state['hubel'].has_key(bot.cfg.name): ievent.reply("Keine Hubel zum Review vorhanden.")
-    #for hubel in state['hubel']:
-        #reply += '%d) %s' % (i, hubel)
     #ievent.reply()
 
 cmnds.add('hubel-review', handle_hubelreview, ['OPER', 'USER', 'GUEST'])
+
+def handle_hubelclear(bot, ievent):
+    hubel = HubelList("Hubel")
+    hubel.clear()
+    ievent.reply("Alle Hubel wurden entfernt.")
+
+cmnds.add('hubel-clear', handle_hubelclear, ['OPER', 'HUBELOPER'])
+
+
 
 def sayhubel(bot, ievent, hubellist):
     """ output hubel items. """
