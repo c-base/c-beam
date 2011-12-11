@@ -29,8 +29,8 @@ RE_STRONGPRONOUN = re.compile(r'\b(man|bernd)\b', re.IGNORECASE)
 RE_WEAKPRONOUN = re.compile(r'\b(jemand|irgendwer|einer|wer)\b', re.IGNORECASE)
 RE_CONJUNCTIVE = re.compile(r'\b(sollte|soLte|m\xfcsste|muesste|mu:sste|mu:Cte|k\xf6nnte|koennte|co:nnte|co:Nte|ko:nnte|ko:Nte|h\xe4tte|haette|ha:tte|ha:Te|br\xe4uchte|braeuchte|bra:uchte)\b', re.IGNORECASE)
 RE_ADDONS = re.compile(r'\b(mal)\b', re.IGNORECASE)
-RE_QUESTION = re.compile(r'\b(\?)\b', re.IGNORECASE)
-RE_HELP = re.compile(r'\b(helfen|erklaeren|erkl\xe4ren|erkla:ren)\b', re.IGNORECASE)
+RE_QUESTION = re.compile(r'\?', re.IGNORECASE)
+RE_HELP = re.compile(r'(helfen|erklaeren|erkl\xe4ren|erkla:ren)\b', re.IGNORECASE)
 RE_STRIP_QUOTE = re.compile(r'("|<quote>).*?("|</quote>)', re.IGNORECASE)
 
 initdone = False
@@ -123,6 +123,7 @@ def prehubelmeter(bot, event):
     if len(event.txt) > 0 and event.txt[0] == '!': return False
 
     interimhubelcount = checkhubel(event.txt)
+    print interimhubelcount
 
     user = getuser(event).lower()
     i = HubelItem(user)
@@ -130,6 +131,11 @@ def prehubelmeter(bot, event):
     i.data.rowcount += 1.0
 
     if interimhubelcount >= 0.6:
+        if state:
+            if not state['hubel']:
+                state['hubel'] = []
+        state['hubel'].append(event.txt)
+        state.save()
         i.data.hubelcount += interimhubelcount
         i.save()
         if event.channel != '#c-base':
