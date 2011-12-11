@@ -86,7 +86,11 @@ class HubelList(UserState):
         self.data.list = []
         self.save()
         return self
-  
+
+    def increase(self):
+        return self
+    def decrease(self):
+        return self
 
 def init():
     global state
@@ -113,6 +117,7 @@ def checkhubel(text):
     if question: interimhubelcount -= 0.2
 
     if interimhubelcount > 1.0: interimhubelcount = 1.0
+    if strongpronoun and conjunctive and addons: interimhubelcount = 42.23
 
     return interimhubelcount
 
@@ -136,12 +141,17 @@ def prehubelmeter(bot, event):
                 state['hubel'] = []
         state['hubel'].append(event.txt)
         state.save()
+
+        if interimhubelcount == 42.23:
+            if event.channel != '#c-base':
+                event.reply('C-C-C-Combombobreaker: %s hat %f hubel' % (user, i.hubel()))
+            interimhubelcount = 1.0
+        else:
+            if event.channel != '#c-base':
+                event.reply('%s: %s (%s hat %f hubel)' % (user, random.choice(warntxt), user, i.hubel()))
+        print 'hubel detected from %s' % user
         i.data.hubelcount += interimhubelcount
         i.save()
-        if event.channel != '#c-base':
-            #event.reply('hubel von %s detektiert.' % user)
-            event.reply('%s: %s (%s hat %f hubel)' % (user, random.choice(warntxt), user, i.hubel()))
-        print 'hubel detected from %s' % user
         return True
     else:
         i.save()
@@ -269,7 +279,12 @@ def handle_hubelcheck(bot, ievent):
 
 cmnds.add('hubel-check', handle_hubelcheck, ['USER', 'GUEST', 'OPER', 'HUBELOPER'])
 
+def handle_hubeldispute(bot, ievent):
+    hubel = HubelList("Hubel")
+    nr = hubel.add("DISPUTED: %s" % ievent.rest)
+    ievent.reply("Der Dispute wurde als Nr. %d zum Review angenommen. Vielen Dank." % nr)
 
+cmnds.add('hubel-dispute', handle_hubeldispute, ['OPER', 'USER', 'GUEST'])
 
 def sayhubel(bot, ievent, hubellist):
     """ output hubel items. """
@@ -283,3 +298,4 @@ def sayhubel(bot, ievent, hubellist):
         res += "%s " % i.txt
         result.append(res.strip())
     if result: ievent.reply("Hubel zum Review: %s" % " ".join(result))
+
