@@ -26,8 +26,9 @@ from jsb.lib.persiststate import PlugState
 ## defines
 
 RE_STRONGPRONOUN = re.compile(r'\b(man|bernd)\b', re.IGNORECASE)
-RE_WEAKPRONOUN = re.compile(r'\b(jemand|irgendwer|einer|wer)\b', re.IGNORECASE)
-RE_CONJUNCTIVE = re.compile(r'\b(sollte|soLte|m\xfcsste|muesste|mu:sste|mu:Cte|k\xf6nnte|koennte|co:nnte|co:Nte|ko:nnte|ko:Nte|h\xe4tte|haette|ha:tte|ha:Te|br\xe4uchte|braeuchte|bra:uchte)\b', re.IGNORECASE)
+#RE_WEAKPRONOUN = re.compile(r'\b(jemand|irgendwer|einer|wer)\b', re.IGNORECASE)
+RE_WEAKPRONOUN = re.compile(r'\b(jemand|irgendwer|einer|wer|deine mudder|deine mudda)\b', re.IGNORECASE)
+RE_CONJUNCTIVE = re.compile(r'\b(sollte|soLte|m\xfcsste|muesste|mu:sste|mu:Cte|k\xf6nnte|koennte|co:nnte|co:Nte|ko:nnte|ko:Nte|h\xe4tte|haette|ha:tte|ha:Te|br\xe4uchte|braeuchte|bra:uchte|wuerde|wu:rde|w\xfcrde)\b', re.IGNORECASE)
 RE_ADDONS = re.compile(r'\b(mal)\b', re.IGNORECASE)
 RE_QUESTION = re.compile(r'\?', re.IGNORECASE)
 RE_HELP = re.compile(r'(helfen|erklaeren|erkl\xe4ren|erkla:ren)\b', re.IGNORECASE)
@@ -143,14 +144,14 @@ def prehubelmeter(bot, event):
         state.save()
 
         if interimhubelcount == 42.23:
-            if event.channel != '#c-base':
-                event.reply('C-C-C-Combombobreaker: %s hat %f hubel' % (user, i.hubel()))
             interimhubelcount = 1.0
+            i.data.hubelcount += interimhubelcount
+            if event.channel != '#c-base':
+                event.reply('C-C-C-Combobreaker: %s hat %f hubel' % (user, i.hubel()))
         else:
+            i.data.hubelcount += interimhubelcount
             if event.channel != '#c-base':
                 event.reply('%s: %s (%s hat %f hubel)' % (user, random.choice(warntxt), user, i.hubel()))
-        print 'hubel detected from %s' % user
-        i.data.hubelcount += interimhubelcount
         i.save()
         return True
     else:
@@ -217,7 +218,7 @@ def handle_hubelmeter_reset(bot, event):
     i.data.rowcount = 0
     i.data.hubelcount = 0
     i.save()
-    event.reply("hubelmeter for %s has been neutralized." % item)
+    event.reply("hubelmeter for %s has been desubjunctivised." % item)
 
 cmnds.add('hubelmeter-reset', handle_hubelmeter_reset, ['OPER'])
 
@@ -285,6 +286,18 @@ def handle_hubeldispute(bot, ievent):
     ievent.reply("Der Dispute wurde als Nr. %d zum Review angenommen. Vielen Dank." % nr)
 
 cmnds.add('hubel-dispute', handle_hubeldispute, ['OPER', 'USER', 'GUEST'])
+
+def handle_hubeldiscard(bot, ievent):
+    user = ievent.rest.split(' ')[0]
+    i = HubelItem(user)
+    interimhubel = checkhubel(ievent.rest)
+    if interimhubel == 42.23: interimhubel = 1.0
+    i.data.hubelcount = i.data.hubelcount - interimhubel
+    i.save()
+    ievent.reply("Der Hubel von %s wurde ordnungsgema:C verringert. (%f)" % (user, i.data.hubelcount/i.data.rowcount))
+    
+cmnds.add('hubel-discard', handle_hubeldiscard, ['OPER'])
+    
 
 def sayhubel(bot, ievent, hubellist):
     """ output hubel items. """
