@@ -37,7 +37,7 @@ data = {
     'achievements': {},
 }
 
-daemonize()
+#daemonize()
 
 logger = logging.getLogger('c-beam')
 hdlr = logging.FileHandler(cfg.logfile)
@@ -116,7 +116,8 @@ def setnickspell(user, nickspell):
 
 def login(user):
     result = stealth_login(user)
-    monitord.login(user)
+    try: monitord.login(user)
+    except: pass
     if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
         os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
     else:
@@ -161,7 +162,8 @@ def logout(user):
     else:
         if getnickspell(user) != "NONE":
             tts("julia", "guten heimflug %s" % getnickspell(user))
-    monitord.logout(user)
+    try: monitord.logout(user)
+    except: pass
     return result
 
 def stealth_logout(user):
