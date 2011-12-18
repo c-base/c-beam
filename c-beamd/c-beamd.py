@@ -259,6 +259,10 @@ def eta(user, text):
     if eta != "0" and extract_eta(eta) == "9999":
         return 'err_timeparser'
 
+    etatime = extract_eta(eta)
+    hour = int(etatime[0:2])
+    minute = int(etatime[2:4])
+
     #tts("julia", "E.T.A. %s: %s" % (getnickspell(user), eta))
     tts("julia", "E.T.A. %s: %d Uhr %d" % (getnickspell(user), hour, minute))
     return seteta(user, eta)
