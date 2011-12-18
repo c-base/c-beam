@@ -12,22 +12,39 @@ from jsb.lib.examples import examples
 from jsb.lib.persist import PlugPersist
 from jsb.utils.statdict import StatDict
 from jsb.lib.persistconfig import PersistConfig
+from jsb.lib.persiststate import UserState
+from jsb.utils.lazydict import LazyDict
+
 
 ## basic imports
 
 import logging
 import re
 import random
+from jsb.lib.persiststate import PlugState
 
 ## defines
 
-RE_PRONOUN = re.compile(r'jemand|irgendwer|man|einer', re.IGNORECASE)
-RE_CONJUNCTIVE = re.compile(r'sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte', re.IGNORECASE)
+RE_STRONGPRONOUN = re.compile(r'\b(man|bernd)\b', re.IGNORECASE)
+#RE_WEAKPRONOUN = re.compile(r'\b(jemand|irgendwer|einer|wer)\b', re.IGNORECASE)
+RE_WEAKPRONOUN = re.compile(r'\b(jemand|irgendwer|einer|wer|deine mudder|deine mudda)\b', re.IGNORECASE)
+RE_CONJUNCTIVE = re.compile(r'\b(sollte|soLte|m\xfcsste|muesste|mu:sste|mu:Cte|k\xf6nnte|koennte|co:nnte|co:Nte|ko:nnte|ko:Nte|h\xe4tte|haette|ha:tte|ha:Te|br\xe4uchte|braeuchte|bra:uchte|wuerde|wu:rde|w\xfcrde)\b', re.IGNORECASE)
+RE_ADDONS = re.compile(r'\b(mal)\b', re.IGNORECASE)
+RE_QUESTION = re.compile(r'\?', re.IGNORECASE)
+RE_HELP = re.compile(r'(helfen|erklaeren|erkl\xe4ren|erkla:ren)\b', re.IGNORECASE)
+RE_STRIP_QUOTE = re.compile(r'("|<quote>).*?("|</quote>)', re.IGNORECASE)
 
-
+initdone = False
 
 cfg = PersistConfig()
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
+
+## Hubel class
+
+class Hubel(LazyDict):
+    def __init__(self, rating=0):
+        self.rating = rating
+    pass
 
 ## HubelItem class
 
@@ -42,27 +59,100 @@ class HubelItem(PlugPersist):
     def hubel(self):
         if self.data.rowcount == 0: return 0.0
         return float(self.data.hubelcount) / float(self.data.rowcount)
-      
+    
+class HubelList(UserState):
+
+    def __init__(self, name, *args, **kwargs):
+        UserState.__init__(self, name, "hubel", *args, **kwargs)
+        if self.data.list: self.data.list = [LazyDict(x) for x in self.data.list]
+        else: self.data.list = []
+        self.name = name
+
+    def add(self, txt):
+        """ add a hubel """
+        hubel = Hubel()
+        hubel.txt = txt
+        self.data.list.append(hubel)
+        self.save()
+        return len(self.data.list)
+
+    def delete(self, indexnr):
+        """ delete a hubel. """
+        del self.data.list[indexnr-1]
+        self.save()
+        return self
+
+    def clear(self):
+        """ clear the hubel list. """
+        self.data.list = []
+        self.save()
+        return self
+
+    def increase(self):
+        return self
+    def decrease(self):
+        return self
+
+def init():
+    global state
+    global initdone
+    state = PlugState()
+    state.define('hubel', {})
+    initdone = True
+    return 1
+
+def checkhubel(text):
+    stripped = re.sub(RE_STRIP_QUOTE, '', text)
+    
+    strongpronoun = re.search(RE_STRONGPRONOUN, stripped)
+    weakpronoun = re.search(RE_WEAKPRONOUN, stripped)
+    conjunctive = re.search(RE_CONJUNCTIVE, stripped)
+    addons = re.search(RE_ADDONS, stripped)
+    question = re.search(RE_QUESTION, stripped)
+
+    interimhubelcount = 0.0
+    if conjunctive: interimhubelcount += 0.4
+    if strongpronoun: interimhubelcount += 0.4
+    elif weakpronoun: interimhubelcount += 0.2
+    if addons: interimhubelcount += 0.1
+    if question: interimhubelcount -= 0.2
+
+    if interimhubelcount > 1.0: interimhubelcount = 1.0
+    if strongpronoun and conjunctive and addons: interimhubelcount = 42.23
+
+    return interimhubelcount
+
 ## hubelmeter-precondition
 
 def prehubelmeter(bot, event):
     if event.userhost in bot.ignore: return False
     if len(event.txt) > 0 and event.txt[0] == '!': return False
-    pronoun = re.search(RE_PRONOUN, event.txt)
-    conjunctive = re.search(RE_CONJUNCTIVE, event.txt)
+
+    interimhubelcount = checkhubel(event.txt)
+    print interimhubelcount
 
     user = getuser(event).lower()
     i = HubelItem(user)
     # increase linecounter only
     i.data.rowcount += 1.0
-    if pronoun and conjunctive:
-        # increase hubelcounter
-        i.data.hubelcount += 1.0
+
+    if interimhubelcount >= 0.6:
+        if state:
+            if not state['hubel']:
+                state['hubel'] = []
+        state['hubel'].append(event.txt)
+        state.save()
+
+        if interimhubelcount == 42.23:
+            interimhubelcount = 1.0
+            i.data.hubelcount += interimhubelcount
+            if event.channel != '#c-base':
+                event.reply('C-C-C-Combobreaker: %s hat %f hubel' % (user, i.hubel()))
+        else:
+            i.data.hubelcount += interimhubelcount
+            if event.channel != '#c-base':
+                event.reply('%s: %s (%s hat %f hubel)' % (user, random.choice(warntxt), user, i.hubel()))
         i.save()
-        if event.channel != '#c-base':
-            #event.reply('hubel von %s detektiert.' % user)
-            event.reply('%s: %s (%s hat %f hubel)' % (user, random.choice(warntxt), user, i.hubel()))
-        print 'hubel detected from %s' % user
         return True
     else:
         i.save()
@@ -128,7 +218,7 @@ def handle_hubelmeter_reset(bot, event):
     i.data.rowcount = 0
     i.data.hubelcount = 0
     i.save()
-    event.reply("hubelmeter for %s has been neutralized." % item)
+    event.reply("hubelmeter for %s has been desubjunctivised." % item)
 
 cmnds.add('hubelmeter-reset', handle_hubelmeter_reset, ['OPER'])
 
@@ -153,4 +243,72 @@ def handle_hubelwarn(bot, ievent):
     ievent.reply(random.choice(warntxt))
 
 cmnds.add('hubelwarn', handle_hubelwarn, ['OPER', 'USER', 'GUEST'])
+
+def handle_hubelsubmit(bot, ievent):
+    hubel = HubelList("Hubel")
+    nr = hubel.add(ievent.rest)
+    ievent.reply("Der Hubel wurde als Nr. %d hinzugefügt. Vielen Dank." % nr)
+
+cmnds.add('hubel-submit', handle_hubelsubmit, ['OPER', 'USER', 'GUEST'])
+
+def handle_hubeldelete(bot, ievent):
+    hubel = HubelList("Hubel")
+    nr = int(ievent.rest)
+    hubel.delete(nr)
+    ievent.reply("Hubel Nr. %d wurde entfernt." % nr)
+
+cmnds.add('hubel-delete', handle_hubeldelete, ['OPER', 'HUBELOPER'])
+
+#TODO ijon cmnds.add('hubel-learn', handle_add, ['OPER', 'USER', 'GUEST'])
+
+def handle_hubelreview(bot, ievent):
+    hubel = HubelList("Hubel")
+    sayhubel(bot, ievent, hubel['list'])
+    #ievent.reply()
+
+cmnds.add('hubel-review', handle_hubelreview, ['OPER', 'USER', 'GUEST'])
+
+def handle_hubelclear(bot, ievent):
+    hubel = HubelList("Hubel")
+    hubel.clear()
+    ievent.reply("Alle Hubel wurden entfernt.")
+
+cmnds.add('hubel-clear', handle_hubelclear, ['OPER', 'HUBELOPER'])
+
+def handle_hubelcheck(bot, ievent):
+    ievent.reply("Der interimshubel beträgt %f" % checkhubel(ievent.txt))
+
+cmnds.add('hubel-check', handle_hubelcheck, ['USER', 'GUEST', 'OPER', 'HUBELOPER'])
+
+def handle_hubeldispute(bot, ievent):
+    hubel = HubelList("Hubel")
+    nr = hubel.add("DISPUTED: %s" % ievent.rest)
+    ievent.reply("Der Dispute wurde als Nr. %d zum Review angenommen. Vielen Dank." % nr)
+
+cmnds.add('hubel-dispute', handle_hubeldispute, ['OPER', 'USER', 'GUEST'])
+
+def handle_hubeldiscard(bot, ievent):
+    user = ievent.rest.split(' ')[0]
+    i = HubelItem(user)
+    interimhubel = checkhubel(ievent.rest)
+    if interimhubel == 42.23: interimhubel = 1.0
+    i.data.hubelcount = i.data.hubelcount - interimhubel
+    i.save()
+    ievent.reply("Der Hubel von %s wurde ordnungsgema:C verringert. (%f)" % (user, i.data.hubelcount/i.data.rowcount))
+    
+cmnds.add('hubel-discard', handle_hubeldiscard, ['OPER'])
+    
+
+def sayhubel(bot, ievent, hubellist):
+    """ output hubel items. """
+    if not hubellist: ievent.reply('Keine Hubel zum Review vorhanden.') ; return
+    result = []
+    counter = 1
+    for i in hubellist:
+        res = ""
+        res += "%s) " % counter
+        counter += 1
+        res += "%s " % i.txt
+        result.append(res.strip())
+    if result: ievent.reply("Hubel zum Review: %s" % " ".join(result))
 

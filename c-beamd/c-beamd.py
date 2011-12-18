@@ -38,7 +38,7 @@ data = {
     'achievements': {},
 }
 
-daemonize()
+#daemonize()
 
 logger = logging.getLogger('c-beam')
 hdlr = logging.FileHandler(cfg.logfile)
@@ -117,7 +117,8 @@ def setnickspell(user, nickspell):
 
 def login(user):
     result = stealth_login(user)
-    if monitord: monitord.login(user)
+    try: monitord.login(user)
+    except: pass
     if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
         os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
     else:
@@ -162,7 +163,8 @@ def logout(user):
     else:
         if getnickspell(user) != "NONE":
             tts("julia", "guten heimflug %s" % getnickspell(user))
-    if monitord: monitord.logout(user)
+    try: monitord.logout(user)
+    except: pass
     return result
 
 def stealth_logout(user):
@@ -258,12 +260,8 @@ def eta(user, text):
     if eta != "0" and extract_eta(eta) == "9999":
         return 'err_timeparser'
 
-    etatime = extract_eta(eta)
-    hour = int(etatime[0:2])
-    minute = int(etatime[2:4])
-
-    tts("julia", "E.T.A. %s: %d Uhr %d" % (getnickspell(user), hour, minute))
     #tts("julia", "E.T.A. %s: %s" % (getnickspell(user), eta))
+    tts("julia", "E.T.A. %s: %d Uhr %d" % (getnickspell(user), hour, minute))
     return seteta(user, eta)
 
 def lteconvert():
