@@ -38,6 +38,7 @@ data = {
     'vetatimestamps': {},
     'newetas': {},
     'achievements': {},
+    'macmap': {},
 }
 
 #daemonize()
@@ -610,13 +611,27 @@ def todo():
 
 def dhcphook(action, mac, ip, name):
     print "%s (%s) got %s" % (name, mac, ip)
-    if macmap.has_key(mac): 
-        user = macmap[mac]
+    if data['macmap'].has_key(mac): 
+        user = data['macmap'][mac]
+        save()
         if user in userlist():
             print "%s already logged in" % user
         else:
             login(user)  
     return
+
+def addmac(user, mac):
+    data['macmap'][mac] = user
+    save()
+    return "aye"
+
+def delmac(user, mac):
+    if data['macmap'][mac] == user:
+        del data['macmap'][mac]
+        save()
+        return "aye"
+    else:
+        return "die mac %s ist %s nicht zugeordnet" % (mac, user)
 
 if __name__ == "__main__":
     main()
