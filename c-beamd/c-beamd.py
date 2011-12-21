@@ -265,7 +265,7 @@ def eta(user, text):
     minute = int(etatime[2:4])
 
     #tts("julia", "E.T.A. %s: %s" % (getnickspell(user), eta))
-    tts("julia", "E.T.A. %s: %d Uhr %d" % (getnickspell(user), hour, minute))
+    tts("julia", "E.T.A. %s: %d Uhr %d ." % (getnickspell(user), hour, minute))
     return seteta(user, eta)
 
 def lteconvert():
