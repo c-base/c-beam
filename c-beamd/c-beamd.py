@@ -18,6 +18,8 @@ jsonrpclib.config.version = 1.0
 
 nickspells = {}
 
+macmap = {"f8:1e:df:42:42:68": "smile", "dc:2b:61:4a:f9:8c": "sarah", "00:1c:d6:33:db:16": "sirgoofy"}
+
 c_outd = jsonrpclib.Server(cfg.c_outurl)
 monitord = None
 if cfg.monitorurl != "": monitord = jsonrpclib.Server(cfg.monitorurl)
@@ -36,6 +38,7 @@ data = {
     'vetatimestamps': {},
     'newetas': {},
     'achievements': {},
+    'macmap': {},
 }
 
 #daemonize()
@@ -82,6 +85,8 @@ def main():
     server.register_function(setnickspell, 'setnickspell')
     server.register_function(settimeout, 'settimeout')
     server.register_function(gettimeout, 'gettimeout')
+
+    server.register_function(dhcphook, 'dhcphook')
 
     server.register_function(vlogout, 'vlogout')
     server.register_function(vlogin, 'vlogin')
@@ -603,6 +608,30 @@ def todo():
     
     return todoarray
 
+
+def dhcphook(action, mac, ip, name):
+    print "%s (%s) got %s" % (name, mac, ip)
+    if data['macmap'].has_key(mac): 
+        user = data['macmap'][mac]
+        save()
+        if user in userlist():
+            print "%s already logged in" % user
+        else:
+            login(user)  
+    return
+
+def addmac(user, mac):
+    data['macmap'][mac] = user
+    save()
+    return "aye"
+
+def delmac(user, mac):
+    if data['macmap'][mac] == user:
+        del data['macmap'][mac]
+        save()
+        return "aye"
+    else:
+        return "die mac %s ist %s nicht zugeordnet" % (mac, user)
 
 if __name__ == "__main__":
     main()
