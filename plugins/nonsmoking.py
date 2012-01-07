@@ -1,6 +1,5 @@
 from jsb.utils.exception import handle_exception
 from jsb.lib.commands import cmnds
-from jsb.lib.examples import examples
 
 import datetime
 
@@ -13,5 +12,3 @@ def pose_as_nonsmoker(bot, ievent):
     bot.say('#c-base', "baccenfutter ist jetzt seit %i Tagen Nichtraucher." % days)
 
 cmnds.add("smoke", pose_as_nonsmoker, ['OPER', 'USER', 'GUEST'])
-example.add('smoke', 'Wie lange ist baccenfutter schon Nichtraucher?')
-
