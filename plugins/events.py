@@ -9,6 +9,9 @@
 
 from jsb.lib.commands import cmnds
 from jsb.lib.examples import examples
+from jsb.lib.persistconfig import PersistConfig
+from jsb.lib.threadloop import TimedLoop
+from jsb.lib.fleet import fleet
 
 ## basic imports
 
@@ -21,14 +24,43 @@ import re
 
 from icalendar.cal import Calendar, Event
 
-
 ## defines
 
+channel = "#c-base"
 events = []
+
+cfg = PersistConfig()
+cfg.define('watcher-interval', 5)
+cfg.define('watcher-enabled', 0)
+cfg.define('channel', "#c-base")
+
+class EventError(Exception): pass
+
+class EventWatcher(TimedLoop):
+
+    def handle(self):
+        if not cfg.get('watcher-enabled'):
+            raise EventError('watcher not enabled, use "!%s-cfg watcher-enabled 1" to enable' % os.path.basename(__file__)[:-3])
+        #logging.info("fleet: %s - %s" % (str(fleet), str(fleet.list())))
+        bot = 0
+        try: bot = fleet.byname(self.name)
+        except: print "fleet: %s" % str(fleet) #"fleet.byname(%s)" % self.name
+
+        bot.connectok.wait()
+        now = int(datetime.datetime.now().strftime("%H%M%S"))
+        if now > 030000 and now <= 030005:
+            settopic(bot, "#c-base")
+
+watcher = EventWatcher('default-irc', cfg.get('watcher-interval'))
 
 ## init function
 
 def init():
+    watcher.start()
+    return 1
+
+def shutdown():
+    watcher.stop()
     return 1
 
 ## functions
@@ -54,10 +86,13 @@ def checktopicmode(bot, ievent):
 
 
 def handle_event_topic(bot, ievent):
+    if not bot.jabber and not checktopicmode(bot, ievent): return
+    result = settopic(bot, ievent.channel)
+    return ievent.reply(result)
+
     """ event-topic .. add todays events to the topic """
     if not bot.jabber and not checktopicmode(bot, ievent): return
     result = bot.gettopic(ievent.channel)
-    if not result: ievent.reply("can't get topic data") ; return
     what = result[0]
     #what += " | %s" % ievent.rest
     # remopve old events
@@ -78,6 +113,27 @@ def handle_event_topic(bot, ievent):
         ievent.reply('das topic ist bereits auf dem aktuellen stand.')
 
 cmnds.add('event-topic', handle_event_topic, ['OPER'])
+
+def settopic(bot, channel):
+    """ event-topic .. add todays events to the topic """
+    result = bot.gettopic(channel)
+    if not result: return 'topic connte nicht ausgelesen werden'
+    what = result[0]
+    what = re.sub(r' \| heute an bord\: .* \|', ' |', what)
+    what = re.sub(r' \| heute an bord\: .*', '', what)
+    cal = getcal()
+    events = []
+    for event in cal.walk('vevent'):
+        if str(event['dtstart']).startswith(datetime.datetime.now().strftime("%Y%m%d")):
+            #start = int(str(event['dtstart'])[-7:-3])+200) % 2400
+            #events.append("%s [%s]" % (event['summary'], int(start[-7:-3])+200))
+            events.append(event['summary'].replace("|", "/"))
+    if len(events) > 0:
+        what += " | heute an bord: %s" % ", ".join(events) 
+    if what != result[0]:
+        bot.settopic(channel, what)
+    else:
+        return 'das topic ist bereits auf dem aktuellen stand.'
 
 def handle_events(bot, ievent):
     """ get a events """
