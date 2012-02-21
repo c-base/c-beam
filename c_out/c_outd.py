@@ -8,16 +8,17 @@ from urllib2 import Request, urlopen
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 from daemonize import daemonize
 
-player = 'mpg123'
+#player = 'mpg123'
+player = 'mplayer'
 
 c_outlimit = 5
 suppressiontimeout = 300
 cpamdelta = 90
 
-sampledir = '/mnt/datengrab/00_audio/c_out'
+sampledir = '/tmp'
 sampledir = '/usr/local/sounds/loop'
 sampledir = '/usr/local/sounds/samples'
-tmpdir = '/tmp/shout'
+tmpdir = '/tmp'
 
 r2d2path = '/home/smile/projects/c-beam/c_out/r2d2_wav'
 txt2phopath = "/var/www/c_out.c-base.org/txt2speech/txt2pho"
@@ -46,7 +47,7 @@ logger.setLevel(logging.INFO)
 enabled = 1
 
 def main():
-    daemonize()
+    #daemonize()
     #tts("julia", "c")
 
     server = SimpleJSONRPCServer(('0.0.0.0', 1775))
@@ -313,8 +314,8 @@ def playfile(filename):
         filename = findFile(sampledir, filename)
 #    print '%s %s' % (player, filename)
     if player == 'mplayer':
-        print 'mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename
-        if enabled == 1: os.system('mplayer -af volume=+10 -really-quiet -ao esd %s >/dev/null' % filename)
+        print 'mplayer -af volume=+5 -softvol -ao pulse -really-quiet %s >/dev/null' % filename
+        if enabled == 1: os.system('mplayer -af volume=+5 -softvol -ao pulse -really-quiet %s >/dev/null' % filename)
     else:
         if enabled == 1: os.system('%s %s &' % (player, filename))
     return "aye"
