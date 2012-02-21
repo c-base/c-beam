@@ -50,7 +50,7 @@ if os.path.exists(messagefile):
     except: logging.error('error in userlist_messages')
 else:
     messages = {
-        'unknown_nick': ['ich kenne deinen nickname noch nicht, bitte contact mit smile aufnehmen.'],
+        'unknown_nick': ['ich kenne deinen nickname noch nicht, bitte contact mit smile/cmile aufnehmen.'],
         'logged_in': ['an bord: '],
         'login_success': ['hallo %s, willkommen auf der c-base', 'hallo %s, willkommen an bord!'],
         'logout_success': ['danke, daC du dich abgemeldet hast %s.', 'danke und guten heimflug %s.'],
@@ -393,9 +393,17 @@ def handle_userlist(bot, ievent):
                 for key in sorted(whoresult['etd'].keys()):
                    etalist += ['%s [%s]' % (key, whoresult['etd'][key])]
                 result.append('ETD: ' + ', '.join(etalist))
-            ievent.reply(" | ".join(result))
+            if ievent.channel == "#c-base":
+                #bot.say(" | ".join(result))
+                ievent.reply(" | ".join(result))
+            else:
+                ievent.reply(" | ".join(result))
         else:
-            ievent.reply(getmessage('no_one_there'))
+            if ievent.channel == "#c-base":
+                #bot.say(getmessage('no_one_there'))
+                ievent.reply(getmessage('no_one_there'))
+            else:
+                ievent.reply(getmessage('no_one_there'))
     else:
         users = userlist()
         if len(users) > 0 or len(etaitem.data.etas) > 0:
