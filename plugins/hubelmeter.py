@@ -240,10 +240,14 @@ warntxt=[
     ]
 
 def handle_hubelwarn(bot, ievent):
+    warning = random.choice(warntxt)
+    if ievent.rest != "":
+        warning = "%s: %s" % (ievent.rest, warning)
+
     if ievent.channel == "#c-base":
-        bot.say(ievent.channel, random.choice(warntxt))
+        bot.say(ievent.channel, warning)
     else:
-        ievent.reply(random.choice(warntxt))
+        ievent.reply(warning)
 
 cmnds.add('hubelwarn', handle_hubelwarn, ['OPER', 'USER', 'GUEST'])
 
