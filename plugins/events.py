@@ -48,7 +48,9 @@ class EventWatcher(TimedLoop):
 
         bot.connectok.wait()
         now = int(datetime.datetime.now().strftime("%H%M%S"))
-        if now > 030000 and now <= 030005:
+        print now
+        if now > 91500 and now <= 91505:
+            print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>setting topic"
             settopic(bot, "#c-base")
 
 watcher = EventWatcher('default-irc', cfg.get('watcher-interval'))
