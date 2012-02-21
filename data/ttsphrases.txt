@@ -20,5 +20,7 @@
 'auCenhu:lle intakt.': 'aussenhülle intakt.',
 'hu:llenintegrita:t 100%.': 'hüllen-integrität einhundert prozent.',
 'die c-base begrüßt alle aliens an bord.': 'die c-base begrüßt alle aliens an bord.',
-'update für wurstware erforderlich.': 'update für wurstware erforderlich.'
+'update für wurstware erforderlich.': 'update für wurstware erforderlich.',
+'vielen dank, dass sie mit air discordia geflogen sind': 'vielen dank, dass sie mit air discordia geflogen sind',
+'bitte lassen sie ihr gebäck nicht unbeaufsichtigt': 'bitte lassen sie ihr gebäck nicht unbeaufsichtigt',
 }
