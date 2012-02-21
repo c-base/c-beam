@@ -47,13 +47,15 @@ class Announce2342Watcher(TimedLoop):
     def handle(self):
         if not cfg.get('watcher-enabled'):
             raise Announce2342Error('watcher not enabled, use "!%s-cfg watcher-enabled 1" to enable' % os.path.basename(__file__)[:-3])
-        logging.info("fleet: %s - %s" % (str(fleet), str(fleet.list())))
+        logging.warn("fleet: %s - %s" % (str(fleet), str(fleet.list())))
+        #print "fleet: %s - %s" % (str(fleet), str(fleet.list()))
         bot = 0
         try: bot = fleet.byname(self.name)
         except: pass #print "fleet: %s" % str(fleet) #"fleet.byname(%s)" % self.name
 
         bot.connectok.wait()
         now = int(datetime.datetime.now().strftime("%H%M%S"))
+        print now
         if now > 234200 and now <= 234205:
             bot.say(cfg.get('channel'), 'Es ist jetzt dreiundzwanzig Uhr zweiundvierzig.')
             time.sleep(2)
