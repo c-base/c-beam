@@ -27,7 +27,7 @@ import datetime
 
 
 cfg = PersistConfig()
-cfg.define('rpcurl', 'http://10.0.1.13:1775')
+cfg.define('rpcurl', 'http://10.0.1.27:1775')
 cfg.define('local', False)
 
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
