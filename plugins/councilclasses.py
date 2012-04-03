@@ -158,7 +158,7 @@ class Topic():
         else:
             return False
 
-    def voting(self, council="", voting={} ):
+    def vote(self, council="", voting={} ):
         """Arrange a voting upon this topic
         
         Attributes:
@@ -358,7 +358,7 @@ class Council():
             self.topics.remove(topic)
             return self.topics
 
-    def topic_reorder(self, topics=[]):
+    def topic_set_order(self, topics=[]):
         """Reorder list of topics
         
         Arguments:
@@ -379,6 +379,7 @@ class Council():
         self.topics = topics
 
 if __name__ == '__main__':
+    print "Create instance"
     c = Council(
             "Test Meeting",
             "baccenfutter",
@@ -387,6 +388,7 @@ if __name__ == '__main__':
             )
     print c
 
+    print "Add attendees and board members"
     print c.attendee_add('baccenfutter')
     print c.attendee_add('cmile')
     print c.attendee_add('dazs')
@@ -397,26 +399,51 @@ if __name__ == '__main__':
     print c.board_add('dazs')
     print c.board
 
-    print c.topic_add(2, 'Test Topic', 'baccenfutter')
-    print c.topic_add(2, 'Test flavour', 'cmile')
-    print c.topic_add(1, 'Party auf dem T-Feld', 'dazs')
+    print
+    print "Add topics"
+    print c.topic_add(0, 'Test Topic', 'baccenfutter')
+    print c.topic_add(1, 'Test flavour', 'cmile')
+    print c.topic_add(2, 'Party auf dem T-Feld', 'dazs')
     print c.topics
 
     print
+    print "Notice information in the object representation"
     print c
 
-    print '\n' * 2
+    print
 
+    print "Iterating over topics"
     print c.open()
     for topic in c:
+        print "Open topic"
         print topic.open(c)
-        print topic.is_open()
+        print "Check if open: %s" % topic.is_open()
+        print "Check if we have to vote"
+        if topic.TYPE == 0:
+            vote = {
+                    'PRO': 3,
+                    'CONTRA': 0,
+                    'ABSTENTIONS': 0,
+                    }
+            print "Voting: " + str(vote)
+            topic.vote(c, vote)
+        elif topic.TYPE == 1:
+            vote = {
+                    'PRO': 2,
+                    'CONTRA': 1,
+                    'ABSTENTIONS': 0,
+                    }
+            print "Voting: " + str(vote)
+            topic.vote(c, vote)
+        print "Close topic"
         print topic.close(c)
-        print topic.is_open()
+        print "Chekc if open: %s" % topic.is_open()
+    print "Close council"
     print c.close()
 
+    print "Topics can be get using __getitem__"
     topic = c[2]
-
     print topic
-    print topic.open(c)  # <- False, weil council bereits geschlossen wurde
+    print "Topics cannot be opend if council is not open"
+    print topic.open(c)
 
