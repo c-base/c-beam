@@ -15,8 +15,10 @@ def getAttrForLdapDn(dn, attr, result):
 def getDnForLdapAttr(attr, key, result):
     for dn, attrs in result:
         if attrs.has_key(attr):
-            if attrs[attr] == [key]:
-                return dn
+			# a ldapentry can have multiple attribute with the same key
+			for k in attrs[attr]:
+				if k == key:
+					return dn
     return None
 
 
