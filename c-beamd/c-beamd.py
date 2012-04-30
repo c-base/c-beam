@@ -121,21 +121,31 @@ def setnickspell(user, nickspell):
     return "ok"
 
 def login(user):
-    result = stealth_login(user)
-    try: monitord.login(user)
-    except: pass
-    if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
-        os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
+    userfile = '%s/%s' % (cfg.userdir, user)
+    # TTS and message display only if not already logged in 
+    if os.path.isfile(userfile):
+        logger.info("%s already logged in, skipping greetings" % user)
     else:
-        if getnickspell(user) != "NONE":
-            if user == "kristall":
-                tts("julia", "a loa crew")
-            else:
-                tts("julia", cfg.ttsgreeting % getnickspell(user))
+        try: monitord.login(user)
+        except: pass
+
+        if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
+            os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
+        else:
+            if getnickspell(user) != "NONE":
+                if user == "kristall":
+                    tts("julia", "a loa crew")
+                else:
+                    tts("julia", cfg.ttsgreeting % getnickspell(user))
+    result = stealth_login(user)
     return result
 
 def stealth_login(user):
     userfile = '%s/%s' % (cfg.userdir, user)
+    if os.path.isfile(userfile):
+        # already logged in
+        relogin = True
+
     if data['logouttimeouts'].has_key(user):
         delta = data['logouttimeouts'][user]
     else:
@@ -145,7 +155,6 @@ def stealth_login(user):
     expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
     f = open(userfile, 'w')
     f.write(str(expire))
-    #os.chown(userfile, 11488, 11489)
     os.chmod(userfile, stat.S_IREAD|stat.S_IWRITE|stat.S_IRGRP|stat.S_IWGRP)
     if data['etas'].has_key(user):
         # check if the user hit the ETA
