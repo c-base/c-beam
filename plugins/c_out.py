@@ -27,7 +27,7 @@ import datetime
 
 
 cfg = PersistConfig()
-cfg.define('rpcurl', 'http://10.0.1.13:1775')
+cfg.define('rpcurl', 'http://shout2:1775')
 
 usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
 c_outlog = '%s/botlogs/c_out.log' % cfg.get('datadir')
