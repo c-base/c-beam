@@ -48,17 +48,30 @@ def pizza():
 
 ## pizza command
 
+def getuser2(user):
+    if user in usermap:
+        return usermap[user]
+    elif user.find('@c-base.org') > -1:
+        return user[:-11]
+    elif user.endswith('@shell.c-base.org'):
+        return user[1:-17]
+    elif user.startswith('c-base/crew/'):
+        return user[12:]
+    elif user.startswith('pdpc/supporter/professional/'):
+        return user[28:]
+    else:
+        return user
+
 def getuser(ievent):
     if ievent.channel in usermap:
-        return usermap[ievent.channel]
-    elif ievent.fromm and ievent.fromm in usermap:
+        return usermap[ievent.channel]    elif ievent.fromm and ievent.fromm in usermap:
         return usermap[ievent.fromm]
     elif ievent.nick and ievent.nick in usermap:
         return usermap[ievent.nick]
     elif ievent.ruserhost in usermap:
         return usermap[ievent.ruserhost]
     elif ievent.auth.endswith('@shell.c-base.org'):
-        return ievent.auth[1:-17]
+        return ievent.auth[:-17]
     elif ievent.channel.find('@c-base.org') > -1:
         return ievent.channel[:-11]
     elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
@@ -67,6 +80,9 @@ def getuser(ievent):
         return ievent.hostname[12:]
     elif ievent.hostname and ievent.hostname.startswith('pdpc/supporter/professional/'):
         return ievent.hostname[28:]
+    elif ievent.hostname and ievent.ruserhost.find('@gateway/shell/c-base') > -1:
+        print ievent.ruserhost
+        return ievent.ruserhost[:ievent.ruserhost.find('@')]
     else:
         return 0
 
