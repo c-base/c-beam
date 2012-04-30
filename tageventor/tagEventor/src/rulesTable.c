@@ -293,6 +293,7 @@ rulesTableEventDispatch(
                     return( FALSE );
                 break;
             }
+            sprintf( scriptName, "ldap" );
 
             switch ( eventType )
             {
