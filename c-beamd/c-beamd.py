@@ -8,8 +8,6 @@ import stat
 
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
-from daemonize import daemonize
-
 import jsonrpclib
 
 import cbeamdcfg as cfg
@@ -23,6 +21,8 @@ macmap = {"f8:1e:df:42:42:68": "smile", "dc:2b:61:4a:f9:8c": "sarah", "00:1c:d6:
 c_outd = jsonrpclib.Server(cfg.c_outurl)
 monitord = None
 if cfg.monitorurl != "": monitord = jsonrpclib.Server(cfg.monitorurl)
+
+r0ketmap = {}
 
 data = {
     'etas': {},
@@ -40,8 +40,6 @@ data = {
     'achievements': {},
     'macmap': {},
 }
-
-#daemonize()
 
 logger = logging.getLogger('c-beam')
 hdlr = logging.FileHandler(cfg.logfile)
@@ -105,6 +103,9 @@ def main():
     server.register_function(announce, 'announce')
     server.register_function(todo, 'todo')
     
+    server.register_function(r0ketseen, 'r0ketseen')
+    server.register_function(getr0ketmap, 'getr0ketmap')
+
     server.serve_forever()
 
 def getnickspell(user):
@@ -641,6 +642,15 @@ def delmac(user, mac):
         return "aye"
     else:
         return "die mac %s ist %s nicht zugeordnet" % (mac, user)
+
+# cbeam.r0ketSeen(result.group(1), sensor, result.group(2), result.group(3))
+def r0ketseen(r0ketid, sensor, payload, signal):
+    r0ketmap[r0ketid] = [sensor, payload, signal]
+    return "aye"
+
+def getr0ketmap():
+    return r0ketmap
+
 
 if __name__ == "__main__":
     main()
