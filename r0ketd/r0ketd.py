@@ -7,10 +7,12 @@ from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 logindelta = 10
 timeoutdelta = 240
 
-r0ketmap = {'95471AAF': 'baccenfutter', 'TEST': 'TEST', '1B3A8845': 'MM'}
+r0ketmap = {'95471AAF': 'baccenfutter', 'TEST': 'TEST', '1854AD15': 'smile'}
 
 jsonrpclib.config.version = 1.0
 cbeam = jsonrpclib.Server('http://10.0.1.27:4254')
+
+sensor="c_leuse"
 
 def init():
     global ser
@@ -37,7 +39,7 @@ def main():
         if result != None:
             if result.group(1) in r0ketmap.keys():
                 print 'r0ket %s detected, logging in %s' % (result.group(1), r0ketmap[result.group(1)])
-                cbeam.r0ketSeen(result.group(1), sensor, result.group(2), result.group(3))
+                cbeam.r0ketseen(result.group(1), sensor, result.group(2), result.group(3))
                 result = cbeam.login(r0ketmap[result.group(1)])
             else:
                 print 'saw unknown r0ket: %s' % result.group(1)
