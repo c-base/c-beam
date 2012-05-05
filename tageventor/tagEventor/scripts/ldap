@@ -4,6 +4,8 @@ from ldapRfid import LdapRfidCheck
 import sys, re
 import login
 
+print "ldap"
+
 logindelta = 10
 timeoutdelta = 600
 
@@ -30,9 +32,4 @@ if m == None:
 user = m.group(1)
 
 result = login.login(user, timeoutdelta)
-if result == "login":
-    login.tts("julia", "hallo %s, willkommen an bord" % nickspell)
-elif result == "logout":
-    login.tts("julia", "guten heimflug %s" % nickspell)
-else:
-    print "ignore"
+print "%s: %s" % (result, user)
