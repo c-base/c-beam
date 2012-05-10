@@ -28,6 +28,9 @@ def handle_circle(bot, ievent):
         month = circledate.month + 1
         circledate = circledate.replace(month=month)
 
-    ievent.reply("der na:chste circle wird am %s um 2000 begonnen haben." % circledate.strftime("%Y-%m-%d"))
+    if ievent.channel == "#c-base":
+        bot.say("#c-base", "der na:chste circle wird am %s um 2000 begonnen haben." % circledate.strftime("%Y-%m-%d"))
+    else:
+        ievent.reply("der na:chste circle wird am %s um 2000 begonnen haben." % circledate.strftime("%Y-%m-%d"))
 
 cmnds.add('circle', handle_circle, ['OPER', 'USER', 'GUEST'])
