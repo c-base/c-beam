@@ -16,8 +16,6 @@ jsonrpclib.config.version = 1.0
 
 nickspells = {}
 
-macmap = {"f8:1e:df:42:42:68": "smile", "dc:2b:61:4a:f9:8c": "sarah", "00:1c:d6:33:db:16": "sirgoofy"}
-
 c_outd = jsonrpclib.Server(cfg.c_outurl)
 monitord = None
 if cfg.monitorurl != "": monitord = jsonrpclib.Server(cfg.monitorurl)
@@ -39,6 +37,8 @@ data = {
     'newetas': {},
     'achievements': {},
     'macmap': {},
+    'r0ketmap': {},
+    'r0ketids': {},
 }
 
 logger = logging.getLogger('c-beam')
@@ -62,25 +62,32 @@ def main():
     cleanup()
     server = SimpleJSONRPCServer(('0.0.0.0', 4254))
 
+    server.register_function(vwho, 'who')
+    server.register_function(available, 'available')
+
     server.register_function(logout, 'logout')
     server.register_function(login, 'login')
     server.register_function(stealth_login, 'slogin')
     server.register_function(stealth_logout, 'slogout')
     server.register_function(tagevent, 'tagevent')
+
     server.register_function(eta, 'eta')
-    server.register_function(seteta, 'seteta')
-    server.register_function(etd, 'etd')
-    server.register_function(lte, 'lte')
-    server.register_function(vwho, 'who')
-    server.register_function(newetas, 'newetas')
-    server.register_function(achievements, 'achievements')
     server.register_function(geteta, 'geteta')
+    server.register_function(seteta, 'seteta')
+    server.register_function(newetas, 'newetas')
+
+    server.register_function(etd, 'etd')
     server.register_function(getetd, 'getetd')
+
+    server.register_function(lte, 'lte')
     server.register_function(getlte, 'getlte')
     server.register_function(getlteforday, 'getlteforday')
-    server.register_function(available, 'available')
+
+    server.register_function(achievements, 'achievements')
+
     server.register_function(getnickspell, 'getnickspell')
     server.register_function(setnickspell, 'setnickspell')
+
     server.register_function(settimeout, 'settimeout')
     server.register_function(gettimeout, 'gettimeout')
 
@@ -105,6 +112,8 @@ def main():
     
     server.register_function(r0ketseen, 'r0ketseen')
     server.register_function(getr0ketmap, 'getr0ketmap')
+    server.register_function(registerr0ket, 'registerr0ket')
+    server.register_function(getr0ketuser, 'getr0ketuser')
 
     server.serve_forever()
 
@@ -645,12 +654,26 @@ def delmac(user, mac):
 
 # cbeam.r0ketSeen(result.group(1), sensor, result.group(2), result.group(3))
 def r0ketseen(r0ketid, sensor, payload, signal):
-    r0ketmap[r0ketid] = [sensor, payload, signal]
+    timestamp = 42
+    data['r0ketmap'][r0ketid] = [sensor, payload, signal, timestamp]
+    save()
+    if r0ketid in data['r0ketids'].keys():
+        print 'r0ket %s detected, logging in %s' % (r0ketid, data['r0ketids'][r0ketid])
+        result = login(data['r0ketids'][r0ketid])
+    else:
+        print 'saw unknown r0ket: %s' % result.group(1)
     return "aye"
 
 def getr0ketmap():
-    return r0ketmap
+    return data['r0ketmap']
 
+def registerr0ket(r0ketid, user):
+    data['r0ketids'][r0ketid] = user
+    save()
+    return "aye"
+
+def getr0ketuser(r0ketid):
+    return data['r0ketids'][r0ketid]
 
 if __name__ == "__main__":
     main()
