@@ -56,11 +56,11 @@ class DDate(object):
         else:
             msg = self.weekdays[self.dayOfWeek] +  \
                     u', the ' + showDayNum(self.dayOfSeason) + \
-                    u' day of ' + self.dSeasons[self.seasonNum] + \
+                    u' day of ' + self.seasons[self.seasonNum] + \
                     u' in the YOLD ' + `self.YOLD` + '.'
                 if(self.seasonHoliday):
                     msg = msg + u' Celebrate ' + self.seasonHolidays[self.seasonNum] + '!'
-                if(self.dApostleHoliday):
+                if(self.apostleHoliday):
                     msg = msg + u' Celebrate ' + self.apostleHolidays[self.seasonNum] + '!'
                 return msg
 
@@ -80,7 +80,7 @@ class DDate(object):
         dd.seasonNum = (correctedDay / 73)
         dd.YOLD = aDate.year + 1166
         dd.stTibs = isLeapYear(aDate.year) and (dayOfYear == 60)
-        dd.checkHoliday(dd.dDayOfSeason) 
+        dd.checkHoliday(dd.dayOfSeason) 
 
     @classmethod
     def today(klass):
