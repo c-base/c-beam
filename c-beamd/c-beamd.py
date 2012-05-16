@@ -661,7 +661,7 @@ def r0ketseen(r0ketid, sensor, payload, signal):
         print 'r0ket %s detected, logging in %s' % (r0ketid, data['r0ketids'][r0ketid])
         result = login(data['r0ketids'][r0ketid])
     else:
-        print 'saw unknown r0ket: %s' % result.group(1)
+        print 'saw unknown r0ket: %s' % r0ketid
     return "aye"
 
 def getr0ketmap():
