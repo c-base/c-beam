@@ -4,7 +4,14 @@ from ldapRfid import LdapRfidCheck
 import sys, re
 import login
 
-print "ldap"
+import socket
+
+MCAST_GRP = '10.0.1.255'
+MCAST_PORT = 7343
+
+
+
+
 
 logindelta = 10
 timeoutdelta = 600
@@ -15,6 +22,16 @@ if (len(sys.argv) != 3):
     sys.exit(1)
 
 rfidUUid = sys.argv[1]
+
+# send rfid via udp broadcast
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+#sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+sock.sendto(rfidUUid, (MCAST_GRP, MCAST_PORT))
+
+# debug output
+print "ldap: %s" % rfidUUid
+
 # anonymous bind against lea
 f = LdapRfidCheck("ldap://10.0.1.7:389/", 'ou=crew,dc=c-base,dc=org', '', '', 'rfid', '(memberOf=cn=crew,ou=groups,dc=c-base,dc=org)')
 userDn = f.getUserForRfid(rfidUUid)
