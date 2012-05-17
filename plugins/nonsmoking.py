@@ -19,13 +19,13 @@ def pose_as_nonsmoker(bot, ievent):
         diff = now - firstday
         days = diff.days
         bot.say('#c-base', "%s raucht jetzt seit %i Tagen." % (ievent.nick, days))
-    elif ievent.nick in ('baccenfutter'):
-        firstday = datetime.datetime(2011, 12, 6, 0, 0, 0)
-        now = datetime.datetime.now()
-        diff = now - firstday
-        days = diff.days
-        bot.say('#c-base', "baccenfutter ist jetzt seit %i Tagen Nichtraucher." % days)
-    elif ievent.nick in ('tacco'):
+    #elif ievent.nick in ('baccenfutter'):
+        #firstday = datetime.datetime(2011, 12, 6, 0, 0, 0)
+        #now = datetime.datetime.now()
+        #diff = now - firstday
+        #days = diff.days
+        #bot.say('#c-base', "baccenfutter ist jetzt seit %i Tagen Nichtraucher." % days)
+    elif ievent.nick in ('tacco', 'teco'):
         bot.say('#c-base', "deine mudder.")
     else:
         bot.say('#c-base', "ich hab keine ahnung wie lange du schon rauchst oder nicht rauchst, %s." % ievent.nick)
