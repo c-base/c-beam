@@ -6,6 +6,7 @@ import logging
 import datetime
 import stat
 import ddate
+from ddate import DDate
 
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
@@ -74,7 +75,6 @@ def main():
 
     server.register_function(eta, 'eta')
     server.register_function(geteta, 'geteta')
-    server.register_function(ddate, 'ddate')
     server.register_function(seteta, 'seteta')
     server.register_function(newetas, 'newetas')
 
@@ -116,6 +116,9 @@ def main():
     server.register_function(getr0ketmap, 'getr0ketmap')
     server.register_function(registerr0ket, 'registerr0ket')
     server.register_function(getr0ketuser, 'getr0ketuser')
+
+    server.register_function(ddate, 'ddate')
+    server.register_function(fnord, 'fnord')
 
     server.serve_forever()
 
@@ -295,8 +298,12 @@ def eta(user, text):
     return seteta(user, eta)
 
 def ddate():
-    return "At c-base it's now "+str(DDate.today())
+    now = DDate()
+    now.fromDate(datetime.date.today())
+    return "Today is "+str(now)
 
+def fnord():
+    return DDate().fnord()
 
 def lteconvert():
     # LTE conversion to ETA

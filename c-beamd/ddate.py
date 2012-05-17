@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-#Taken from pyChao - Python IRC-Bot
-#Released under GPL-3 (at least that's what their cooglegode site says)
-import datetime
+import datetime, random
 
 def showDayNum(num):
     if((num!=11) and ((num % 10)==1)):
@@ -28,60 +26,78 @@ def leapYearCorrection(aDay, year):
         return aDay
 
 class DDate(object):
-    seasonNum = 0
-    dayOfWeek = 0
-    dayOfSeason = 0
-    YOLD = 0
-    seasonHoliday = 0
-    apostleHoliday = 0
-    stTibs = False
-
-    seasons = ["Chaos", "Discord", "Confusion", "Bureaucracy", "The Aftermath"]
-    weekdays = ["Sweetmorn", "Boomtime", "Pungenday", "Prickle-Prickle", "Setting Orange"]
-    apostleHolidays = ["Mungday","Mojoday","Syaday","Zaraday","Maladay"]
-    seasonHolidays = ["Chaoflux", "Discoflux", "Confuflux", "Bureflux", "Afflux"]
-
+    dSeasonNum = 0
+    dDayOfWeek = 0
+    dDayOfSeason = 0
+    dYOLD = 0
+    dSeasonHoliday = 0
+    dApostleHoliday = 0
+    dStTibs = False
+#    def __new__(self):
+#        pass
     def __init__(self):
-        self.seasonNum = 0
-        self.dayOfWeek = 0
-        self.dayOfSeason = 0
-        self.YOLD = 0
-        self.seasonHoliday = False
-        self.apostleHoliday = False
-        self.stTibs = False
-
+        self.dSeasonNum = 0
+        self.dDayOfWeek = 0
+        self.dDayOfSeason = 0
+        self.dYOLD = 0
+        self.dSeasonHoliday = False
+        self.dApostleHoliday = False
+        self.dStTibs = False
     def __str__(self):
         if(self.dStTibs):
-            return "ST TIBS DAY!"
+                return "ST TIBS DAY!"
         else:
-            msg = self.weekdays[self.dayOfWeek] +  \
-                    u', the ' + showDayNum(self.dayOfSeason) + \
-                    u' day of ' + self.seasons[self.seasonNum] + \
-                    u' in the YOLD ' + `self.YOLD` + '.'
-                if(self.seasonHoliday):
-                    msg = msg + u' Celebrate ' + self.seasonHolidays[self.seasonNum] + '!'
-                if(self.apostleHoliday):
-                    msg = msg + u' Celebrate ' + self.apostleHolidays[self.seasonNum] + '!'
+                msg = self.dWeekdays[self.dDayOfWeek] +  \
+                        u', the ' + showDayNum(self.dDayOfSeason) + \
+                        u' day of ' + self.dSeasons[self.dSeasonNum] + \
+                        u' in the YOLD ' + `self.dYOLD` + '.'
+                if(self.dSeasonHoliday):
+                        msg = msg + u' Celebrate ' + self.dSeasonHolidays[self.dSeasonNum] + '!'
+                if(self.dApostleHoliday):
+                        msg = msg + u' Celebrate ' + self.dApostleHolidays[self.dSeasonNum] + '!'
                 return msg
+
+    dSeasons = ["Chaos", "Discord", "Confusion", "Bureaucracy", "The Aftermath"]
+    dWeekdays = ["Sweetmorn", "Boomtime", "Pungenday", "Prickle-Prickle", "Setting Orange"]
+    dApostleHolidays = ["Mungday","Mojoday","Syaday","Zaraday","Maladay"]
+    dSeasonHolidays = ["Chaoflux", "Discoflux", "Confuflux", "Bureflux", "Afflux"]
+
+
 
     def checkHoliday(self, day):
         if(day==5):
-            self.apostleHoliday = True
+                self.dApostleHoliday = True
         if(day==50):
-            self.seasonHoliday = True
-
-    @classmethod
-    def fromDate(klass, aDate):
+                self.dSeasonHoliday = True
+        
+    def fromDate(self, aDate):
         dayOfYear = aDate.timetuple()[7]
         correctedDay = leapYearCorrection(dayOfYear, aDate.year) - 1
-        dd = klass.new()
-        dd.dayOfSeason = (correctedDay % 73) + 1
-        dd.dayOfWeek = (correctedDay % 5)
-        dd.seasonNum = (correctedDay / 73)
-        dd.YOLD = aDate.year + 1166
-        dd.stTibs = isLeapYear(aDate.year) and (dayOfYear == 60)
-        dd.checkHoliday(dd.dayOfSeason) 
+        self.dDayOfSeason = (correctedDay % 73) + 1
+        self.dDayOfWeek = (correctedDay % 5)
+        self.dSeasonNum = (correctedDay / 73)
+        self.dYOLD = aDate.year + 1166
+        self.dStTibs = isLeapYear(aDate.year) and (dayOfYear == 60)
+        self.checkHoliday(self.dDayOfSeason) 
 
-    @classmethod
-    def today(klass):
-        return fromDate(date.today())
+    def today(self):
+        pass
+        #return self.fromDate(datetime.date.today())
+
+    def fnord(self):
+        messages = ['Hail Eris!',
+            'All Hail Discordia!',
+            'Kallisti!',
+            'Fnord.',
+            'Or not.',
+            'Wibble.',
+            'Pzat!',
+            'Pi\'tang!',
+            'Frink!',
+            'Slack!',
+            'Praise \'Bob\'!',
+            'Or kill me.',
+            'Grudnuk demand sustenance!',
+            'Keep the Lasagna flying!',
+        ]
+        return random.choice(messages)
