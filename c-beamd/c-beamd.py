@@ -5,6 +5,8 @@ import httplib, urllib, random, re, os, sys, time, subprocess
 import logging
 import datetime
 import stat
+import ddate
+from ddate import DDate
 
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
@@ -114,6 +116,9 @@ def main():
     server.register_function(getr0ketmap, 'getr0ketmap')
     server.register_function(registerr0ket, 'registerr0ket')
     server.register_function(getr0ketuser, 'getr0ketuser')
+
+    server.register_function(ddate, 'ddate')
+    server.register_function(fnord, 'fnord')
 
     server.serve_forever()
 
@@ -291,6 +296,14 @@ def eta(user, text):
     #tts("julia", "E.T.A. %s: %s" % (getnickspell(user), eta))
     tts("julia", "E.T.A. %s: %d Uhr %d ." % (getnickspell(user), hour, minute))
     return seteta(user, eta)
+
+def ddate():
+    now = DDate()
+    now.fromDate(datetime.date.today())
+    return "Today is "+str(now)
+
+def fnord():
+    return DDate().fnord()
 
 def lteconvert():
     # LTE conversion to ETA
