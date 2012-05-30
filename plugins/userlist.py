@@ -219,8 +219,18 @@ class UserlistWatcher(TimedLoop):
                     except: pass
 
         # check if new users have arrived
-        #newusers = server.newusers()
-        # TODO
+        arrivals = server.arrivals()
+        if len(newetas) > 0:
+            for arrivesub in etaitem.data.arrivesubs:
+                arrivelist = []
+                for key in sorted(arrivals.keys()):
+                    #if getuser2(arrivesub) == key:
+                        #print "skip notifying yourself"
+                    #else:
+                    arrivelist += ['%s [%s]' % (key, arrivals[key])]
+                if bot and bot.type == "sxmpp" and len(etalist) > 0:
+                    bot.say(arrivesub, 'Boarding: ' + ', '.join(arrivelist))
+        
             
         usercount = len(whoresult['available'])
         if self.lastcount == 0 and usercount > 0:
