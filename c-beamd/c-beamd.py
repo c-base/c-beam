@@ -213,6 +213,7 @@ def stealth_logout(user):
     userfile = '%s/%s' % (cfg.userdir, user)
     if os.path.isfile(userfile):
         os.remove(userfile)
+    if data['lastlocation'].has_key(user): del data['lastlocation'][user]
     return "aye"
 
 def tagevent(user):
@@ -223,7 +224,7 @@ def tagevent(user):
     if os.path.isfile(userfile):
         timestamps = eval(open(userfile).read())
         now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
-        data['lastlocation'].remove(user)
+        if data['lastlocation'].has_key(user): del data['lastlocation'][user]
         if timestamps[0] - now > 0:
            # multiple logins, ignore
            logger.info("multiple logins from %s, ignoring" % user)
@@ -359,7 +360,8 @@ def cleanup():
         userfile = "%s/%s" % (cfg.userdir, user)
         timestamps = eval(open(userfile).read())
         if timestamps[1] - now < 0:
-            os.remove(userfile)
+            stealth_logout(user)
+            #os.remove(userfile)
 
     # remove expired ETAs
     for user in data['etas'].keys():
