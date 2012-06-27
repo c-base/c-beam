@@ -21,6 +21,7 @@ nickspells = {}
 c_outd = jsonrpclib.Server(cfg.c_outurl)
 monitord = None
 if cfg.monitorurl != "": monitord = jsonrpclib.Server(cfg.monitorurl)
+print cfg.monitorurl
 
 r0ketmap = {}
 
@@ -37,10 +38,12 @@ data = {
     'vetas': {},
     'vetatimestamps': {},
     'newetas': {},
+    'arrivals': {},
     'achievements': {},
     'macmap': {},
     'r0ketmap': {},
     'r0ketids': {},
+    'lastlocation': {},
 }
 
 logger = logging.getLogger('c-beam')
@@ -77,6 +80,7 @@ def main():
     server.register_function(geteta, 'geteta')
     server.register_function(seteta, 'seteta')
     server.register_function(newetas, 'newetas')
+    server.register_function(arrivals, 'arrivals')
 
     server.register_function(etd, 'etd')
     server.register_function(getetd, 'getetd')
@@ -120,6 +124,12 @@ def main():
     server.register_function(ddate, 'ddate')
     server.register_function(fnord, 'fnord')
 
+    server.register_function(setdigitalmeter, 'setdigitalmeter')
+
+
+    server.register_function(montest, 'montest')
+    
+
     server.serve_forever()
 
 def getnickspell(user):
@@ -156,10 +166,14 @@ def login(user):
     return result
 
 def stealth_login(user):
+    now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
     userfile = '%s/%s' % (cfg.userdir, user)
     if os.path.isfile(userfile):
         # already logged in
         relogin = True
+    else:
+        data['arrivals'][user] = now
+        save()
 
     if data['logouttimeouts'].has_key(user):
         delta = data['logouttimeouts'][user]
@@ -173,7 +187,6 @@ def stealth_login(user):
     os.chmod(userfile, stat.S_IREAD|stat.S_IWRITE|stat.S_IRGRP|stat.S_IWGRP)
     if data['etas'].has_key(user):
         # check if the user hit the ETA
-        now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
         #if (now - data['etatimestamps'][user]) > 9:
         if extract_eta(data['etas'][user]) == datetime.datetime.now().strftime("%H%M"):
             data['achievements'][user] = 'ETA'
@@ -210,6 +223,7 @@ def tagevent(user):
     if os.path.isfile(userfile):
         timestamps = eval(open(userfile).read())
         now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+        data['lastlocation'].remove(user)
         if timestamps[0] - now > 0:
            # multiple logins, ignore
            logger.info("multiple logins from %s, ignoring" % user)
@@ -219,7 +233,8 @@ def tagevent(user):
            if os.path.isfile(userfile):
                 os.rename(userfile, "%s.logout" % userfile)
                 tts("julia", "guten heimflug %s." % getnickspell(user))
-                if monitord: monitord.logout(user)
+                try: monitord.logout(user)
+                except: pass
            return "aye"
     else:
         if os.path.isfile("%s.logout" % userfile):
@@ -374,11 +389,18 @@ def available():
 def who():
     """list all user that have logged in on the mirror."""
     cleanup()
-    return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds']}
+    return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'lastlocation': data['lastlocation']}
 
 def newetas():
     tmp = data['newetas']
     data['newetas'] = {}
+    save()
+    return tmp
+
+
+def arrivals():
+    tmp = data['arrivals']
+    data['arrivals'] = {}
     save()
     return tmp
 
@@ -465,10 +487,6 @@ def gettimeout(user, timeout):
     else:
         return "not set"
 
-
-
-
-
 # MO 1900 2300
 def lte(user, args):
 
@@ -500,12 +518,17 @@ def getlteforday(day):
 def getlte():
     return data['ltes']
 
-
+#################################################################
+# Forward c_out calls
+#################################################################
 
 # c_out methods will be forwarded to c_outd running on shout
 def tts(voice, text): 
     if cfg.ttsenabled == 1:
-        return c_outd.tts(voice, text)
+        res = "fail"
+        try: res = c_outd.tts(voice, text)
+        except: pass
+        return res
     else:
         return "aye"
 
@@ -518,9 +541,9 @@ def sounds(): return c_outd.sounds()
 def c_out(): return c_outd.c_out()
 def announce(text): return c_outd.announce(text)
 
-
-
-
+#################################################################
+# Camp Village handling
+#################################################################
 
 def vlogin(user):
     userfile = '%s/%s' % (cfg.vuserdir, user)
@@ -627,7 +650,11 @@ def vavailable():
 def vwho():
     """list all user that have logged in on the mirror."""
     cleanup()
-    return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'vavailable': vavailable(), 'veta': data['vetas']}
+    return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'vavailable': vavailable(), 'veta': data['vetas'], 'lastlocation': data['lastlocation']}
+
+#################################################################
+# ToDo
+#################################################################
 
 def todo():
     todoarray = []
@@ -640,6 +667,9 @@ def todo():
     
     return todoarray
 
+#################################################################
+# DHCP hook
+#################################################################
 
 def dhcphook(action, mac, ip, name):
     print "%s (%s) got %s" % (name, mac, ip)
@@ -665,16 +695,22 @@ def delmac(user, mac):
     else:
         return "die mac %s ist %s nicht zugeordnet" % (mac, user)
 
+#################################################################
+# r0ket methods
+#################################################################
+
 # cbeam.r0ketSeen(result.group(1), sensor, result.group(2), result.group(3))
 def r0ketseen(r0ketid, sensor, payload, signal):
     timestamp = 42
     data['r0ketmap'][r0ketid] = [sensor, payload, signal, timestamp]
-    save()
     if r0ketid in data['r0ketids'].keys():
-        print 'r0ket %s detected, logging in %s' % (r0ketid, data['r0ketids'][r0ketid])
-        result = login(data['r0ketids'][r0ketid])
+        print 'r0ket %s detected, logging in %s (%s)' % (r0ketid, data['r0ketids'][r0ketid], sensor)
+        user = data['r0ketids'][r0ketid]
+        data['lastlocation'][user] = sensor
+        result = login(user)
     else:
-        print 'saw unknown r0ket: %s' % r0ketid
+        print 'saw unknown r0ket: %s (%s)' % (r0ketid, sensor)
+    save()
     return "aye"
 
 def getr0ketmap():
@@ -687,6 +723,14 @@ def registerr0ket(r0ketid, user):
 
 def getr0ketuser(r0ketid):
     return data['r0ketids'][r0ketid]
+
+def setdigitalmeter(meterid, value):
+    os.system('curl -d \'{"method":"set_digital_meter","id":0,"params":[%d,"%s"]}\' http://altar.cbrp3.c-base.org:4568/jsonrpc' % (meterid, value))
+    return "aye"
+
+def montest(message):
+    monitord.message(message)
+    return "yo"
 
 if __name__ == "__main__":
     main()

@@ -7,7 +7,7 @@ from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 logindelta = 10
 timeoutdelta = 240
 
-r0ketmap = {'95471AAF': 'baccenfutter', 'TEST': 'TEST', '1854AD15': 'smile'}
+r0ketmap = {'95471AAF': 'baccenfutter', '244A0407': 'keyboardsurfer', '1854AD15': 'smile', '6DA003CC': 'dazz'}
 
 jsonrpclib.config.version = 1.0
 cbeam = jsonrpclib.Server('http://10.0.1.27:4254')
