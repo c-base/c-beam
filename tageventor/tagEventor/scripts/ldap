@@ -38,6 +38,7 @@ userDn = f.getUserForRfid(rfidUUid)
 
 if userDn == None:
     # unknown RFID tag
+    login.unknowntag(rfidUUid)
     print "unknown tag"
     sys.exit(1)
 

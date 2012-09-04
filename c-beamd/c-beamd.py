@@ -1,7 +1,7 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-import httplib, urllib, random, re, os, sys, time, subprocess
+import httplib, urllib, random, re, os, sys, time, subprocess, feedparser
 import logging
 import datetime
 import stat
@@ -46,6 +46,8 @@ data = {
     'lastlocation': {},
 }
 
+# TODO barstates = ['auf', 'zu', 'bar macht auf' (5min), 'last call' (5min) ]
+
 logger = logging.getLogger('c-beam')
 hdlr = logging.FileHandler(cfg.logfile)
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
@@ -72,6 +74,7 @@ def main():
 
     server.register_function(logout, 'logout')
     server.register_function(login, 'login')
+    server.register_function(login, 'login_wlan')
     server.register_function(stealth_login, 'slogin')
     server.register_function(stealth_logout, 'slogout')
     server.register_function(tagevent, 'tagevent')
@@ -105,6 +108,8 @@ def main():
 
     server.register_function(cleanup, 'cleanup')
 
+    server.register_function(events, 'events')
+
     server.register_function(tts, 'tts')
     server.register_function(r2d2, 'r2d2')
     server.register_function(play, 'play')
@@ -127,7 +132,7 @@ def main():
     server.register_function(setdigitalmeter, 'setdigitalmeter')
 
 
-    server.register_function(montest, 'montest')
+    server.register_function(monmessage, 'monmessage')
     
 
     server.serve_forever()
@@ -145,6 +150,27 @@ def setnickspell(user, nickspell):
     f.close()
     return "ok"
 
+def is_logged_in(user):
+    userfile = '%s/%s' % (cfg.userdir, user)
+    return os.path.isfile(userfile)
+
+def login_wlan(user):
+    logger.info("login_wlan(%s)" % user)
+    if is_logged_in(user):
+        logger.info("login_wlan(%s): already logged in" % user)
+    else:
+        login(user)
+
+def welcometts(user):
+    if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
+        os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
+    else:
+        if getnickspell(user) != "NONE":
+            if user == "kristall":
+                tts("julia", "a loa crew")
+            else:
+                tts("julia", cfg.ttsgreeting % getnickspell(user))
+
 def login(user):
     userfile = '%s/%s' % (cfg.userdir, user)
     # TTS and message display only if not already logged in 
@@ -153,15 +179,8 @@ def login(user):
     else:
         try: monitord.login(user)
         except: pass
+        welcometts(user)
 
-        if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
-            os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
-        else:
-            if getnickspell(user) != "NONE":
-                if user == "kristall":
-                    tts("julia", "a loa crew")
-                else:
-                    tts("julia", cfg.ttsgreeting % getnickspell(user))
     result = stealth_login(user)
     return result
 
@@ -176,7 +195,7 @@ def stealth_login(user):
         save()
 
     if data['logouttimeouts'].has_key(user):
-        delta = data['logouttimeouts'][user]
+        delta = int(data['logouttimeouts'][user])
     else:
         delta = cfg.timeoutdelta
     logints = datetime.datetime.now() + datetime.timedelta(seconds=cfg.logindelta)
@@ -339,7 +358,6 @@ def lteconvert():
         dayitem.save()   
 
 def cleanup():
-    #vcleanup()
     users = userlist()
     usercount = len(users)
     now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
@@ -371,12 +389,12 @@ def cleanup():
             save()
 
     # remove expired ETDs
-    #for user in data['etds'].keys():
-        #if now > data['etdtimestamps'][user]:
-            #stealth_logout(user)
-            #del data['etds'][user]
-            #del data['etdtimestamps'][user]
-            #save()
+    for user in data['etds'].keys():
+        if now > data['etdtimestamps'][user]:
+            stealth_logout(user)
+            del data['etds'][user]
+            del data['etdtimestamps'][user]
+            save()
 
     return 0
 
@@ -398,7 +416,6 @@ def newetas():
     data['newetas'] = {}
     save()
     return tmp
-
 
 def arrivals():
     tmp = data['arrivals']
@@ -483,7 +500,7 @@ def settimeout(user, timeout):
     save()
     return "aye"
 
-def gettimeout(user, timeout):
+def gettimeout(user):
     if data['logouttimeouts'].has_key(user):
         return data['logouttimeouts'][user]
     else:
@@ -704,8 +721,9 @@ def delmac(user, mac):
 # cbeam.r0ketSeen(result.group(1), sensor, result.group(2), result.group(3))
 def r0ketseen(r0ketid, sensor, payload, signal):
     timestamp = 42
-    data['r0ketmap'][r0ketid] = [sensor, payload, signal, timestamp]
+    print data['r0ketids'].keys()
     if r0ketid in data['r0ketids'].keys():
+        #data['r0ketmap'][r0ketid] = [sensor, payload, signal, timestamp]
         print 'r0ket %s detected, logging in %s (%s)' % (r0ketid, data['r0ketids'][r0ketid], sensor)
         user = data['r0ketids'][r0ketid]
         data['lastlocation'][user] = sensor
@@ -726,11 +744,26 @@ def registerr0ket(r0ketid, user):
 def getr0ketuser(r0ketid):
     return data['r0ketids'][r0ketid]
 
+#################################################################
+# misc methods
+#################################################################
+
 def setdigitalmeter(meterid, value):
+
     os.system('curl -d \'{"method":"set_digital_meter","id":0,"params":[%d,"%s"]}\' http://altar.cbrp3.c-base.org:4568/jsonrpc' % (meterid, value))
     return "aye"
 
-def montest(message):
+def events():
+    events = []
+    d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=regular&cpath=&rssview=today')
+    for entry in d['entries']:
+        title = re.search(r'.*: (.*)', entry['title']).group(1)
+        end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
+        start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
+        events.append('%s (%s-%s)' % (title, start, end))
+    return events
+
+def monmessage(message):
     monitord.message(message)
     return "yo"
 

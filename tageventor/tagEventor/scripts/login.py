@@ -25,31 +25,5 @@ def login(user, timeoutdelta):
 
     return server.tagevent(user)
 
-    if user == "unknown":
-        return "login"
-    userfile = '%s/%s' % (userdir, user)
-    if os.path.isfile(userfile):
-        timestamps = eval(open(userfile).read())
-        now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
-        if timestamps[0] - now > 0:
-           # multiple logins, ignore
-           log("multiple logins, ignoring")
-           return "ignore"
-        else:
-           #logout
-           log("%s logged out" % user)
-           os.rename(userfile, "%s.logout" % userfile)
-           return "logout"
-    else:
-        if os.path.isfile("%s.logout" % userfile):
-           return "ignore"
-        else:
-           logints = datetime.datetime.now() + datetime.timedelta(seconds=logindelta)
-           timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=timeoutdelta)
-           expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
-           f = open(userfile, 'w')
-           f.write(str(expire))
-           #os.chown(userfile, 11488, 11489)
-           os.chmod(userfile, stat.S_IREAD|stat.S_IWRITE|stat.S_IRGRP|stat.S_IWGRP)
-           log("%s logged in" % user)
-           return "login"
+def unknowntag(rfid):
+    return server.monmessage(rfid)
