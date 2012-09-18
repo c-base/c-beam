@@ -7,6 +7,7 @@ import datetime
 import stat
 import ddate
 from ddate import DDate
+import time
 
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
@@ -44,6 +45,7 @@ data = {
     'r0ketmap': {},
     'r0ketids': {},
     'lastlocation': {},
+    'reminder': {},
 }
 
 # TODO barstates = ['auf', 'zu', 'bar macht auf' (5min), 'last call' (5min) ]
@@ -74,7 +76,8 @@ def main():
 
     server.register_function(logout, 'logout')
     server.register_function(login, 'login')
-    server.register_function(login, 'login_wlan')
+    server.register_function(login_wlan, 'login_wlan')
+    server.register_function(login_wlan, 'wifi_login')
     server.register_function(stealth_login, 'slogin')
     server.register_function(stealth_logout, 'slogout')
     server.register_function(tagevent, 'tagevent')
@@ -133,6 +136,8 @@ def main():
 
 
     server.register_function(monmessage, 'monmessage')
+    server.register_function(remind, 'remind')
+    server.register_function(remind, 'reminder')
     
 
     server.serve_forever()
@@ -190,6 +195,7 @@ def stealth_login(user):
     if os.path.isfile(userfile):
         # already logged in
         relogin = True
+        #return extend(user)
     else:
         data['arrivals'][user] = now
         save()
@@ -200,9 +206,10 @@ def stealth_login(user):
         delta = cfg.timeoutdelta
     logints = datetime.datetime.now() + datetime.timedelta(seconds=cfg.logindelta)
     timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=delta)
-    expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S"))]
+    expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S")), time.time()]
     f = open(userfile, 'w')
     f.write(str(expire))
+    f.close()
     os.chmod(userfile, stat.S_IREAD|stat.S_IWRITE|stat.S_IRGRP|stat.S_IWGRP)
     if data['etas'].has_key(user):
         # check if the user hit the ETA
@@ -215,7 +222,26 @@ def stealth_login(user):
         #    if extract_eta(data['etas'][user]) == datetime.datetime.now().strftime("%H%M"):
         #        print "HIT"
         #    print "bar"
+    if user in data['reminder'].keys():
+        return data['reminder'][user]
     return "aye"
+
+def extend(user):
+    now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+    userfile = '%s/%s' % (cfg.userdir, user)
+    if not os.path.isfile(userfile):
+        return "extend failed"
+    timestamps = eval(open(userfile).read())
+    if data['logouttimeouts'].has_key(user):
+        delta = int(data['logouttimeouts'][user])
+    else:
+        delta = cfg.timeoutdelta
+    logints = datetime.datetime.now() + datetime.timedelta(seconds=cfg.logindelta)
+    timeoutts = datetime.datetime.now() + datetime.timedelta(minutes=delta)
+    expire = [int(logints.strftime("%Y%m%d%H%M%S")), int(timeoutts.strftime("%Y%m%d%H%M%S")), timestamps[2]]
+    f = open(userfile, 'w')
+    f.write(str(expire))
+    f.close()
 
 def logout(user):
     result = stealth_logout(user)
@@ -230,9 +256,13 @@ def logout(user):
 
 def stealth_logout(user):
     userfile = '%s/%s' % (cfg.userdir, user)
-    if os.path.isfile(userfile):
-        os.remove(userfile)
     if data['lastlocation'].has_key(user): del data['lastlocation'][user]
+    if os.path.isfile(userfile):
+        #now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+        #timestamps = eval(open(userfile).read())
+        os.remove(userfile)
+        #if (len(timestamps>2)):
+        #return int(now)-int(timestamps[0])+int(cfg.logindelta)
     return "aye"
 
 def tagevent(user):
@@ -363,15 +393,17 @@ def cleanup():
     now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
 
     # 
-    for user in users:
-        if user.endswith(".logout"):
-            userfile = "%s/%s" % (cfg.userdir, user)
-            os.remove(userfile)
-
     # remove ETA if user is logged in
     for user in data['etas'].keys():
         if user in users:
             del data['etas'][user]
+
+    # remove .logout files
+    for user in users:
+        if user.endswith(".logout"):
+            userfile = "%s/%s" % (cfg.userdir, user)
+            os.remove(userfile)
+            users.remove(user)
 
     # remove expired users
     for user in users:
@@ -406,10 +438,20 @@ def available():
     cleanup()
     return userlist()
 
+def ceitloch():
+    now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+    users = userlist()
+    cl = {}
+    for user in users:
+        userfile = "%s/%s" % (cfg.userdir, user)
+        timestamps = eval(open(userfile).read())
+        cl[user] = time.time() - float(timestamps[2])
+    return cl
+
 def who():
     """list all user that have logged in on the mirror."""
     cleanup()
-    return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'lastlocation': data['lastlocation']}
+    return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'lastlocation': data['lastlocation'], 'ceitloch': ceitloch(), 'reminder': data['reminder']}
 
 def newetas():
     tmp = data['newetas']
@@ -669,7 +711,7 @@ def vavailable():
 def vwho():
     """list all user that have logged in on the mirror."""
     cleanup()
-    return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'vavailable': vavailable(), 'veta': data['vetas'], 'lastlocation': data['lastlocation']}
+    return {'available': userlist(), 'eta': data['etas'], 'etd': data['etds'], 'vavailable': vavailable(), 'veta': data['vetas'], 'lastlocation': data['lastlocation'], 'ceitloch': ceitloch(), 'reminder': data['reminder']}
 
 #################################################################
 # ToDo
@@ -745,6 +787,14 @@ def getr0ketuser(r0ketid):
     return data['r0ketids'][r0ketid]
 
 #################################################################
+# reminder methods
+#################################################################
+
+def remind(user, reminder):
+   # save reminder for user
+   data['reminder'][user] = reminder
+
+#################################################################
 # misc methods
 #################################################################
 
@@ -755,7 +805,7 @@ def setdigitalmeter(meterid, value):
 
 def events():
     events = []
-    d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=regular&cpath=&rssview=today')
+    d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
     for entry in d['entries']:
         title = re.search(r'.*: (.*)', entry['title']).group(1)
         end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
