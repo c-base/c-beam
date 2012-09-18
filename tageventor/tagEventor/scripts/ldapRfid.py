@@ -16,9 +16,10 @@ def getDnForLdapAttr(attr, key, result):
     for dn, attrs in result:
         if attrs.has_key(attr):
 			# a ldapentry can have multiple attribute with the same key
-			for k in attrs[attr]:
-				if k == key:
-					return dn
+            for rfids in attrs[attr]:
+                for k in rfids.split(','):
+                    if k == key:
+                        return dn
     return None
 
 
