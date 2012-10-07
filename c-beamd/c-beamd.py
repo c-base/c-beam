@@ -823,14 +823,14 @@ class TornadoHandlerFactory():
     _functions = {}
     def register_function(self, func, method_name=None):
         if method_name:
-            self._functions[method_name] = func
+            self._functions[method_name] = lambda s, *args: func(*args)
         else:
-            self._functions[func.__name__] = func
+            self._functions[func.__name__] = lambda s, *args: func(*args)
 
     def serve_forever(self):
         import new
         handler = new.classobj("NewRPCHandler", (JSONRPCHandler,), self._functions)
-        start_server(handler, port=8082)
+        start_server(handler, port=4254)
 
 if __name__ == "__main__":
     main()
