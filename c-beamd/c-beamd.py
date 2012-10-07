@@ -9,11 +9,13 @@ import ddate
 from ddate import DDate
 import time
 
-from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
-
 import jsonrpclib
 
 import cbeamdcfg as cfg
+
+from tornadorpc.json import JSONRPCHandler
+from tornadorpc import private, start_server
+
 
 jsonrpclib.config.version = 1.0
 
@@ -69,7 +71,7 @@ def init():
 def main():
     init()
     cleanup()
-    server = SimpleJSONRPCServer(('0.0.0.0', 4254))
+    server = TornadoHandlerFactory()
 
     server.register_function(vwho, 'who')
     server.register_function(available, 'available')
@@ -816,6 +818,19 @@ def events():
 def monmessage(message):
     monitord.message(message)
     return "yo"
+
+class TornadoHandlerFactory():
+    _functions = {}
+    def register_function(self, func, method_name=None):
+        if method_name:
+            self._functions[method_name] = func
+        else:
+            self._functions[func.__name__] = func
+
+    def serve_forever(self):
+        import new
+        handler = new.classobj("NewRPCHandler", (JSONRPCHandler,), self._functions)
+        start_server(handler, port=8082)
 
 if __name__ == "__main__":
     main()
