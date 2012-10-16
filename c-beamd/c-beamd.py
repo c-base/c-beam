@@ -595,7 +595,7 @@ def tts(voice, text):
 
 def r2d2(text): return c_outd.r2d2(text)
 def play(filename): return c_outd.play(filename)
-def setvolume(voice, text): return c_outd.setvolume(volume)
+def setvolume(volume): return c_outd.setvolume(volume)
 def getvolume(): return c_outd.getvolume()
 def voices(): return c_outd.voices()
 def sounds(): return c_outd.sounds()
