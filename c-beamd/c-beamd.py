@@ -22,6 +22,7 @@ jsonrpclib.config.version = 1.0
 nickspells = {}
 
 c_outd = jsonrpclib.Server(cfg.c_outurl)
+localc_outd = jsonrpclib.Server("http://127.0.0.1:1775")
 monitord = None
 if cfg.monitorurl != "": monitord = jsonrpclib.Server(cfg.monitorurl)
 print cfg.monitorurl
@@ -162,9 +163,11 @@ def is_logged_in(user):
     return os.path.isfile(userfile)
 
 def login_wlan(user):
+    if user == "nielc": user = "keiner"
     logger.info("login_wlan(%s)" % user)
     if is_logged_in(user):
         logger.info("login_wlan(%s): already logged in" % user)
+        extend(user)
     else:
         login(user)
 
@@ -174,11 +177,14 @@ def welcometts(user):
     else:
         if getnickspell(user) != "NONE":
             if user == "kristall":
+                #localtts("julia", "a loa crew")
                 tts("julia", "a loa crew")
             else:
+                #localtts("julia", cfg.ttsgreeting % getnickspell(user))
                 tts("julia", cfg.ttsgreeting % getnickspell(user))
 
 def login(user):
+    if user == "nielc": user = "keiner"
     userfile = '%s/%s' % (cfg.userdir, user)
     # TTS and message display only if not already logged in 
     if os.path.isfile(userfile):
@@ -192,12 +198,13 @@ def login(user):
     return result
 
 def stealth_login(user):
+    if user == "nielc": user = "keiner"
     now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
     userfile = '%s/%s' % (cfg.userdir, user)
     if os.path.isfile(userfile):
         # already logged in
         relogin = True
-        #return extend(user)
+        return extend(user)
     else:
         data['arrivals'][user] = now
         save()
@@ -215,20 +222,17 @@ def stealth_login(user):
     os.chmod(userfile, stat.S_IREAD|stat.S_IWRITE|stat.S_IRGRP|stat.S_IWGRP)
     if data['etas'].has_key(user):
         # check if the user hit the ETA
-        #if (now - data['etatimestamps'][user]) > 9:
         if extract_eta(data['etas'][user]) == datetime.datetime.now().strftime("%H%M"):
             data['achievements'][user] = 'ETA'
             print "YEAH"
             save()
-        #else:
-        #    if extract_eta(data['etas'][user]) == datetime.datetime.now().strftime("%H%M"):
-        #        print "HIT"
-        #    print "bar"
     if user in data['reminder'].keys():
         return data['reminder'][user]
     return "aye"
 
 def extend(user):
+    if user == "nielc": user = "keiner"
+    logger.info("extend %s" % user)
     now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
     userfile = '%s/%s' % (cfg.userdir, user)
     if not os.path.isfile(userfile):
@@ -244,8 +248,10 @@ def extend(user):
     f = open(userfile, 'w')
     f.write(str(expire))
     f.close()
+    return "aye"
 
 def logout(user):
+    if user == "nielc": user = "keiner"
     result = stealth_logout(user)
     if os.path.isfile('%s/%s/bye.mp3' % (cfg.sampledir, user)):
         os.system('mpg123 %s/%s/bye.mp3' % (cfg.sampledir, user))
@@ -257,6 +263,7 @@ def logout(user):
     return result
 
 def stealth_logout(user):
+    if user == "nielc": user = "keiner"
     userfile = '%s/%s' % (cfg.userdir, user)
     if data['lastlocation'].has_key(user): del data['lastlocation'][user]
     if os.path.isfile(userfile):
@@ -268,6 +275,7 @@ def stealth_logout(user):
     return "aye"
 
 def tagevent(user):
+    if user == "nielc": user = "keiner"
     logger.info("called tagevent for %s" % user)
     if user == "unknown":
         return "login"
@@ -284,6 +292,7 @@ def tagevent(user):
            userfile = '%s/%s' % (cfg.userdir, user)
            if os.path.isfile(userfile):
                 os.rename(userfile, "%s.logout" % userfile)
+                #localtts("julia", "guten heimflug %s." % getnickspell(user))
                 tts("julia", "guten heimflug %s." % getnickspell(user))
                 try: monitord.logout(user)
                 except: pass
@@ -594,6 +603,10 @@ def tts(voice, text):
         return res
     else:
         return "aye"
+
+def localtts(voice, text): 
+    try: res = localc_outd.tts(voice, text)
+    except: pass
 
 def r2d2(text): return c_outd.r2d2(text)
 def play(filename): return c_outd.play(filename)
