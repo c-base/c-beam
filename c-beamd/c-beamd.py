@@ -48,6 +48,7 @@ data = {
     'r0ketmap': {},
     'r0ketids': {},
     'lastlocation': {},
+    'lastlogout': {},
     'reminder': {},
 }
 
@@ -164,12 +165,15 @@ def is_logged_in(user):
 
 def login_wlan(user):
     if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
     logger.info("login_wlan(%s)" % user)
     if is_logged_in(user):
         logger.info("login_wlan(%s): already logged in" % user)
         extend(user)
     else:
-        login(user)
+        now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+	if now - data['lastlogout'][user] > 300:
+            login(user)
 
 def welcometts(user):
     if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
@@ -185,6 +189,7 @@ def welcometts(user):
 
 def login(user):
     if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
     userfile = '%s/%s' % (cfg.userdir, user)
     # TTS and message display only if not already logged in 
     if os.path.isfile(userfile):
@@ -199,6 +204,7 @@ def login(user):
 
 def stealth_login(user):
     if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
     now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
     userfile = '%s/%s' % (cfg.userdir, user)
     if os.path.isfile(userfile):
@@ -232,6 +238,7 @@ def stealth_login(user):
 
 def extend(user):
     if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
     logger.info("extend %s" % user)
     now = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
     userfile = '%s/%s' % (cfg.userdir, user)
@@ -252,6 +259,7 @@ def extend(user):
 
 def logout(user):
     if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
     result = stealth_logout(user)
     if os.path.isfile('%s/%s/bye.mp3' % (cfg.sampledir, user)):
         os.system('mpg123 %s/%s/bye.mp3' % (cfg.sampledir, user))
@@ -264,6 +272,7 @@ def logout(user):
 
 def stealth_logout(user):
     if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
     userfile = '%s/%s' % (cfg.userdir, user)
     if data['lastlocation'].has_key(user): del data['lastlocation'][user]
     if os.path.isfile(userfile):
@@ -272,10 +281,12 @@ def stealth_logout(user):
         os.remove(userfile)
         #if (len(timestamps>2)):
         #return int(now)-int(timestamps[0])+int(cfg.logindelta)
+    data['lastlogout'][user] = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
     return "aye"
 
 def tagevent(user):
     if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
     logger.info("called tagevent for %s" % user)
     if user == "unknown":
         return "login"
@@ -413,8 +424,9 @@ def cleanup():
     for user in users:
         if user.endswith(".logout"):
             userfile = "%s/%s" % (cfg.userdir, user)
-            os.remove(userfile)
-            users.remove(user)
+            if (time.time() - os.stat(userfile).st_ctime > 15):
+                os.remove(userfile)
+                users.remove(user)
 
     # remove expired users
     for user in users:
@@ -825,6 +837,7 @@ def events():
         title = re.search(r'.*: (.*)', entry['title']).group(1)
         end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
         start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
+        title = title.replace("c   user", "c++ user")
         events.append('%s (%s-%s)' % (title, start, end))
     return events
 
