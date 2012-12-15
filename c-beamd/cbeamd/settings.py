@@ -150,3 +150,5 @@ LOGGING = {
         },
     }
 }
+
+TTSGREETING = "Hallo %s, willkommen an bord"
