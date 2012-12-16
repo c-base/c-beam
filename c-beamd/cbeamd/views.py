@@ -1,10 +1,11 @@
 from jsonrpc import jsonrpc_method
 from models import User
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.utils import timezone
 from jsonrpc.proxy import ServiceProxy
 #from django.conf import settings
 import cbeamdcfg as cfg
+from ddate import DDate
 
 import os, re, feedparser
 
@@ -17,13 +18,6 @@ monitord = ServiceProxy('http://10.0.1.27:9090/')
 newarrivallist = []
 newetalist = []
 
-#@jsonrpc_method('who')
-#def who(request):
-    #available = User.objects.filter(status="online")
-    #if len(available) < 1:
-        #return "niemand da"
-    #else:
-        #return "an bord [%s]: " % len(available) + ", ".join([str(a) for a in available])
 
 @jsonrpc_method('login')
 def login(request, user):
@@ -149,6 +143,7 @@ def seteta(request, user, eta):
         u.status = "eta"
         u.save()
         return 'ETA has been set.'
+
 def extract_eta(text):
     m = re.match(r'^.*?(\d\d\d\d).*', text)
     if m:
@@ -335,7 +330,7 @@ def c_out(request):
 @jsonrpc_method('r0ketseen')
 def r0ketseen(request, r0ketid, sensor, payload, signal):
     timestamp = 42
-    #if r0ketid in data['r0ketids'].keys():
+#    if r0ketid in data['r0ketids'].keys():
 #        #data['r0ketmap'][r0ketid] = [sensor, payload, signal, timestamp]
 #        print 'r0ket %s detected, logging in %s (%s)' % (r0ketid, data['r0ketids'][r0ketid], sensor)
 #        user = data['r0ketids'][r0ketid]
@@ -366,3 +361,40 @@ def remind(user, reminder):
    u = getuser(user)
    u.reminder = reminder
    return "aye"
+
+#def lte(request, user, args):
+#    args = args.split(' ')
+#    if len(args) >= 2:
+#        if args[1] == '0':
+#            dayitem = data['ltes'][args[0]]
+#            if user in dayitem.keys():
+#                del dayitem[user]
+#                save()
+#            return 'lte_removed'
+#        if args[0] not in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
+#            return 'err_unknown_day'
+#        dayitem = data['ltes'][args[0]]
+#        eta = " ".join(args[1:])
+#        eta = re.sub(r'(\d\d):(\d\d)',r'\1\2', eta)
+#        dayitem[user] = eta 
+#        save()
+#        return 'lte_set'
+#
+#def getlteforday(day):
+#    if day in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
+#        return LTE.objects.filter(day=day)
+#    else:
+#        return 'err_unknown_day'
+#
+#def getlte():
+#        return data['ltes']
+
+@jsonrpc_method('ddate')
+def ddate(request):
+    now = DDate()
+    now.fromDate(date.today())
+    return "Today is "+str(now)
+
+@jsonrpc_method('fnord')
+def fnord(request):
+    return DDate().fnord()

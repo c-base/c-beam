@@ -7,8 +7,15 @@ class User(models.Model):
     logouttime = models.DateTimeField()
     eta = models.CharField(max_length=200)
     etatimestamp = models.DateTimeField(auto_now_add=True)
+    etd = models.CharField(max_length=200)
+    etdtimestamp = models.DateTimeField(auto_now_add=True)
     nickspell = models.CharField(max_length=200)
     reminder = models.CharField(max_length=200)
+    remindertimestamp = models.DateTimeField(auto_now_add=True)
+    lastlocation = models.CharField(max_length=200)
+    etasub = models.BooleanField()
+    opensub = models.BooleanField()
+
     
     def __str__(self):
         return self.username
