@@ -1,0 +1,18 @@
+{% extends "cbeamd/base.django" %}
+
+{% load bootstrap_toolkit %}
+
+{% block content %}
+
+Online users:
+{% if online_users_list %}
+    <ul>
+    {% for user in online_users_list %}
+        <li><a href="/user/{{ user.id }}/">{{ user.username }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>Niemand da.</p>
+{% endif %}
+
+{% endblock %}

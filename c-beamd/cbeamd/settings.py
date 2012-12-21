@@ -1,3 +1,7 @@
+from django_auth_ldap.config import LDAPSearch,GroupOfNamesType
+import ldap
+
+
 # Django settings for cbeamd project.
 
 DEBUG = True
@@ -123,6 +127,35 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 )
+
+
+AUTH_LDAP_SERVER_URI = "ldap://lea.cbrp3.c-base.org"
+AUTH_LDAP_USER_DN_TEMPLATE = "uid=%(user)s,ou=crew,dc=c-base,dc=org"
+AUTH_LDAP_START_TLS = True
+AUTH_LDAP_BIND_AS_AUTHENTICATING_USER = True
+
+AUTH_LDAP_CACHE_GROUPS = True
+AUTH_LDAP_GROUP_CACHE_TIMEOUT = 300
+AUTH_LDAP_MIRROR_GROUPS = True
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+        "ou=crew,dc=c-base,dc=org",
+        ldap.SCOPE_SUBTREE,
+        "(objectClass=groupOfNames)",
+        )
+AUTH_LDAP_REQUIRE_GROUP = "cn=crew,ou=groups,dc=c-base,dc=org"
+AUTH_LDAP_GROUP_TYPE = GroupOfNamesType(name_attr='cn')
+AUTH_LDAP_USER_FLAGS_BY_GROUP = {
+        "is_circlemember": "cn=circle,ou=groups,dc=c-base,dc=org",
+        "is_member": "cn=crew,ou=groups,dc=c-base,dc=org",
+        }
+
+AUTHENTICATION_BACKENDS = (
+        'django_auth_ldap.backend.LDAPBackend',
+        'django.contrib.auth.backends.ModelBackend',
+        )
+
+LOGIN_URL = "/login"
+LOGOUT_URL = "/logout"
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from jsonrpc import jsonrpc_method
 from models import User
 from models import LTE
@@ -9,8 +11,14 @@ import cbeamdcfg as cfg
 from ddate import DDate
 
 from django.template import Context, loader
-from django.http import HttpResponse
+from django.http import HttpResponse,HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
+from django.contrib.auth import login as login_auth
+from django.contrib.auth import logout as logout_auth
+from django.contrib.auth import authenticate
+from forms import LoginForm
+from django.template.context import RequestContext
+from django.contrib.auth.decorators import login_required
 
 import os, re, feedparser
 
@@ -35,8 +43,7 @@ def login_with_id(request, user):
 
 @jsonrpc_method('login')
 def login(request, user):
-    print request.POST
-
+    print "login %s" % user
     if user == "nielc": user = "keiner"
     if user == "azt": user = "pille"
     u = getuser(user)
@@ -88,19 +95,30 @@ def setnickspell(request, user, nickspell):
 def is_logged_in(user):
     return len(User.objects.filter(username=user, status="online")) > 0
     
-@jsonrpc_method('login_wlan')
+#jsonrpc_method('login_wlan')
+@jsonrpc_method('wifi_login')
 def login_wlan(request, user):
     if user == "nielc": user = "keiner"
     if user == "azt": user = "pille"
+    u = getuser(user)
 
-    logger.info("login_wlan(%s)" % user)
     if is_logged_in(user):
-        logger.info("login_wlan(%s): already logged in" % user)
         extend(user)
     else:
-        now = int(datetime.now().strftime("%Y%m%d%H%M%S"))
-        if now - data['lastlogout'][user] > 300:
-            login(user)
+        if u.logouttime + timedelta(minutes=5) < timezone.now():
+            login(request, user)
+        else:
+            print "hysterese"
+
+def extend(user):
+    if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
+    #logger.info("extend %s" % user)
+    u = getuser(user)
+    u.status = "online"
+    u.logintime=timezone.now()
+    u.save()
+    return "aye"
 
 def welcometts(request, user):
     #if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
@@ -128,6 +146,39 @@ def tagevent(request, user):
         return logout(request, user)
     else:
         return login(request, user)
+
+@jsonrpc_method('eta')
+def eta(request, user, text):
+    eta = "0"
+
+    # if the first argument is a weekday, delegate to LTE
+    #TODO
+    #if text[:2].upper() in weekdays:
+        #return lte(bot, ievent)
+
+    if text in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
+        etaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
+        eta = etaval.strftime("%H%M")
+    elif text.startswith('+'):
+        foo = int(text[1:])
+        etaval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
+        eta = etaval.strftime("%H%M")
+    #elif ievent.rest == 'heute nicht mehr':
+     #   eta = "0"
+    else: 
+        eta = text   
+    # remove superflous colons
+    eta = re.sub(r'(\d\d):(\d\d)',r'\1\2',eta)
+    #eta = re.sub(r'(\d\d).(\d\d)',r'\1\2',eta)
+
+    if eta != "0" and extract_eta(eta) == "9999":
+                return 'err_timeparser'
+    etatime = extract_eta(eta)
+    hour = int(etatime[0:2])
+    minute = int(etatime[2:4])
+
+    tts(request, "julia", "E.T.A. %s: %d Uhr %d ." % (getnickspell(request, user), hour, minute))
+    return seteta(request, user, eta)
 
 @jsonrpc_method('seteta')
 def seteta(request, user, eta):
@@ -453,29 +504,57 @@ def index(request):
     online_users_list = User.objects.filter(status="online")
     eta_list = User.objects.filter(status="eta")
     #event_list = 
-    t = loader.get_template('cbeamd/index.html')
+    t = loader.get_template('cbeamd/index.django')
     c = Context({
          'online_users_list': online_users_list,
          "eta_list": eta_list,
     })
     return HttpResponse(t.render(c))
 
+@login_required
 def user(request, user_id):
     u = get_object_or_404(User, pk=user_id)
-    return render_to_response('user.html', {'user': u})
+    return render_to_response('cbeamd/user_detail.django', {'user': u})
 
+@login_required
 def user_online(request):
     user_list = User.objects.filter(status="online")
-    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'online'})
+    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'online'})
 
+@login_required
 def user_offline(request):
     user_list = User.objects.filter(status="offline")
-    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'offline'})
+    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'offline'})
 
+@login_required
 def user_eta(request):
     user_list = User.objects.filter(status="eta")
-    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'eta'})
+    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'eta'})
 
+@login_required
 def user_all(request):
     user_list = User.objects.all()
-    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'all'})
+    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'all'})
+
+
+def auth_login( request ):
+    redirect_to = request.REQUEST.get( 'next', '' ) or '/'
+    if request.method == 'POST':
+        form = LoginForm( request.POST )
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate( username=username, password=password )
+            if user is not None:
+                if user.is_active:
+                    login_auth( request, user )
+                    return HttpResponseRedirect( redirect_to )
+    else:
+        form = LoginForm()
+    return render_to_response( 'cbeamd/login.django', RequestContext( request,
+        locals() ) )
+
+def auth_logout( request ):
+    redirect_to = request.REQUEST.get( 'next', '' ) or '/'
+    logout_auth( request )
+    return HttpResponseRedirect( redirect_to )

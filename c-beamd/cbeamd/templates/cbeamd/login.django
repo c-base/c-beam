@@ -1,0 +1,11 @@
+{% extends 'cbeamd/base.django' %}
+
+{% block content %}
+
+<form class="form" action="/login?next={{redirect_to}}" method="post">
+  {% csrf_token %}
+  {{form.as_p}}
+  <input class="btn" type="submit" value="login" />
+</form>
+
+{% endblock content %}

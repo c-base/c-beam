@@ -24,7 +24,7 @@ urlpatterns = patterns('',
 
     url(r'^admin/', include(admin.site.urls)),
     #url(r'^user/(?P<user_id>\d+)/$', 'cbeamd.views.user'),
-    (r'^user/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail', info_dict),
+    (r'^user/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail', dict(info_dict, template_name='cbeamd/user_detail.django'), info_dict),
     url(r'^user/(?P<user>\d+)/login$', 'cbeamd.views.login_with_id'),
     url(r'^user/online$', 'cbeamd.views.user_online'),
     url(r'^user/offline$', 'cbeamd.views.user_offline'),
@@ -32,6 +32,8 @@ urlpatterns = patterns('',
     url(r'^user/all$', 'cbeamd.views.user_all'),
     url(r'^user/login/(?P<user>.+)$', 'cbeamd.views.login'),
     url(r'^user/logout/(?P<user>.+)$', 'cbeamd.views.logout'),
+    url(r'^login$', 'cbeamd.views.auth_login'),
+    url(r'^logout$', 'cbeamd.views.auth_logout'),
 )
 
 urlpatterns += patterns('', (r'^rpc/', jsonrpc_site.dispatch))

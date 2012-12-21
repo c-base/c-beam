@@ -1,0 +1,47 @@
+body {
+    background-color:#000000;
+    font-family:lucida console,andale mono,courier new, monospace;
+    background-image:url("bg.jpg");
+    background-repeat:no-repeat;
+    background-attachment:fixed;
+    color:#FAFAFA;
+    font-size:12px;
+    line-height:120%;
+}
+
+.navbar-inner {
+    min-height:30px;
+    background-color: #0C1C2A;
+    background-image: -moz-linear-gradient(top, #ffffff, #0C1C2A);
+    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#0C1C2A));
+    background-image: -webkit-linear-gradient(top, black, #0C1C2A);
+    background-image: -o-linear-gradient(top, #ffffff, #0C1C2A);
+    background-image: linear-gradient(to bottom, #ffffff, #0C1C2A);
+    background-repeat: repeat-x;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ff0C1C2A', GradientType=0);
+    border: 1px solid #000000;
+}
+
+.navbar .nav > li > a {
+    color: white;
+    text-shadow: 0 1px 0 grey;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+    background-image: url("../bundles/mopabootstrap/img/glyphicons-halflings-white.png");
+    margin-top: 0px;
+}
+
+ul.unstyled.inline li {
+    display: inline;
+    padding-right: 10px;
+}
+
+a {
+    color: #FFCC33;
+}
+
+a:hover {
+    color: #CCCC99;
+    text-decoration: none;
+}
