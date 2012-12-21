@@ -64,7 +64,8 @@ def getuser2(user):
 
 def getuser(ievent):
     if ievent.channel in usermap:
-        return usermap[ievent.channel]    elif ievent.fromm and ievent.fromm in usermap:
+        return usermap[ievent.channel]    
+    elif ievent.fromm and ievent.fromm in usermap:
         return usermap[ievent.fromm]
     elif ievent.nick and ievent.nick in usermap:
         return usermap[ievent.nick]
@@ -155,7 +156,7 @@ def handle_pizza_list(bot, ievent):
             reply += '%s total: %.2f\n' % (user, total)
             ievent.reply(str(reply))
         else:
-            ievent.reply('I don\'t think you\'ve ordered anything yet.')
+            ievent.reply('I don\'t think you\'ve ordered anything yet. Type !pizza <your item> <price> to order something.')
 
 cmnds.add('pizza-list', handle_pizza_list, ['USER', 'GUEST'])
 

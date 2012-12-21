@@ -21,8 +21,7 @@ import random
 import httplib
 import datetime
 import re
-
-from icalendar.cal import Calendar, Event
+import jsonrpclib
 
 ## defines
 
@@ -34,6 +33,12 @@ cfg.define('watcher-interval', 5)
 cfg.define('watcher-enabled', 0)
 cfg.define('channel', "#c-base")
 
+cfg.define('c-beam-url', 'http://127.0.0.1:4254')
+
+##
+jsonrpclib.config.version = 1.0
+server = jsonrpclib.Server(cfg.get('c-beam-url'))
+
 class EventError(Exception): pass
 
 class EventWatcher(TimedLoop):
@@ -44,12 +49,13 @@ class EventWatcher(TimedLoop):
         #logging.info("fleet: %s - %s" % (str(fleet), str(fleet.list())))
         bot = 0
         try: bot = fleet.byname(self.name)
-        except: print "fleet: %s" % str(fleet) #"fleet.byname(%s)" % self.name
+        except: pass #print "fleet: %s" % str(fleet) #"fleet.byname(%s)" % self.name
 
-        bot.connectok.wait()
+        if bot != None:
+            bot.connectok.wait()
         now = int(datetime.datetime.now().strftime("%H%M%S"))
-        print now
-        if now > 91500 and now <= 91505:
+        #print now
+        if now > 60000 and now <= 60005:
             print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>setting topic"
             settopic(bot, "#c-base")
 
@@ -68,13 +74,6 @@ def shutdown():
 ## functions
 
 ## commands
-
-def getcal():
-    conn = httplib.HTTPConnection("community.c-base.org")
-    conn.request("GET", "/commcal.php")
-    r1 = conn.getresponse()
-    cal = Calendar.from_string(r1.read())
-    return cal
 
 def checktopicmode(bot, ievent):
     """ callback for change in channel topic mode """
@@ -100,13 +99,7 @@ def handle_event_topic(bot, ievent):
     # remopve old events
     what = re.sub(r' \| heute an bord\: .* \|', ' |', what)
     what = re.sub(r' \| heute an bord\: .*', '', what)
-    cal = getcal()
-    events = []
-    for event in cal.walk('vevent'):
-        if str(event['dtstart']).startswith(datetime.datetime.now().strftime("%Y%m%d")):
-            #start = int(str(event['dtstart'])[-7:-3])+200) % 2400
-            #events.append("%s [%s]" % (event['summary'], int(start[-7:-3])+200))
-            events.append(event['summary'].replace("|", "/"))
+    events = server.events()
     if len(events) > 0:
         what += " | heute an bord: %s" % ", ".join(events) 
     if what != result[0]:
@@ -123,13 +116,7 @@ def settopic(bot, channel):
     what = result[0]
     what = re.sub(r' \| heute an bord\: .* \|', ' |', what)
     what = re.sub(r' \| heute an bord\: .*', '', what)
-    cal = getcal()
-    events = []
-    for event in cal.walk('vevent'):
-        if str(event['dtstart']).startswith(datetime.datetime.now().strftime("%Y%m%d")):
-            #start = int(str(event['dtstart'])[-7:-3])+200) % 2400
-            #events.append("%s [%s]" % (event['summary'], int(start[-7:-3])+200))
-            events.append(event['summary'].replace("|", "/"))
+    events = server.events()
     if len(events) > 0:
         what += " | heute an bord: %s" % ", ".join(events) 
     if what != result[0]:
@@ -142,20 +129,16 @@ def handle_events(bot, ievent):
     try:
         now = datetime.datetime.now().strftime("%H%M%S")
         today = datetime.datetime.now().strftime("%Y%m%d")
-        cal = getcal()
         #for event in cal.walk('vevent'): print event['summary'] if e
         #ievent.reply("na:chster event: %s" % event ) 
     except: pass
 
 def handle_today(bot, ievent):
-    cal = getcal()
-    eventcounter = 0
-    for event in cal.walk('vevent'):
-        if str(event['dtstart']).startswith(datetime.datetime.now().strftime("%Y%m%d")):
-            ievent.reply("%s - %s" % (event['summary'], event['dtstart']))
-            eventcounter += 1
-    if eventcounter == 0:
-            ievent.reply("für heute sind leider keine events eingetragen")
+    events = server.events()
+    if len(events) > 0:
+        ievent.reply(' | '.join(events))
+    else:
+        ievent.reply("für heute sind leider keine events eingetragen")
 
 cmnds.add('events', handle_today, ['GUEST', 'USER'])
 cmnds.add('events-today', handle_today, ['GUEST', 'USER'])

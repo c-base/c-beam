@@ -1,9 +1,9 @@
 {
     'unknown_nick': ['ich kenne deinen nickname noch nicht, bitte contact mit smile/cmile aufnehmen.'],
-    'logged_in': ['an bord: '],
+    'logged_in': ['an bord [%d]: '],
     'login_success': ['hallo %s, willkommen auf der c-base', 'hallo %s, willkommen an bord!'],
     'logout_success': ['danke, daC du dich abgemeldet hast %s.', 'danke und guten flug %s.'],
-    'no_one_there': ['derceit hat sich keine cohlenstoffeinheit bei mir angemeldet.', 'ga:hnende leere'],
+    'no_one_there': ['derceit hat sich keine cohlenstoffeinheit bei mir angemeldet.', 'ga:hnende leere', 'ich fu:hle mich einsam', 'keiner da'],
     'eta_set': ['danke, daC du bescheid sagst %s. [ETA: %s]'],
     'eta_removed': ['c_ade, daC du doch nicht kommen cannst %s. [ETA: %s]'],
     'lte_set': ['danke %s, dein LTE wurde gespeichert. [%s]'],

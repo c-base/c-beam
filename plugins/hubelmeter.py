@@ -129,7 +129,6 @@ def prehubelmeter(bot, event):
     if len(event.txt) > 0 and event.txt[0] == '!': return False
 
     interimhubelcount = checkhubel(event.txt)
-    print interimhubelcount
 
     user = getuser(event).lower()
     i = HubelItem(user)
@@ -202,9 +201,7 @@ def handle_hubelmeter(bot, event):
     else:
         item = event.rest.lower()
 
-    print item
     i = HubelItem(item)
-    print i.data.hubelcount
     event.reply("%s has %f hubel." % (item, i.hubel()))
 
 cmnds.add('hubelmeter', handle_hubelmeter, ['OPER', 'USER', 'GUEST'])
