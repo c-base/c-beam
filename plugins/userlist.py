@@ -26,8 +26,8 @@ import re, random
 import os, time, datetime
 import logging
 import uuid
-import jsonrpclib
-
+#import jsonrpclib
+from jsonrpc.proxy import ServiceProxy
 
 cfg = PersistConfig()
 
@@ -101,8 +101,9 @@ weekdays = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO']
 nextday = ['tomorrow', 'morgen']
 
 ##
-jsonrpclib.config.version = 1.0
-server = jsonrpclib.Server(cfg.get('c-beam-url'))
+#jsonrpclib.config.version = 1.0
+#server = jsonrpclib.Server(cfg.get('c-beam-url'))
+server = ServiceProxy(cfg.get('c-beam-url'))
 
 def getuser2(user):
     if user in usermap:
@@ -192,10 +193,10 @@ class UserlistWatcher(TimedLoop):
             dayitem.data.ltes = {}
             dayitem.save()   
         
-        whoresult = server.who()
+        whoresult = server.who()['result']
             
         # check if new ETAs have been added
-        newetas = server.newetas()
+        newetas = server.newetas()['result']
         if len(newetas) > 0:
             for etasub in etaitem.data.etasubs:
                 etalist = []
@@ -296,8 +297,7 @@ def handle_userlist(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
     if ievent.channel == "#hackerspaces": return
-    whoresult = server.who()
-    print whoresult['eta']
+    whoresult = server.who()['result']
     if len(whoresult['available']) > 0 or len(whoresult['eta']) > 0:
         result = []
         if len(whoresult['available']) > 0:
@@ -334,7 +334,7 @@ def handle_userlist_login(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
     
-    result = server.login(user)
+    result = server.login(user)['result']
     ievent.reply(getmessage('login_success') % user)
     if result != "aye" and result != "":
         ievent.reply(getmessage('login_remind') % reminder)
@@ -347,7 +347,7 @@ def handle_userlist_slogin(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
     
-    result = server.slogin(user)
+    result = server.slogin(user)['result']
     ievent.reply(getmessage('login_success') % user)
 
 cmnds.add('slogin', handle_userlist_slogin, ['GUEST', 'USER'])
@@ -355,7 +355,7 @@ cmnds.add('slogin', handle_userlist_slogin, ['GUEST', 'USER'])
 def handle_userlist_logout(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
-    server.logout(user)
+    server.logout(user)['result']
     ievent.reply(getmessage('logout_success') % user)
 
 cmnds.add('ul-logout', handle_userlist_logout, ['GUEST', 'USER'])
@@ -365,7 +365,7 @@ cmnds.add('weg', handle_userlist_logout, ['GUEST', 'USER'])
 def handle_userlist_slogout(bot, ievent):
     user = getuser(ievent)
     if not user: return ievent.reply(getmessage('unknown_nick'))
-    result = server.slogout(user)
+    result = server.slogout(user)['result']
     ievent.reply(getmessage('logout_success') % user)
 
 cmnds.add('slogout', handle_userlist_slogout, ['GUEST', 'USER'])
@@ -465,7 +465,7 @@ def handle_userlist_eta(bot, ievent):
     if ievent.args[0].upper() in weekdays:
         return handle_lte(bot, ievent)
 
-    result = server.eta(user, eta)
+    result = server.eta(user, eta)['result']
     ievent.reply(getmessage(result) % (user, eta))
 
 def handle_userlist_watch_start(bot, ievent):
@@ -509,7 +509,7 @@ cmnds.add('ul-unsubopen', handle_userlist_unsubopen, ['USER'])
 cmnds.add('ul-unsubarrive', handle_userlist_unsubarrive, ['GUEST', 'USER'])
 cmnds.add('ul-subscribe', handle_userlist_subeta, ['GUEST', 'USER'])
 cmnds.add('ul-unsubscribe', handle_userlist_unsubeta, ['GUEST', 'USER'])
-cmnds.add('ul-lssub', handle_userlist_lssub, ['ULADM'])
+cmnds.add('ul-lssub', handle_userlist_lssub, ['ULADM', 'OPER'])
 cmnds.add('userlist', handle_userlist, ['GUEST', 'USER'])
 
 cmnds.add('userlist-watch-start', handle_userlist_watch_start, 'ULADM')
@@ -610,7 +610,7 @@ def handle_userlist_etd(bot, ievent):
     if len(ievent.args) == 0:
         return handle_userlist(bot, ievent)
 
-    result = server.etd(user, etd)
+    result = server.etd(user, etd)['result']
     ievent.reply(getmessage(result) % (user, etd))
 
 cmnds.add('etd', handle_userlist_etd, ['GUEST', 'USER'])
