@@ -1,1 +1,20 @@
-5ddce49d
+#! /usr/bin/python
+
+import login
+import datetime
+import os.path
+
+user="kristall"
+nickspell = "christall"
+
+logindelta = 1
+timeoutdelta = 600
+
+
+result = login.login(user, timeoutdelta)
+if result == "login":
+    login.tts("julia", "a loa crew")
+elif result == "logout":
+    login.tts("julia", "guten heimflug %s" % nickspell)
+else:
+    print "ignore"

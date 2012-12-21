@@ -4,9 +4,10 @@ import login
 import datetime
 import os.path
 
-user="keyboardsurfer"
-nickspell = "keyboard surfer"
+user="t"
+nickspell = "t"
 
+logindelta = 10
 timeoutdelta = 600
 
 
