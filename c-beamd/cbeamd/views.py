@@ -1,5 +1,6 @@
 from jsonrpc import jsonrpc_method
 from models import User
+from models import LTE
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 from jsonrpc.proxy import ServiceProxy
@@ -7,25 +8,40 @@ from jsonrpc.proxy import ServiceProxy
 import cbeamdcfg as cfg
 from ddate import DDate
 
+from django.template import Context, loader
+from django.http import HttpResponse
+from django.shortcuts import render_to_response, get_object_or_404
+
 import os, re, feedparser
 
-hysterese = 3
+hysterese = 15
 eta_timeout=120
 
 cout = ServiceProxy('http://10.0.1.13:1775/')
 monitord = ServiceProxy('http://10.0.1.27:9090/')
 
-newarrivallist = []
-newetalist = []
+newarrivallist = {}
+newetalist = {}
 
+def reply(request, text):
+    if request.path.startswith('/rpc'):
+        return text
+    else:
+        return HttpResponse(text)
+
+
+def login_with_id(request, user):
+    return "not implemented yet"
 
 @jsonrpc_method('login')
 def login(request, user):
+    print request.POST
+
     if user == "nielc": user = "keiner"
     if user == "azt": user = "pille"
     u = getuser(user)
     if u.logouttime + timedelta(seconds=hysterese) > timezone.now():
-        return "hysterese"
+        return (reply, "hysterese")
     else:
         #if u.status != "online":
         welcometts(request, user)
@@ -36,8 +52,8 @@ def login(request, user):
         u.status = "online"
         u.logintime=timezone.now()
         u.save()
-        newarrivallist.append(user)
-    return "%s logged in" % user
+        newarrivallist[user] = timezone.now()
+    return reply(request, "%s logged in" % user)
 
 @jsonrpc_method('logout')
 def logout(request, user):
@@ -45,29 +61,28 @@ def logout(request, user):
     if user == "azt": user = "pille"
     u = getuser(user)
     if u.logintime + timedelta(seconds=hysterese) > timezone.now():
-        return "hysterese"
+        return reply(request, "hysterese")
     else:
         monitord.logout(user)
         u.status = "offline"
         u.logouttime = timezone.now()
         u.save()
 
-    return "%s logged out" % user
+    return reply(request, "%s logged out" % user)
 
 @jsonrpc_method('getnickspell')
 def getnickspell(request, user):
     u = getuser(user)
-    if u.nickspell == None:
+    if u.nickspell == "":
         return user
     else:
         return u.nickspell
 
 @jsonrpc_method('setnickspell')
 def setnickspell(request, user, nickspell):
-    nickspells[user] = nickspell
-    #f = open('nickspell', 'w')
-    #f.write(str(nickspells))
-    #f.close()
+    u = getuser(user)
+    u.nickspell = nickspell
+    u.save()
     return "ok"
 
 def is_logged_in(user):
@@ -101,7 +116,7 @@ def getuser(user):
     try:
         u = User.objects.get(username=user)
     except:
-        u = User(username=user, logintime=timezone.now(), logouttime=timezone.now(), status="unknown")
+        u = User(username=user, logintime=timezone.now()-timedelta(seconds=hysterese), logouttime=timezone.now()-timedelta(seconds=hysterese), status="unknown")
         u.save()
     return u
 
@@ -119,7 +134,7 @@ def seteta(request, user, eta):
     #data['newetas'][user] = eta
     u = getuser(user)
 
-    newetalist.append("%s (%s)" % (u.username, u.eta))
+    newetalist[user] = eta
     if eta == '0':
         # delete eta for user
         u.eta=""
@@ -150,6 +165,30 @@ def extract_eta(text):
         return m.group(1)
     else:
         return "9999"
+
+@jsonrpc_method('subeta')
+def subeta(request, user):
+    u = getuser(user)
+    u.etasub = True
+    u.save()
+
+@jsonrpc_method('unsubeta')
+def unsubeta(request, user):
+    u = getuser(user)
+    u.etasub = False
+    u.save()
+
+@jsonrpc_method('subarrive')
+def subarrive(request, user):
+    u = getuser(user)
+    u.arrivesub = True
+    u.save()
+
+@jsonrpc_method('unsubarrive')
+def unsubarrive(request, user):
+    u = getuser(user)
+    u.arrivesub = False
+    u.save()
 
 @jsonrpc_method('cleanup')
 def cleanup(request):
@@ -213,14 +252,16 @@ def who(request):
 def newetas(request):
     global newetalist
     tmp = newetalist
-    newetalist = []
+    newetalist = {}
     return tmp
 
 @jsonrpc_method('arrivals')
 def arrivals(request):
     global newarrivallist
+    print newarrivallist
+    print "foo"
     tmp = newarrivallist
-    newarrivallist = []
+    newarrivallist = {}
     return tmp
 
 #################################################################
@@ -255,6 +296,7 @@ def monmessage(request, message):
 
 @jsonrpc_method('tts')
 def tts(request, voice, text):
+    print text
     return cout.tts(voice, text)
 
 @jsonrpc_method('r2d2')
@@ -284,6 +326,10 @@ def sounds(request):
 @jsonrpc_method('c_out')
 def c_out(request):
     return cout.c_out()
+
+@jsonrpc_method('announce')
+def announce(request):
+    return cout.announce()
 
 #################################################################
 # ToDo
@@ -362,23 +408,27 @@ def remind(user, reminder):
    u.reminder = reminder
    return "aye"
 
-#def lte(request, user, args):
-#    args = args.split(' ')
-#    if len(args) >= 2:
-#        if args[1] == '0':
-#            dayitem = data['ltes'][args[0]]
-#            if user in dayitem.keys():
-#                del dayitem[user]
-#                save()
-#            return 'lte_removed'
-#        if args[0] not in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
-#            return 'err_unknown_day'
-#        dayitem = data['ltes'][args[0]]
-#        eta = " ".join(args[1:])
-#        eta = re.sub(r'(\d\d):(\d\d)',r'\1\2', eta)
-#        dayitem[user] = eta 
-#        save()
-#        return 'lte_set'
+@jsonrpc_method('lte')
+def lte(request, user, args):
+    args = args.split(' ')
+    if len(args) >= 2:
+        if args[0] not in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
+            return 'err_unknown_day'
+        if args[1] == '0':
+            for lte in LTE.objects.filter(username=user, day=args[0]):
+                LTE.objects.delete(lte)
+            return 'lte_removed'
+        eta = " ".join(args[1:])
+        eta = re.sub(r'(\d\d):(\d\d)',r'\1\2', eta)
+        ltes = LTE.objects.filter(username=user, day=args[0])
+        if len(ltes) > 0:
+            for lte in ltes:
+                lte.eta = eta
+                lte.save()
+        else:
+            LTE(username=user, day=args[0], eta=eta).save()
+        return 'lte_set'
+    return "meh"
 #
 #def getlteforday(day):
 #    if day in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
@@ -398,3 +448,34 @@ def ddate(request):
 @jsonrpc_method('fnord')
 def fnord(request):
     return DDate().fnord()
+
+def index(request):
+    online_users_list = User.objects.filter(status="online")
+    eta_list = User.objects.filter(status="eta")
+    #event_list = 
+    t = loader.get_template('cbeamd/index.html')
+    c = Context({
+         'online_users_list': online_users_list,
+         "eta_list": eta_list,
+    })
+    return HttpResponse(t.render(c))
+
+def user(request, user_id):
+    u = get_object_or_404(User, pk=user_id)
+    return render_to_response('user.html', {'user': u})
+
+def user_online(request):
+    user_list = User.objects.filter(status="online")
+    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'online'})
+
+def user_offline(request):
+    user_list = User.objects.filter(status="offline")
+    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'offline'})
+
+def user_eta(request):
+    user_list = User.objects.filter(status="eta")
+    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'eta'})
+
+def user_all(request):
+    user_list = User.objects.all()
+    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'all'})
