@@ -48,8 +48,9 @@ if os.path.exists(messagefile):
 else:
     messages = {
         'unknown_nick': ['ich kenne deinen nickname noch nicht, bitte contact mit smile/cmile aufnehmen.'],
-        'logged_in': ['an bord: '],
-        'login_success': ['hallo %s, willkommen auf der c-base', 'hallo %s, willkommen an bord!'],
+        'logged_in': ['an bord: [%d]'],
+        'login_success': ['hallo %s, willkommen auf der c-base.', 'hallo %s, willkommen an bord!'],
+        'login_remind': ['Denk daran: %s'],
         'logout_success': ['danke, daC du dich abgemeldet hast %s.', 'danke und guten heimflug %s.'],
         'no_one_there': ['derceit hat sich keine cohlenstoffeinheit bei mir angemeldet.', 'ga:hnende leere'],
         'eta_set': ['danke, daC du bescheid sagst %s. [ETA: %s]'],
@@ -137,7 +138,6 @@ def getuser(ievent):
     elif ievent.hostname and ievent.hostname.startswith('pdpc/supporter/professional/'):
         return ievent.hostname[28:]
     elif ievent.hostname and ievent.ruserhost.find('@gateway/shell/c-base') > -1:
-        print ievent.ruserhost
         return ievent.ruserhost[:ievent.ruserhost.find('@')]
     else:
         return 0
@@ -173,7 +173,8 @@ class UserlistWatcher(TimedLoop):
         try: bot = fleet.byname(self.name)
         except: pass #print "fleet: %s" % str(fleet) #"fleet.byname(%s)" % self.name
 
-        bot.connectok.wait()
+        if bot != None:
+            bot.connectok.wait()
 
         # LTE conversion to ETA
         day = weekdays[datetime.datetime.now().weekday()]
@@ -219,24 +220,20 @@ class UserlistWatcher(TimedLoop):
                     except: pass
 
         # check if new users have arrived
-        arrivals = server.arrivals()
-        if len(newetas) > 0:
+        arrivals = server.arrivals()['result']
+        if len(arrivals) > 0:
             for arrivesub in etaitem.data.arrivesubs:
-                arrivelist = []
-                for key in sorted(arrivals.keys()):
-                    #if getuser2(arrivesub) == key:
-                        #print "skip notifying yourself"
-                    #else:
-                    arrivelist += ['%s [%s]' % (key, arrivals[key])]
-                if bot and bot.type == "sxmpp" and len(etalist) > 0:
-                    bot.say(arrivesub, 'Boarding: ' + ', '.join(arrivelist))
+                arrivelist = ', '.join(sorted(arrivals.keys()))
+                if bot and bot.type == "sxmpp":
+                    bot.say(arrivesub, 'Now boarding: ' + arrivelist)
         
             
         usercount = len(whoresult['available'])
         if self.lastcount == 0 and usercount > 0:
             if bot and bot.type == "sxmpp":
                 for opensub in etaitem.data.opensubs:
-                    bot.say(opensub, 'c3pO is awake')
+                    #bot.say(opensub, 'c3pO is awake')
+                    print "FUUUUUUUUUUUU"
             else:
                 logging.error("bot undefined or not xmpp")
 
@@ -304,7 +301,11 @@ def handle_userlist(bot, ievent):
     if len(whoresult['available']) > 0 or len(whoresult['eta']) > 0:
         result = []
         if len(whoresult['available']) > 0:
-            result.append(getmessage('logged_in') + ', '.join(whoresult['available']))
+            
+            for n, user in enumerate(whoresult['available']):
+                if whoresult['lastlocation'].has_key(user):
+                    whoresult['available'][n] = '%s (%s)' % (user, whoresult['lastlocation'][user])
+            result.append(getmessage('logged_in') % len(whoresult['available']) + ', '.join(whoresult['available']))
             #ievent.reply(getmessage('logged_in') + ', '.join(whoresult['available']))
         if len(whoresult['eta']) > 0:
             etalist = []
@@ -335,6 +336,8 @@ def handle_userlist_login(bot, ievent):
     
     result = server.login(user)
     ievent.reply(getmessage('login_success') % user)
+    if result != "aye" and result != "":
+        ievent.reply(getmessage('login_remind') % reminder)
 
 cmnds.add('ul-login', handle_userlist_login, ['GUEST', 'USER'])
 cmnds.add('login', handle_userlist_login, ['GUEST', 'USER'])
@@ -695,14 +698,28 @@ cmnds.add('ul', handle_userlist, ['GUEST', 'USER'])
 cmnds.add('who', handle_userlist, ['GUEST', 'USER'])
 
 def handle_ddate(bot, ievent):
-    print ievent.rest
     if ievent.rest == '+%.':
-        msg = server.fnord()
+        msg = server.fnord()['result']
     else:
-        msg = server.ddate()
+        msg = server.ddate()['result']
     if ievent.channel == '#c-base':
         bot.say('#c-base', msg)
     else:
         ievent.reply(msg)
 
 cmnds.add('ddate', handle_ddate, ['GUEST', 'USER', 'OPER'])
+
+def handle_sdate(bot, ievent):
+    stream = os.popen("sdate")
+    result = stream.readline().rstrip()
+    ievent.reply(result)
+
+cmnds.add('sdate', handle_sdate, ['GUEST', 'USER', 'OPER'])
+
+def handle_remindme(bot, ievent):
+    user = getuser(ievent)
+    server.remind(user, ievent.rest)
+    ievent.reply("aye")
+    
+
+cmnds.add('remindme', handle_remindme, ['GUEST', 'USER', 'OPER'])
