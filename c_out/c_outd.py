@@ -6,7 +6,6 @@ import logging
 import hashlib
 from urllib2 import Request, urlopen
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
-from daemonize import daemonize
 
 #player = 'mpg123'
 player = 'mplayer'
@@ -47,7 +46,6 @@ logger.setLevel(logging.INFO)
 enabled = 1
 
 def main():
-    #daemonize()
     #tts("julia", "c")
 
     server = SimpleJSONRPCServer(('0.0.0.0', 1775))

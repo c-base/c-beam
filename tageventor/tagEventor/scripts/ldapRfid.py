@@ -1,5 +1,13 @@
 import ldap
 import sys
+import logging
+
+logger = logging.getLogger('rfidLdap.py')
+filelogging = logging.FileHandler('/tmp/rfidLdapScript.log')
+filelogging.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
+logger.addHandler(filelogging)
+logger.setLevel(logging.DEBUG)
+
 
 # search in a ldapResult for specified dn and return the key for given attr. if your attr for dn is found, key will returned. if not found None returned
 # todo return exception...
@@ -15,10 +23,11 @@ def getAttrForLdapDn(dn, attr, result):
 def getDnForLdapAttr(attr, key, result):
     for dn, attrs in result:
         if attrs.has_key(attr):
-			# a ldapentry can have multiple attribute with the same key
-			for k in attrs[attr]:
-				if k == key:
-					return dn
+            # a ldapentry can have multiple attribute with the same key
+            for rfids in attrs[attr]:
+                for k in rfids.split(','):
+                    if k == key:
+                        return dn
     return None
 
 
@@ -59,8 +68,12 @@ if __name__ == '__main__':
         sys.exit(1)
 
     rfidUUid = sys.argv[1]
+
+    logger.warning("[%s] appeared" % rfidUUid)
     # anonymous bind against lea
     f = LdapRfidCheck("ldap://10.0.1.7:389/", 'ou=crew,dc=c-base,dc=org', '', '', 'rfid', '(memberOf=cn=crew,ou=groups,dc=c-base,dc=org)')
     userDn = f.getUserForRfid(rfidUUid)
+    logger.warning("[%s] known as" % userDn)
+
     print(userDn)
 
