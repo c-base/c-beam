@@ -27,3 +27,12 @@ class LTE(models.Model):
 
     def __str__(self):
         return '%s %s %s' % (self.username, self.day, self.eta)
+
+class Mission(models.Model):
+    short_description = models.CharField(max_length=200)
+    description = models.CharField(max_length=2000)
+    #assigned_to = User()
+    created_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+         return self.short_description

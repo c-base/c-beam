@@ -3,6 +3,7 @@
 from jsonrpc import jsonrpc_method
 from models import User
 from models import LTE
+from models import Mission
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 from jsonrpc.proxy import ServiceProxy
@@ -30,6 +31,9 @@ monitord = ServiceProxy('http://10.0.1.27:9090/')
 
 newarrivallist = {}
 newetalist = {}
+
+eventcache = []
+eventcache_time = timezone.now() - timedelta(days=1)
 
 def reply(request, text):
     if request.path.startswith('/rpc'):
@@ -326,14 +330,22 @@ def setdigitalmeter(request, meterid, value):
 
 @jsonrpc_method('events')
 def events(request):
+    global eventcache
+    global eventcache_time
     events = []
-    d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
-    for entry in d['entries']:
-        title = re.search(r'.*: (.*)', entry['title']).group(1)
-        end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
-        start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
-        title = title.replace("c   user", "c++ user")
-        events.append('%s (%s-%s)' % (title, start, end))
+    if eventcache_time.day != timezone.now().day:
+        d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
+        for entry in d['entries']:
+            title = re.search(r'.*: (.*)', entry['title']).group(1)
+            end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
+            start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
+            title = title.replace("c   user", "c++ user")
+            events.append('%s (%s-%s)' % (title, start, end))
+        events.append("test (2042-2342)")
+        eventcache = events
+        eventcache_time = timezone.now()
+    else:
+        events = eventcache
     return events
 
 @jsonrpc_method('monmessage')
@@ -558,3 +570,14 @@ def auth_logout( request ):
     redirect_to = request.REQUEST.get( 'next', '' ) or '/'
     logout_auth( request )
     return HttpResponseRedirect( redirect_to )
+
+
+@jsonrpc_method('add_mission')
+def add_mission(request, short_description):
+    m = Mission(short_description=short_description)
+    m.save()
+    return "aye"
+
+@jsonrpc_method('missions')
+def missions(request):
+    return [str(mission) for mission in Mission.objects.all()]

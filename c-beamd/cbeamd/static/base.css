@@ -45,3 +45,7 @@ a:hover {
     color: #CCCC99;
     text-decoration: none;
 }
+
+.container {
+   width: 180px;
+}
