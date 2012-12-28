@@ -3,7 +3,7 @@
 from jsonrpc import jsonrpc_method
 from models import User
 from models import LTE
-from models import Mission
+from models import Mission, Subscription
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 from jsonrpc.proxy import ServiceProxy
@@ -17,23 +17,39 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.contrib.auth import login as login_auth
 from django.contrib.auth import logout as logout_auth
 from django.contrib.auth import authenticate
-from forms import LoginForm
+from forms import LoginForm, MissionForm
 from django.template.context import RequestContext
 from django.contrib.auth.decorators import login_required
+from django.core.context_processors import csrf
+from gcm import GCM
 
 import os, re, feedparser
+
+import crypto
 
 hysterese = 15
 eta_timeout=120
 
 cout = ServiceProxy('http://10.0.1.13:1775/')
 monitord = ServiceProxy('http://10.0.1.27:9090/')
+apikey = 'AIzaSyBLk_iU8ORnHM39YQCUsHngMfG85Rg9yss'
 
 newarrivallist = {}
 newetalist = {}
 
 eventcache = []
 eventcache_time = timezone.now() - timedelta(days=1)
+
+def AddPadding(data, interrupt, pad, block_size):
+    new_data = ''.join([data, interrupt])
+    new_data_len = len(new_data)
+    remaining_len = block_size - new_data_len
+    to_pad_len = remaining_len % block_size
+    pad_string = pad * to_pad_len
+    return ''.join([new_data, pad_string])
+
+def StripPadding(data, interrupt, pad):
+    return data.rstrip(pad).rstrip(interrupt)
 
 def reply(request, text):
     if request.path.startswith('/rpc'):
@@ -66,6 +82,25 @@ def login(request, user):
         newarrivallist[user] = timezone.now()
     return reply(request, "%s logged in" % user)
 
+@jsonrpc_method('force_login')
+def force_login(request, user):
+    print "login %s" % user
+    if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
+    u = getuser(user)
+    #if u.status != "online":
+    welcometts(request, user)
+    monitord.login(user)
+    if u.status == "eta":
+        #remove eta
+        u.eta = ""
+    u.status = "online"
+    u.logintime=timezone.now()
+    u.save()
+    newarrivallist[user] = timezone.now()
+    return reply(request, "%s logged in" % user)
+
+
 @jsonrpc_method('logout')
 def logout(request, user):
     if user == "nielc": user = "keiner"
@@ -78,6 +113,18 @@ def logout(request, user):
         u.status = "offline"
         u.logouttime = timezone.now()
         u.save()
+
+    return reply(request, "%s logged out" % user)
+
+@jsonrpc_method('force_logout')
+def force_logout(request, user):
+    if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
+    u = getuser(user)
+    monitord.logout(user)
+    u.status = "offline"
+    u.logouttime = timezone.now()
+    u.save()
 
     return reply(request, "%s logged out" % user)
 
@@ -141,6 +188,12 @@ def getuser(user):
         u = User(username=user, logintime=timezone.now()-timedelta(seconds=hysterese), logouttime=timezone.now()-timedelta(seconds=hysterese), status="unknown")
         u.save()
     return u
+
+
+@jsonrpc_method('get_user_by_id')
+def get_user_by_id(request, id):
+    u = User.objects.get(id=id)
+    return u.dic()
 
 @jsonrpc_method('tagevent')
 def tagevent(request, user):
@@ -263,6 +316,7 @@ def cleanup(request):
     for u in User.objects.filter(status="eta"):
         if u.etatimestamp < timezone.now():
             u.eta=""
+            u.status = "offline"
             u.save()
 
     # remove expired ETDs
@@ -281,7 +335,7 @@ def ceitloch():
     cl = {}
     for user in User.objects.filter(status="online"):
         td = timezone.now() - user.logintime
-        cl[str(user)] = str(td.seconds)
+        cl[str(user)] = td.seconds
     return cl
 
 def reminder():
@@ -308,6 +362,8 @@ def newetas(request):
     global newetalist
     tmp = newetalist
     newetalist = {}
+    if len(tmp) > 0:
+        gcm_send(request, 'ETA', ', '.join(['%s (%s)' % (key, tmp[key]) for key in tmp.keys()]))
     return tmp
 
 @jsonrpc_method('arrivals')
@@ -317,6 +373,8 @@ def arrivals(request):
     print "foo"
     tmp = newarrivallist
     newarrivallist = {}
+    if len(tmp) > 0:
+        gcm_send(request, 'now boarding', ', '.join(tmp.keys()))
     return tmp
 
 #################################################################
@@ -341,7 +399,6 @@ def events(request):
             start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
             title = title.replace("c   user", "c++ user")
             events.append('%s (%s-%s)' % (title, start, end))
-        events.append("test (2042-2342)")
         eventcache = events
         eventcache_time = timezone.now()
     else:
@@ -581,3 +638,81 @@ def add_mission(request, short_description):
 @jsonrpc_method('missions')
 def missions(request):
     return [str(mission) for mission in Mission.objects.all()]
+
+@jsonrpc_method('mission_detail')
+def mission_detail(request, mission_id):
+    mission = get_object_or_404(Mission, pk=mission_id)
+    return mission.dic()
+    #return render_to_response('cbeamd/mission_detail.django', {'mission': mission})
+
+@jsonrpc_method('mission_list')
+def mission_list(request):
+    if request.path.startswith('/rpc'):
+        missions = Mission.objects.all()
+        return [mission.dic() for mission in missions]
+    else:
+        mission_list = Mission.objects.filter(status="open")
+        return render_to_response('cbeamd/mission_list.django', {'mission_list': mission_list})
+
+@jsonrpc_method('user_list')
+def user_list(request):
+    users = User.objects.all()
+    return [user.dic() for user in users]
+
+def edit_mission(request, object_id):
+    if request.method == "POST":
+        m = Mission.objects.get(pk=object_id)
+        form = MissionForm(request.POST, instance=m)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect('/missions/%s' % object_id)
+    else:
+        m = Mission.objects.get(id=object_id)
+        form = MissionForm(instance=m)
+    return render_to_response('cbeamd/mission_form.django', locals(), context_instance = RequestContext(request))
+
+@jsonrpc_method('gcm_register')
+def gcm_register(request, user, regid):
+    print regid
+    s = Subscription()
+    s.regid = regid
+    s.user = getuser(user)
+    s.save()
+    return "aye"
+
+@jsonrpc_method('gcm_update')
+def gcm_update(request, user, regid):
+    u = getuser(user)
+    subs = Subscription.objects.filter(user=u)
+    if len(subs) < 1:
+        s = Subscription()
+        s.regid = regid
+        s.user = u
+        s.save()
+    else:
+        s = subs[0]
+        s.regid = regid
+        s.save()
+    return "aye"
+
+@jsonrpc_method('gcm_send')
+def gcm_send(request, title, text):
+    gcm = GCM(apikey)
+    subscriptions = Subscription.objects.all()
+    regids = [subscription.regid for subscription in subscriptions]
+    data = {'title': title, 'text': text}
+    response = gcm.json_request(registration_ids=regids, data=data)
+    return response
+
+@jsonrpc_method('test_enc')
+def test_enc(request):
+    gcm = GCM(apikey)
+    encrypted_data = crypto.EncryptWithAES("fooderbar")
+    u = getuser("smile")
+    s = Subscription.objects.get(user=u)
+    print encrypted_data
+    regids = [s.regid]
+    data = {'title': "AES", 'text': encrypted_data}
+    response = gcm.json_request(registration_ids=regids, data=data)
+    return encrypted_data
+

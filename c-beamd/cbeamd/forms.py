@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from cbeamd.models import Mission
 
 class LoginForm( forms.Form ):
     username = forms.CharField( max_length=255 )
@@ -23,4 +24,11 @@ password=self.cleaned_data['password'] )
 
     def get_user( self ):
         return self.user_cache
+
+class MissionForm( forms.ModelForm ):
+    class Meta:
+        model = Mission
+        widgets = {
+                'description': forms.Textarea(attrs={'cols': 80, 'rows': 10})
+        }
 

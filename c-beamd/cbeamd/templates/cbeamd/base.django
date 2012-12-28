@@ -29,6 +29,7 @@
               <li><a class="nav" href="/user/all">All</a></li>
             </ul>
           </li>
+          <li><a href="/missions">Missions</a></li>
           <!--
           <li><a href="">Tabs &amp; Pills</a></li>
           <li><a href="">Pagination</a></li>

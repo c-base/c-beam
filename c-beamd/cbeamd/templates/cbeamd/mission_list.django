@@ -1,0 +1,21 @@
+{% extends "cbeamd/base.django" %}
+
+{% load bootstrap_toolkit %}
+
+{% block content %}
+
+missions:
+{% if mission_list %}
+    <ul>
+    {% for mission in mission_list %}
+    <li>
+      <a href="/missions/{{ mission.id }}/">{{ mission.short_description }}</a>
+      (<a href="/missions/{{ mission.id }}/edit">Edit</a>)
+    </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>-.-</p>
+{% endif %}
+
+{% endblock %}

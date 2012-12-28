@@ -1,0 +1,15 @@
+{% extends "cbeamd/base.django" %}
+
+{% load bootstrap_toolkit %}
+
+{% block content %}
+
+  <table>
+    <tr><td>Short Description:</td><td> {{ object.short_description }}</td></tr>
+    <tr><td>Status:</td><td> {{ object.status }}</td></tr>
+    <tr><td>Long Description:</td><td> {{ object.description }}</td></tr>
+    <tr><td>Created On:</td><td> {{ object.created_on }}</td></tr>
+    <tr><td>Due Date:</td><td> {{ object.due_date }}</td></tr>
+  </table>
+
+{% endblock%}
