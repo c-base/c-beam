@@ -33,6 +33,7 @@ eta_timeout=120
 cout = ServiceProxy('http://10.0.1.13:1775/')
 monitord = ServiceProxy('http://10.0.1.27:9090/')
 apikey = 'AIzaSyBLk_iU8ORnHM39YQCUsHngMfG85Rg9yss'
+culd = ServiceProxy('http://localhost:4339/')
 
 newarrivallist = {}
 newetalist = {}
@@ -715,4 +716,21 @@ def test_enc(request):
     data = {'title': "AES", 'text': encrypted_data}
     response = gcm.json_request(registration_ids=regids, data=data)
     return encrypted_data
+
+
+@jsonrpc_method('smile', authenticated=True)
+def smile(request):
+    return "aye"
+
+@jsonrpc_method('bluewall()', authenticated=True, validate=True)
+def bluewall(request):
+    return culd.bluewall(True)
+
+@jsonrpc_method('darkwall()', authenticated=True, validate=True)
+def darkwall(REQUEST):
+    return culd.bluewall(False)
+
+@jsonrpc_method('hwstorage(Boolean)', authenticated=True, validate=True)
+def hwstorage(request, status):
+    return culd.hwstorage(status)
 
