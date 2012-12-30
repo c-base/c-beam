@@ -308,11 +308,13 @@ def playfile(filename):
         filename = findFile(sampledir, filename)
 #    print '%s %s' % (player, filename)
     if player == 'mplayer':
-        print 'mplayer -af volume=+5 -softvol -ao pulse -really-quiet %s >/dev/null' % filename
-        if enabled == 1: os.system('mplayer -af volume=+5 -softvol -ao pulse -really-quiet %s >/dev/null' % filename)
+        #print 'mplayer -af volume=+5 -softvol -ao pulse -really-quiet %s >/dev/null' % filename
+        print 'mplayer -af volume=+5 -softvol -really-quiet %s' % filename
+        #if enabled == 1: os.system('mplayer -af volume=+5 -softvol -ao pulse -really-quiet %s >/dev/null' % filename)
+        #if enabled == 1: os.system('mplayer -af volume=+5 -softvol -really-quiet %s &' % filename)
+        if enabled == 1: os.system('mplayer -af volume=+5 -softvol -really-quiet %s' % filename)
     else:
-        #if enabled == 1: os.system('%s %s &' % (player, filename))
-        if enabled == 1: os.system('%s %s &' % (player, filename))
+        if enabled == 1: os.system('%s %s' % (player, filename))
     return "aye"
 
 @jsonrpc_method('announce')
