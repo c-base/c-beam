@@ -21,7 +21,7 @@ sampledir = '/usr/local/sounds/loop'
 sampledir = '/usr/local/sounds/samples'
 tmpdir = '/tmp'
 
-r2d2path = '/home/smile/projects/c-beam/c_out/r2d2_wav'
+r2d2path = '/usr/local/sounds/r2d2'
 txt2phopath = "/var/www/c_out.c-base.org/txt2speech/txt2pho"
 
 acapelapassword = '0g7znor2aa'
