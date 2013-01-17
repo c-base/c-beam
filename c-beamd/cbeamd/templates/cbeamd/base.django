@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+{% load bootstrap_toolkit %} 
+<html lang="en">
+<head>
+    {% bootstrap_stylesheet_tag %} 
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+      }
+    </style>
+    <title>{% block title %}My amazing site{% endblock %}</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+    {% bootstrap_javascript_tag "dropdown" %}
+    <link href="/static/base.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+  <div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <a class="brand" href="/">c-beam web interface</a>
+        <ul class="nav">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Users<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a class="nav" href="/user/online">Online</a></li>
+              <li><a class="nav" href="/user/offline">Offline</a></li>
+              <li><a class="nav" href="/user/eta">ETA</a></li>
+              <li><a class="nav" href="/user/all">All</a></li>
+            </ul>
+          </li>
+          <li><a href="/missions">Missions</a></li>
+          <!--
+          <li><a href="">Tabs &amp; Pills</a></li>
+          <li><a href="">Pagination</a></li>
+          <li><a href="">Contact</a></li>
+          -->
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+      {% block content %}Empty Page{% endblock %}
+      <p><hr></p>
+      <footer class="row">
+        <div class="span6">
+        </div>
+        <div class="span6" style="text-align:right">
+          <p>
+          </p>
+        </div>
+      </footer>
+
+</div> <!-- container -->
+
+
+</body>
+</html>

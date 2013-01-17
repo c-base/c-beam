@@ -1,27 +1,72 @@
+# -*- coding: utf-8 -*-
+
+from threading import Timer
 from jsonrpc import jsonrpc_method
 from models import User
 from models import LTE
+from models import Mission, Subscription, UserStatsEntry
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 from jsonrpc.proxy import ServiceProxy
 #from django.conf import settings
 import cbeamdcfg as cfg
 from ddate import DDate
+from urllib import urlopen
 
 from django.template import Context, loader
-from django.http import HttpResponse
+from django.http import HttpResponse,HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
+from django.contrib.auth import login as login_auth
+from django.contrib.auth import logout as logout_auth
+from django.contrib.auth import authenticate
+from forms import LoginForm, MissionForm
+from django.template.context import RequestContext
+from django.contrib.auth.decorators import login_required
+from django.core.context_processors import csrf
+from gcm import GCM
 
 import os, re, feedparser
+
+import crypto
+from MyHTMLParser import MyHTMLParser
 
 hysterese = 15
 eta_timeout=120
 
+
 cout = ServiceProxy('http://10.0.1.13:1775/')
+cerebrum = ServiceProxy('http://10.0.1.27:7777/')
+portal = ServiceProxy('https://c-portal.c-base.org/rpc/')
 monitord = ServiceProxy('http://10.0.1.27:9090/')
+culd = ServiceProxy('http://localhost:4339/')
+apikey = 'AIzaSyBLk_iU8ORnHM39YQCUsHngMfG85Rg9yss'
 
 newarrivallist = {}
 newetalist = {}
+achievments = {}
+
+eventcache = []
+eventcache_time = timezone.now() - timedelta(days=1)
+
+artefactcache = {}
+artefactcache_time = timezone.now() - timedelta(days=1)
+
+hwstorage_state = "closed"
+
+default_stripe_pattern = 1
+default_stripe_speed = 3
+default_stripe_offset = 0
+
+def AddPadding(data, interrupt, pad, block_size):
+    new_data = ''.join([data, interrupt])
+    new_data_len = len(new_data)
+    remaining_len = block_size - new_data_len
+    to_pad_len = remaining_len % block_size
+    pad_string = pad * to_pad_len
+    return ''.join([new_data, pad_string])
+
+def StripPadding(data, interrupt, pad):
+    return data.rstrip(pad).rstrip(interrupt)
 
 def reply(request, text):
     if request.path.startswith('/rpc'):
@@ -29,46 +74,142 @@ def reply(request, text):
     else:
         return HttpResponse(text)
 
+#################################################################
+# Login / Logout
+#################################################################
 
 def login_with_id(request, user):
     return "not implemented yet"
 
 @jsonrpc_method('login')
 def login(request, user):
-    print request.POST
-
-    if user == "nielc": user = "keiner"
-    if user == "azt": user = "pille"
     u = getuser(user)
     if u.logouttime + timedelta(seconds=hysterese) > timezone.now():
         return (reply, "hysterese")
     else:
-        #if u.status != "online":
-        welcometts(request, user)
-        monitord.login(user)
+        welcometts(request, u.username)
+        monitord.login(u.username)
         if u.status == "eta":
-            #remove eta
             u.eta = ""
         u.status = "online"
         u.logintime=timezone.now()
         u.save()
-        newarrivallist[user] = timezone.now()
-    return reply(request, "%s logged in" % user)
+        log_stats()
+        newarrivallist[u.username] = timezone.now()
+    return reply(request, "%s logged in" % u.username)
+
+@jsonrpc_method('force_login')
+def force_login(request, user):
+    u = getuser(user)
+    welcometts(request, u.username)
+    monitord.login(u.username)
+    if u.status == "eta":
+        u.eta = ""
+    u.status = "online"
+    u.logintime=timezone.now()
+    u.save()
+    log_stats()
+    newarrivallist[u.username] = timezone.now()
+    return reply(request, "%s logged in" % u.username)
+
+@jsonrpc_method('stealth_login')
+def stealth_login(request, user):
+    u = getuser(user)
+    if u.status == "eta":
+        u.eta = ""
+    u.status = "online"
+    u.logintime=timezone.now()
+    u.save()
+    log_stats()
+    newarrivallist[u.username] = timezone.now()
+    return reply(request, "%s logged in" % u.username)
+
 
 @jsonrpc_method('logout')
 def logout(request, user):
-    if user == "nielc": user = "keiner"
-    if user == "azt": user = "pille"
+    return stealth_logout(request, user)
+
+@jsonrpc_method('stealth_logout')
+def stealth_logout(request, user):
     u = getuser(user)
     if u.logintime + timedelta(seconds=hysterese) > timezone.now():
         return reply(request, "hysterese")
     else:
-        monitord.logout(user)
+        monitord.logout(u.username)
         u.status = "offline"
         u.logouttime = timezone.now()
         u.save()
+        log_stats()
 
-    return reply(request, "%s logged out" % user)
+    return reply(request, "%s logged out" % u.username)
+
+@jsonrpc_method('force_logout')
+def force_logout(request, user):
+    u = getuser(user)
+    monitord.logout(u.username)
+    u.status = "offline"
+    u.logouttime = timezone.now()
+    u.save()
+    log_stats()
+
+    return reply(request, "%s logged out" % u.username)
+
+#jsonrpc_method('login_wlan')
+@jsonrpc_method('wifi_login')
+def login_wlan(request, user):
+    u = getuser(user)
+    if is_logged_in(user):
+        extend(user)
+    else:
+        if u.logouttime + timedelta(minutes=5) < timezone.now():
+            login(request, user)
+        else:
+            print "hysterese"
+
+def extend(user):
+    #logger.info("extend %s" % user)
+    u = getuser(user)
+    u.status = "online"
+    u.logintime=timezone.now()
+    u.save()
+    return "aye"
+
+@jsonrpc_method('tagevent')
+def tagevent(request, user):
+    if is_logged_in(user): # TODO and logintimeout
+        return logout(request, user)
+    else:
+        return login(request, user)
+
+def welcometts(request, user):
+    #if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
+    #    os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
+    #else:
+    if getnickspell(request, user) != "NONE":
+        if user == "kristall":
+            tts(request, "julia", "a loa crew")
+        else:
+            tts(request, "julia", cfg.ttsgreeting % getnickspell(request, user))
+
+#################################################################
+# User Handling
+#################################################################
+
+def getuser(user):
+    if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
+    try:
+        u = User.objects.get(username=user)
+    except:
+        u = User(username=user, logintime=timezone.now()-timedelta(seconds=hysterese), logouttime=timezone.now()-timedelta(seconds=hysterese), status="unknown")
+        u.save()
+    return u
+
+
+@jsonrpc_method('get_user_by_id')
+def get_user_by_id(request, id):
+    u = User.objects.get(id=id)
+    return u.dic()
 
 @jsonrpc_method('getnickspell')
 def getnickspell(request, user):
@@ -85,49 +226,100 @@ def setnickspell(request, user, nickspell):
     u.save()
     return "ok"
 
+@jsonrpc_method('setwlanlogin')
+def setwlanlogin(request, user, enabled):
+    u = getuser(user)
+    u.wlanlogin = enabled
+    u.save()
+
+@jsonrpc_method('getwlanlogin')
+def getwlanlogin(request, user):
+    u = getuser(user)
+    return u.wlanlogin
+
 def is_logged_in(user):
+    if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
     return len(User.objects.filter(username=user, status="online")) > 0
-    
-@jsonrpc_method('login_wlan')
-def login_wlan(request, user):
-    if user == "nielc": user = "keiner"
-    if user == "azt": user = "pille"
 
-    logger.info("login_wlan(%s)" % user)
-    if is_logged_in(user):
-        logger.info("login_wlan(%s): already logged in" % user)
-        extend(user)
-    else:
-        now = int(datetime.now().strftime("%Y%m%d%H%M%S"))
-        if now - data['lastlogout'][user] > 300:
-            login(user)
+@jsonrpc_method('get_autologout')
+def get_autologout(request, user):
+    u = getuser(user)
+    return u.autologout
 
-def welcometts(request, user):
-    #if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
-    #    os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
-    #else:
-    if getnickspell(request, user) != "NONE":
-        if user == "kristall":
-            tts(request, "julia", "a loa crew")
-        else:
-            tts(request, "julia", cfg.ttsgreeting % getnickspell(request, user))
+@jsonrpc_method('set_autologout')
+def set_autologout(request, user, autologout):
+    u = getuser(user)
+    u.autologout = autologout
+    u.save()
+    return "aye"
 
-def getuser(user):
-    try:
-        u = User.objects.get(username=user)
-    except:
-        u = User(username=user, logintime=timezone.now()-timedelta(seconds=hysterese), logouttime=timezone.now()-timedelta(seconds=hysterese), status="unknown")
-        u.save()
-    return u
+def userlist():
+    return [str(user) for user in User.objects.filter(status="online").order_by('username')]
 
-@jsonrpc_method('tagevent')
-def tagevent(request, user):
-    if user == "nielc": user = "keiner"
-    if user == "azt": user = "pille"
-    if is_logged_in(user): # TODO and logintimeout
-        return logout(request, user)
-    else:
-        return login(request, user)
+@jsonrpc_method('available')
+def available(request):
+    cleanup(request)
+    return userlist()
+
+def ceitloch():
+    now = int(timezone.now().strftime("%Y%m%d%H%M%S"))
+    cl = {}
+    for user in User.objects.filter(status="online"):
+        td = timezone.now() - user.logintime
+        cl[str(user)] = td.seconds
+    return cl
+
+def etalist():
+    result = {}
+    for u in User.objects.filter(status="eta").order_by('username'):
+        result[u.username] = u.eta
+    return result
+
+@jsonrpc_method('who')
+def who(request):
+    """list all user that have logged in."""
+    cleanup(request)
+    return {'available': userlist(), 'eta': etalist(), 'etd': [], 'lastlocation': {}, 
+            'ceitloch': ceitloch(), 'reminder': reminder()}
+
+
+#################################################################
+# ETA
+#################################################################
+
+@jsonrpc_method('eta')
+def eta(request, user, text):
+    eta = "0"
+
+    # if the first argument is a weekday, delegate to LTE
+    #TODO
+    #if text[:2].upper() in weekdays:
+        #return lte(bot, ievent)
+
+    if text in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
+        etaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
+        eta = etaval.strftime("%H%M")
+    elif text.startswith('+'):
+        foo = int(text[1:])
+        etaval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
+        eta = etaval.strftime("%H%M")
+    #elif ievent.rest == 'heute nicht mehr':
+     #   eta = "0"
+    else: 
+        eta = text   
+    # remove superflous colons
+    eta = re.sub(r'(\d\d):(\d\d)',r'\1\2',eta)
+    #eta = re.sub(r'(\d\d).(\d\d)',r'\1\2',eta)
+
+    if eta != "0" and extract_eta(eta) == "9999":
+                return 'err_timeparser'
+    etatime = extract_eta(eta)
+    hour = int(etatime[0:2])
+    minute = int(etatime[2:4])
+
+    tts(request, "julia", "E.T.A. %s: %d Uhr %d ." % (getnickspell(request, user), hour, minute))
+    return seteta(request, user, eta)
 
 @jsonrpc_method('seteta')
 def seteta(request, user, eta):
@@ -140,6 +332,7 @@ def seteta(request, user, eta):
         u.eta=""
         u.status = "offline"
         u.save()
+        log_stats()
         return 'eta_removed'
     else:
         arrival = extract_eta(eta)
@@ -157,7 +350,8 @@ def seteta(request, user, eta):
         u.etatimestamp = etatimestamp
         u.status = "eta"
         u.save()
-        return 'ETA has been set.'
+        log_stats()
+        return 'eta_set'
 
 def extract_eta(text):
     m = re.match(r'^.*?(\d\d\d\d).*', text)
@@ -165,6 +359,10 @@ def extract_eta(text):
         return m.group(1)
     else:
         return "9999"
+
+#################################################################
+# Subscription & achievement handling
+#################################################################
 
 @jsonrpc_method('subeta')
 def subeta(request, user):
@@ -190,100 +388,109 @@ def unsubarrive(request, user):
     u.arrivesub = False
     u.save()
 
-@jsonrpc_method('cleanup')
-def cleanup(request):
-    users = userlist()
-    usercount = len(users)
-
-    now = int(timezone.now().strftime("%Y%m%d%H%M%S"))
-
-    # remove expired users
-    for u in User.objects.filter(status="online"):
-        if u.logintime + timedelta(minutes=cfg.timeoutdelta) < timezone.now():
-            u.status="offline"
-            u.logouttime = timezone.now()
-            u.save()
-
-    # remove expired ETAs
-    for u in User.objects.filter(status="eta"):
-        if u.etatimestamp < timezone.now():
-            u.eta=""
-            u.save()
-
-    # remove expired ETDs
-    return 0
-
-def userlist():
-    return [str(user) for user in User.objects.filter(status="online")]
-
-@jsonrpc_method('available')
-def available(request):
-    cleanup(request)
-    return userlist()
-
-def ceitloch():
-    now = int(timezone.now().strftime("%Y%m%d%H%M%S"))
-    cl = {}
-    for user in User.objects.filter(status="online"):
-        td = timezone.now() - user.logintime
-        cl[str(user)] = str(td.seconds)
-    return cl
-
-def reminder():
-    result = {}
-    for u in User.objects.filter(status="eta"):
-        result[u.username] = u.reminder
-    return result
-
-def etalist():
-    result = {}
-    for u in User.objects.filter(status="eta"):
-        result[u.username] = u.eta
-    return result
-
-@jsonrpc_method('who')
-def who(request):
-    """list all user that have logged in."""
-    cleanup(request)
-    return {'available': userlist(), 'eta': etalist(), 'etd': [], 'lastlocation': {}, 
-            'ceitloch': ceitloch(), 'reminder': reminder()}
-
 @jsonrpc_method('newetas')
 def newetas(request):
     global newetalist
     tmp = newetalist
     newetalist = {}
+    if len(tmp) > 0:
+        gcm_send(request, 'ETA', ', '.join(['%s (%s)' % (key, tmp[key]) for key in tmp.keys()]))
+    print "newetas_done"
     return tmp
 
 @jsonrpc_method('arrivals')
 def arrivals(request):
     global newarrivallist
-    print newarrivallist
-    print "foo"
     tmp = newarrivallist
     newarrivallist = {}
+    if len(tmp) > 0:
+        gcm_send(request, 'now boarding', ', '.join(tmp.keys()))
+    print "arrivals_done"
+    return tmp
+
+@jsonrpc_method('achievements')
+def achievements(request):
+    global achievements
+    tmp = achievements
+    achievements = {}
     return tmp
 
 #################################################################
-# misc methods
+# Cleanup methods
 #################################################################
 
-@jsonrpc_method('setdigitalmeter')
-def setdigitalmeter(request, meterid, value):
-    os.system('curl -d \'{"method":"set_digital_meter","id":0,"params":[%d,"%s"]}\' http://altar.cbrp3.c-base.org:4568/jsonrpc' % (meterid, value))
-    return "aye"
+@jsonrpc_method('cleanup')
+def cleanup(request):
+    users = userlist()
+    usercount = len(users)
+    autologout = False
+
+    now = int(timezone.now().strftime("%Y%m%d%H%M%S"))
+
+    # remove expired users
+    for u in User.objects.filter(status="online"):
+        #if u.logintime + timedelta(minutes=cfg.timeoutdelta) < timezone.now():
+        if u.autologout_in() < 0:
+            autologout = True
+            u.status="offline"
+            u.logouttime = timezone.now()
+            u.save()
+            log_stats()
+
+    # remove expired ETAs
+    for u in User.objects.filter(status="eta"):
+        if u.etatimestamp < timezone.now():
+            u.eta=""
+            u.status = "offline"
+            u.save()
+            log_stats()
+
+    # remove expired ETDs
+
+    if autologout:
+        set_stripe_default(request)
+
+    return 0
+
+
+#################################################################
+# event methods
+#################################################################
 
 @jsonrpc_method('events')
 def events(request):
+    global eventcache
+    global eventcache_time
     events = []
+    if eventcache_time.day != timezone.now().day:
+        d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
+        for entry in d['entries']:
+            title = re.search(r'.*: (.*)', entry['title']).group(1)
+            end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
+            start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
+            title = title.replace("c   user", "c++ user")
+            events.append('%s (%s-%s)' % (title, start, end))
+        eventcache = events
+        eventcache_time = timezone.now()
+    else:
+        events = eventcache
+    return events
+
+@jsonrpc_method('event_detail')
+def event_detail(request, id):
     d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
     for entry in d['entries']:
         title = re.search(r'.*: (.*)', entry['title']).group(1)
         end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
         start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
         title = title.replace("c   user", "c++ user")
-        events.append('%s (%s-%s)' % (title, start, end))
-    return events
+        print title
+        #events.append('%s (%s-%s)' % (title, start, end))
+    return "aye"
+
+#################################################################
+# scanner methods
+#################################################################
 
 @jsonrpc_method('monmessage')
 def monmessage(request, message):
@@ -328,8 +535,8 @@ def c_out(request):
     return cout.c_out()
 
 @jsonrpc_method('announce')
-def announce(request):
-    return cout.announce()
+def announce(request, text):
+    return cout.announce(text)
 
 #################################################################
 # ToDo
@@ -372,6 +579,7 @@ def announce(request):
 #################################################################
 # r0ket methods
 #################################################################
+
 # cbeam.r0ketSeen(result.group(1), sensor, result.group(2), result.group(3))
 @jsonrpc_method('r0ketseen')
 def r0ketseen(request, r0ketid, sensor, payload, signal):
@@ -408,6 +616,16 @@ def remind(user, reminder):
    u.reminder = reminder
    return "aye"
 
+def reminder():
+    result = {}
+    for u in User.objects.filter(status="eta"):
+        result[u.username] = u.reminder
+    return result
+
+#################################################################
+# LTE methods
+#################################################################
+
 @jsonrpc_method('lte')
 def lte(request, user, args):
     args = args.split(' ')
@@ -420,7 +638,7 @@ def lte(request, user, args):
             return 'lte_removed'
         eta = " ".join(args[1:])
         eta = re.sub(r'(\d\d):(\d\d)',r'\1\2', eta)
-        ltes = LTE.objects.filter(username=user, day=args[0])
+        ltes = LTE.objects.filter(username=user, day=args[0]).order_by('username')
         if len(ltes) > 0:
             for lte in ltes:
                 lte.eta = eta
@@ -429,6 +647,7 @@ def lte(request, user, args):
             LTE(username=user, day=args[0], eta=eta).save()
         return 'lte_set'
     return "meh"
+
 #
 #def getlteforday(day):
 #    if day in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
@@ -438,6 +657,315 @@ def lte(request, user, args):
 #
 #def getlte():
 #        return data['ltes']
+
+
+#################################################################
+# Web Views
+#################################################################
+
+def index(request):
+    online_users_list = User.objects.filter(status="online").order_by('username')
+    eta_list = User.objects.filter(status="eta").order_by('username')
+    #event_list = 
+    t = loader.get_template('cbeamd/index.django')
+    c = Context({
+         'online_users_list': online_users_list,
+         "eta_list": eta_list,
+    })
+    return HttpResponse(t.render(c))
+
+@login_required
+def user(request, user_id):
+    u = get_object_or_404(User, pk=user_id)
+    return render_to_response('cbeamd/user_detail.django', {'user': u})
+
+@login_required
+def user_online(request):
+    user_list = User.objects.filter(status="online").order_by('username')
+    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'online'})
+
+@login_required
+def user_offline(request):
+    user_list = User.objects.filter(status="offline").order_by('username')
+    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'offline'})
+
+@login_required
+def user_eta(request):
+    user_list = User.objects.filter(status="eta").order_by('username')
+    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'eta'})
+
+@login_required
+def user_all(request):
+    user_list = User.objects.all().order_by('username')
+    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'all'})
+
+@jsonrpc_method('user_list')
+def user_list(request):
+    users = User.objects.all().order_by('username')
+    return [user.dic() for user in users]
+
+#################################################################
+# Web Login / Logout
+#################################################################
+
+def auth_login( request ):
+    redirect_to = request.REQUEST.get( 'next', '' ) or '/'
+    if request.method == 'POST':
+        form = LoginForm( request.POST )
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate( username=username, password=password )
+            if user is not None:
+                if user.is_active:
+                    login_auth( request, user )
+                    return HttpResponseRedirect( redirect_to )
+    else:
+        form = LoginForm()
+    return render_to_response( 'cbeamd/login.django', RequestContext( request,
+        locals() ) )
+
+def auth_logout( request ):
+    redirect_to = request.REQUEST.get( 'next', '' ) or '/'
+    logout_auth( request )
+    return HttpResponseRedirect( redirect_to )
+
+#################################################################
+# mission handling
+#################################################################
+
+@jsonrpc_method('add_mission')
+def add_mission(request, short_description):
+    m = Mission(short_description=short_description)
+    m.save()
+    return "aye"
+
+@jsonrpc_method('missions')
+def missions(request):
+    return [str(mission) for mission in Mission.objects.all()]
+
+@jsonrpc_method('mission_detail')
+def mission_detail(request, mission_id):
+    mission = get_object_or_404(Mission, pk=mission_id)
+    return mission.dic()
+    #return render_to_response('cbeamd/mission_detail.django', {'mission': mission})
+
+@jsonrpc_method('mission_list')
+def mission_list(request):
+    if request.path.startswith('/rpc'):
+        missions = Mission.objects.all()
+        return [mission.dic() for mission in missions]
+    else:
+        mission_list = Mission.objects.all()
+        return render_to_response('cbeamd/mission_list.django', {'mission_list': mission_list})
+
+def edit_mission(request, object_id):
+    if request.method == "POST":
+        m = Mission.objects.get(pk=object_id)
+        form = MissionForm(request.POST, instance=m)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect('/missions/%s' % object_id)
+    else:
+        m = Mission.objects.get(id=object_id)
+        form = MissionForm(instance=m)
+    return render_to_response('cbeamd/mission_form.django', locals(), context_instance = RequestContext(request))
+
+#################################################################
+# Google Cloud Messaging
+#################################################################
+
+@jsonrpc_method('gcm_register')
+def gcm_register(request, user, regid):
+    print regid
+    s = Subscription()
+    s.regid = regid
+    s.user = getuser(user)
+    s.save()
+    return "aye"
+
+@jsonrpc_method('gcm_update')
+def gcm_update(request, user, regid):
+    u = getuser(user)
+    subs = Subscription.objects.filter(user=u)
+    if len(subs) < 1:
+        s = Subscription()
+        s.regid = regid
+        s.user = u
+        s.save()
+    else:
+        s = subs[0]
+        s.regid = regid
+        s.save()
+    return "aye"
+
+@jsonrpc_method('gcm_send')
+def gcm_send(request, title, text):
+    gcm = GCM(apikey)
+    subscriptions = Subscription.objects.all()
+    regids = [subscription.regid for subscription in subscriptions]
+    data = {'title': title, 'text': text}
+    response = gcm.json_request(registration_ids=regids, data=data)
+    return response
+
+@jsonrpc_method('gcm_send_test')
+def gcm_send_test(request, title, text):
+    gcm = GCM(apikey)
+    u = getuser("smile")
+    subscriptions = Subscription.objects.filter(user=u)
+    regids = [subscription.regid for subscription in subscriptions]
+    data = {'title': title, 'text': text}
+    response = gcm.json_request(registration_ids=regids, data=data)
+    return response
+
+@jsonrpc_method('test_enc')
+def test_enc(request):
+    gcm = GCM(apikey)
+    encrypted_data = crypto.EncryptWithAES("fooderbar")
+    u = getuser("smile")
+    s = Subscription.objects.get(user=u)
+    print encrypted_data
+    regids = [s.regid]
+    data = {'title': "AES", 'text': encrypted_data}
+    response = gcm.json_request(registration_ids=regids, data=data)
+    return encrypted_data
+
+
+@jsonrpc_method('smile', authenticated=True)
+def smile(request):
+    return "aye"
+
+#################################################################
+# CULd method forwarding
+#################################################################
+
+@jsonrpc_method('bluewall()')#, authenticated=True, validate=True)
+def bluewall(request):
+    return culd.bluewall(True)
+
+@jsonrpc_method('darkwall()')#, authenticated=True, validate=True)
+def darkwall(REQUEST):
+    return culd.bluewall(False)
+
+#@jsonrpc_method('hwstorage(Boolean)', authenticated=True, validate=True)
+@jsonrpc_method('hwstorage(bool)')
+def hwstorage(request, status):
+    global timer
+    #global hwstorage_state
+    #if hwstorage_state == "open":
+        #return
+    #hwstorage_state = "open"
+    culd.hwstorage(True)
+    culd.hwstorage(True)
+    def close():
+        culd.hwstorage(False)
+        culd.hwstorage(False)
+        #hwstorage_state = "closed"
+    timer = Timer(30.0, close)
+    timer.start()
+    return "aye"
+
+#################################################################
+# artefact handling
+#################################################################
+
+@jsonrpc_method('artefact_list')
+def artefact_list(request):
+    global artefactcache
+    global artefactcache_time
+    artefactlist = {}
+    if artefactcache_time + timedelta(hours=1) < timezone.now():
+        parser = MyHTMLParser()
+        parser.feed(urlopen("http://cbag3.c-base.org/artefact/").read())
+        artefacts = parser.get_artefacts()
+        artefactlist = [{'name': key, 'slug': artefacts[key]} for key in artefacts.keys()]
+        artefactcache = artefactlist
+        artefactcache_time = timezone.now()
+    else:
+        artefactlist = artefactcache
+    return sorted(artefactlist)
+
+#################################################################
+# article handling
+#################################################################
+
+@jsonrpc_method('list_articles')
+def list_articles(request):
+    return portal.api.list_articles()
+
+
+@jsonrpc_method('log_stats')
+def log_stats():
+    u = UserStatsEntry()
+    u.usercount = len(User.objects.filter(status="online"))
+    u.etacount = len(User.objects.filter(status="eta"))
+    #u.save()
+    return str(u)
+
+@jsonrpc_method('get_stats')
+def get_stats(request):
+    return str(UserStatsEntry.objects.all())
+
+
+#################################################################
+# cerebrum leds methods
+#################################################################
+
+@jsonrpc_method('set_stripe_pattern')
+def set_stripe_pattern(request, pattern_id):
+    return cerebrum.set_pattern(pattern_id)
+
+@jsonrpc_method('set_stripe_speed')
+def set_stripe_speed(request, speed):
+    return cerebrum.set_speed(speed)
+
+@jsonrpc_method('set_stripe_offset')
+def set_stripe_pattern(request, offset):
+    return cerebrum.set_offset(offset)
+
+@jsonrpc_method('set_stripe_default')
+def set_stripe_default(request):
+    global default_stripe_pattern
+    global default_stripe_speed
+    global default_stripe_offset
+
+    if len(User.objects.filter(status="online")) > 0:
+        default_stripe_pattern = 1
+        default_stripe_speed = 3
+    else:
+        default_stripe_pattern = 10
+        default_stripe_speed = 1
+    cerebrum.set_pattern(default_stripe_pattern)
+    cerebrum.set_speed(default_stripe_speed)
+    #cerebrum.set_offset(default_stripe_offset)
+    return "aye"
+
+@jsonrpc_method('notbeleuchtung')
+def notbeleuchtung(request):
+    global default_stripe_pattern
+    global default_stripe_speed
+    default_stripe_pattern = 10
+    default_stripe_speed = 0
+    cerebrum.set_pattern(10)
+    cerebrum.set_speed(1)
+
+@jsonrpc_method('rainbow')
+def rainbow(request):
+    global default_stripe_pattern
+    global default_stripe_speed
+    default_stripe_pattern = 1
+    default_stripe_speed = 3
+    cerebrum.set_pattern(default_stripe_pattern)
+    cerebrum.set_speed(default_stripe_speed)
+
+#################################################################
+# misc methods
+#################################################################
+
+@jsonrpc_method('setdigitalmeter')
+def setdigitalmeter(request, meterid, value):
+    os.system('curl -d \'{"method":"set_digital_meter","id":0,"params":[%d,"%s"]}\' http://altar.cbrp3.c-base.org:4568/jsonrpc' % (meterid, value))
+    return "aye"
 
 @jsonrpc_method('ddate')
 def ddate(request):
@@ -449,33 +977,15 @@ def ddate(request):
 def fnord(request):
     return DDate().fnord()
 
-def index(request):
-    online_users_list = User.objects.filter(status="online")
-    eta_list = User.objects.filter(status="eta")
-    #event_list = 
-    t = loader.get_template('cbeamd/index.html')
-    c = Context({
-         'online_users_list': online_users_list,
-         "eta_list": eta_list,
-    })
-    return HttpResponse(t.render(c))
 
-def user(request, user_id):
-    u = get_object_or_404(User, pk=user_id)
-    return render_to_response('user.html', {'user': u})
+@jsonrpc_method('isWifiLoginEnabled()')
+def isWifiLoginEnabled(request, users):
+    print users
+    return {user.username: user.wlanlogin for user in User.objects.filter(username__in=users)}
 
-def user_online(request):
-    user_list = User.objects.filter(status="online")
-    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'online'})
-
-def user_offline(request):
-    user_list = User.objects.filter(status="offline")
-    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'offline'})
-
-def user_eta(request):
-    user_list = User.objects.filter(status="eta")
-    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'eta'})
-
-def user_all(request):
-    user_list = User.objects.all()
-    return render_to_response('cbeamd/user_list.html', {'user_list': user_list, 'status': 'all'})
+@jsonrpc_method('set_wlan_login')
+def set_wlan_login(request, user, enabled):
+    u = getuser(user)
+    u.wlanlogin=enabled
+    u.save()
+    return "aye"

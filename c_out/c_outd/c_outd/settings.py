@@ -1,22 +1,18 @@
-from django_auth_ldap.config import LDAPSearch,GroupOfNamesType
-import ldap
-
-
-# Django settings for cbeamd project.
+# Django settings for c_outd project.
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
-     ('smile', 'smile@c-base.org'),
+    # ('Your Name', 'your_email@example.com'),
 )
 
 MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'cbeam.sl3',                      # Or path to database file if using sqlite3.
+        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': '',                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -28,7 +24,7 @@ DATABASES = {
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
 # In a Windows environment this must be set to your system time zone.
-TIME_ZONE = 'Europe/Berlin'
+TIME_ZONE = 'America/Chicago'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -82,7 +78,7 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'vua+c7%ipz5yua!v9t_)i^plx9e^523e%9l-g6v&amp;bqaxx2d-4!'
+SECRET_KEY = '48%ge7)t=@2n%pas2px5r)y$x_e6-m$fu-2z_-wur#pxaoa1d@'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -101,16 +97,15 @@ MIDDLEWARE_CLASSES = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'cbeamd.urls'
+ROOT_URLCONF = 'c_outd.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
-WSGI_APPLICATION = 'cbeamd.wsgi.application'
+WSGI_APPLICATION = 'c_outd.wsgi.application'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    #"/home/smile/projects/c-beam/c-beamd"
 )
 
 INSTALLED_APPS = (
@@ -120,43 +115,11 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cbeamd',
-    'south',
-    'bootstrap_toolkit',
     # Uncomment the next line to enable the admin:
-    'django.contrib.admin',
+    # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 )
-
-
-AUTH_LDAP_SERVER_URI = "ldap://lea.cbrp3.c-base.org"
-AUTH_LDAP_USER_DN_TEMPLATE = "uid=%(user)s,ou=crew,dc=c-base,dc=org"
-AUTH_LDAP_START_TLS = True
-AUTH_LDAP_BIND_AS_AUTHENTICATING_USER = True
-
-AUTH_LDAP_CACHE_GROUPS = True
-AUTH_LDAP_GROUP_CACHE_TIMEOUT = 300
-AUTH_LDAP_MIRROR_GROUPS = True
-AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
-        "ou=crew,dc=c-base,dc=org",
-        ldap.SCOPE_SUBTREE,
-        "(objectClass=groupOfNames)",
-        )
-AUTH_LDAP_REQUIRE_GROUP = "cn=crew,ou=groups,dc=c-base,dc=org"
-AUTH_LDAP_GROUP_TYPE = GroupOfNamesType(name_attr='cn')
-AUTH_LDAP_USER_FLAGS_BY_GROUP = {
-        "is_circlemember": "cn=circle,ou=groups,dc=c-base,dc=org",
-        "is_member": "cn=crew,ou=groups,dc=c-base,dc=org",
-        }
-
-AUTHENTICATION_BACKENDS = (
-        'django_auth_ldap.backend.LDAPBackend',
-        'django.contrib.auth.backends.ModelBackend',
-        )
-
-LOGIN_URL = "/login"
-LOGOUT_URL = "/logout"
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -186,5 +149,3 @@ LOGGING = {
         },
     }
 }
-
-TTSGREETING = "Hallo %s, willkommen an bord"
