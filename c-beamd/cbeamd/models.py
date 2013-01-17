@@ -1,4 +1,6 @@
 from django.db import models
+from datetime import timedelta
+from django.utils import timezone
 
 class User(models.Model):
     username = models.CharField(max_length=200)
@@ -15,6 +17,8 @@ class User(models.Model):
     lastlocation = models.CharField(max_length=200, blank=True)
     etasub = models.BooleanField(default=False)
     arrivesub = models.BooleanField(default=False)
+    autologout = models.IntegerField(default=600)
+    wlanlogin = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username
@@ -36,7 +40,16 @@ class User(models.Model):
         dic['lastlocation'] = self.lastlocation
         dic['etasub'] = self.etasub
         dic['arrivesub'] = self.arrivesub
+        dic['autologout'] = self.autologout
+        dic['autologout_in'] = self.autologout_in()
+        dic['wlanlogin'] = self.wlanlogin
         return dic
+
+    def autologout_in(self):
+        autologout_at = self.logintime + timedelta(minutes=self.autologout)
+        autologout_in = autologout_at - timezone.now()
+        return (autologout_in.total_seconds()/60)
+
 
 class LTE(models.Model):
     day = models.CharField(max_length=2)
@@ -74,4 +87,21 @@ class Subscription(models.Model):
     regid = models.CharField(max_length="2000")
     user = models.OneToOneField(User, primary_key=True)
 
+    def __str__(self):
+        return "%s: %s" % (self.user.username, self.regid)
+
+class Event(models.Model):
+    uid = models.CharField(max_length=200)
+    start = models.CharField(max_length=20)
+    end = models.CharField(max_length=20)
+    title = models.CharField(max_length=200)
+
+
+class UserStatsEntry(models.Model):
+    timestamp = models.DateTimeField(auto_now_add=True)
+    usercount = models.IntegerField(default=0)
+    etacount = models.IntegerField(default=0)
+
+    def __str__(self):
+        return "%s: %d" % (str(self.timestamp), self.usercount)
 
