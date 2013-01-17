@@ -76,7 +76,7 @@ def handle_c_out(bot, ievent):
 cmnds.add('c_out', handle_c_out, ['USER', 'GUEST'])
 
 def handle_c_out_list(bot, ievent):
-    return ievent.reply(" ".join(server.sounds()))
+    return ievent.reply(" ".join(server.sounds()['result']))
 
 cmnds.add('c_out-list', handle_c_out_list, ['USER', 'GUEST'])
 
