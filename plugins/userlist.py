@@ -222,6 +222,7 @@ class UserlistWatcher(TimedLoop):
 
         # check if new users have arrived
         arrivals = server.arrivals()['result']
+	print arrivals
         if len(arrivals) > 0:
             for arrivesub in etaitem.data.arrivesubs:
                 arrivelist = ', '.join(sorted(arrivals.keys()))
@@ -466,6 +467,7 @@ def handle_userlist_eta(bot, ievent):
         return handle_lte(bot, ievent)
 
     result = server.eta(user, eta)['result']
+    print result
     ievent.reply(getmessage(result) % (user, eta))
 
 def handle_userlist_watch_start(bot, ievent):
@@ -721,5 +723,20 @@ def handle_remindme(bot, ievent):
     server.remind(user, ievent.rest)
     ievent.reply("aye")
     
-
 cmnds.add('remindme', handle_remindme, ['GUEST', 'USER', 'OPER'])
+
+def handle_bluewall(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+    server.bluewall()
+    ievent.reply("aye")
+    
+cmnds.add('bluewall', handle_bluewall, ['GUEST', 'USER', 'OPER'])
+
+def handle_darkwall(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+    server.darkwall()
+    ievent.reply("aye")
+    
+cmnds.add('darkwall', handle_darkwall, ['GUEST', 'USER', 'OPER'])
