@@ -21,7 +21,9 @@ import random
 import httplib
 import datetime
 import re
-import jsonrpclib
+#import jsonrpclib
+from jsonrpc.proxy import ServiceProxy
+
 
 ## defines
 
@@ -33,11 +35,12 @@ cfg.define('watcher-interval', 5)
 cfg.define('watcher-enabled', 0)
 cfg.define('channel', "#c-base")
 
-cfg.define('c-beam-url', 'http://127.0.0.1:4254')
+cfg.define('c-beam-url', 'http://127.0.0.1:4254/rpc/')
 
 ##
-jsonrpclib.config.version = 1.0
-server = jsonrpclib.Server(cfg.get('c-beam-url'))
+#jsonrpclib.config.version = 1.0
+#server = jsonrpclib.Server(cfg.get('c-beam-url'))
+server = ServiceProxy(cfg.get('c-beam-url'))
 
 class EventError(Exception): pass
 
@@ -99,7 +102,7 @@ def handle_event_topic(bot, ievent):
     # remopve old events
     what = re.sub(r' \| heute an bord\: .* \|', ' |', what)
     what = re.sub(r' \| heute an bord\: .*', '', what)
-    events = server.events()
+    events = server.events()['result']
     if len(events) > 0:
         what += " | heute an bord: %s" % ", ".join(events) 
     if what != result[0]:
@@ -116,7 +119,7 @@ def settopic(bot, channel):
     what = result[0]
     what = re.sub(r' \| heute an bord\: .* \|', ' |', what)
     what = re.sub(r' \| heute an bord\: .*', '', what)
-    events = server.events()
+    events = server.events()['result']
     if len(events) > 0:
         what += " | heute an bord: %s" % ", ".join(events) 
     if what != result[0]:
@@ -134,7 +137,7 @@ def handle_events(bot, ievent):
     except: pass
 
 def handle_today(bot, ievent):
-    events = server.events()
+    events = server.events()['result']
     if len(events) > 0:
         ievent.reply(' | '.join(events))
     else:
