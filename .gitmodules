@@ -1,0 +1,3 @@
+[submodule "c-beamd/cbeamd/static/c-base-bootstrap"]
+	path = c-beamd/cbeamd/static/c-base-bootstrap
+	url = git://dev.c-base.org/c-portal/c-portal-bootstrap.git
