@@ -843,7 +843,8 @@ def gcm_update(request, user, regid):
         s.save()
     return "aye"
 
-@jsonrpc_method('gcm_send')
+# This method should usually not be exposed through JSON-RPC
+# @jsonrpc_method('gcm_send')
 def gcm_send(request, title, text):
     gcm = GCM(apikey)
     subscriptions = Subscription.objects.all()
