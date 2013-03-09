@@ -19,11 +19,13 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.contrib.auth import login as login_auth
 from django.contrib.auth import logout as logout_auth
 from django.contrib.auth import authenticate
-from forms import LoginForm, MissionForm
+from forms import LoginForm, MissionForm, StripeForm
 from django.template.context import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.core.context_processors import csrf
+from django.views.decorators.csrf import csrf_exempt
 from gcm import GCM
+from LEDStripe import *
 
 import os, re, feedparser
 
@@ -47,13 +49,14 @@ achievments = {}
 
 eventcache = []
 eventcache_time = timezone.now() - timedelta(days=1)
+event_details = []
 
 artefactcache = {}
 artefactcache_time = timezone.now() - timedelta(days=1)
 
 hwstorage_state = "closed"
 
-default_stripe_pattern = 1
+default_stripe_pattern = 4
 default_stripe_speed = 3
 default_stripe_offset = 0
 
@@ -88,7 +91,10 @@ def login(request, user):
         return (reply, "hysterese")
     else:
         welcometts(request, u.username)
-        monitord.login(u.username)
+        try:
+            monitord.login(u.username)
+        except:
+            pass
         if u.status == "eta":
             u.eta = ""
         u.status = "online"
@@ -102,7 +108,10 @@ def login(request, user):
 def force_login(request, user):
     u = getuser(user)
     welcometts(request, u.username)
-    monitord.login(u.username)
+    try:
+        monitord.login(u.username)
+    except:
+        pass
     if u.status == "eta":
         u.eta = ""
     u.status = "online"
@@ -135,7 +144,10 @@ def stealth_logout(request, user):
     if u.logintime + timedelta(seconds=hysterese) > timezone.now():
         return reply(request, "hysterese")
     else:
-        monitord.logout(u.username)
+        try:
+            monitord.logout(u.username)
+        except:
+            pass
         u.status = "offline"
         u.logouttime = timezone.now()
         u.save()
@@ -146,7 +158,10 @@ def stealth_logout(request, user):
 @jsonrpc_method('force_logout')
 def force_logout(request, user):
     u = getuser(user)
-    monitord.logout(u.username)
+    try:
+        monitord.logout(u.username)
+    except:
+        pass
     u.status = "offline"
     u.logouttime = timezone.now()
     u.save()
@@ -167,7 +182,7 @@ def login_wlan(request, user):
             print "hysterese"
 
 def extend(user):
-    #logger.info("extend %s" % user)
+    print("extend %s" % user)
     u = getuser(user)
     u.status = "online"
     u.logintime=timezone.now()
@@ -345,7 +360,7 @@ def seteta(request, user, eta):
         if timezone.now().strftime("%H%M") > arrival:
             etatimestamp = etatimestamp + timedelta(days=1)
 
-        print etatimestamp
+        #print etatimestamp
         u.eta = eta
         u.etatimestamp = etatimestamp
         u.status = "eta"
@@ -395,7 +410,7 @@ def newetas(request):
     newetalist = {}
     if len(tmp) > 0:
         gcm_send(request, 'ETA', ', '.join(['%s (%s)' % (key, tmp[key]) for key in tmp.keys()]))
-    print "newetas_done"
+    #print "newetas_done"
     return tmp
 
 @jsonrpc_method('arrivals')
@@ -404,8 +419,9 @@ def arrivals(request):
     tmp = newarrivallist
     newarrivallist = {}
     if len(tmp) > 0:
-        gcm_send(request, 'now boarding', ', '.join(tmp.keys()))
-    print "arrivals_done"
+        try: gcm_send(request, 'now boarding', ', '.join(tmp.keys()))
+        except: pass
+    #print "arrivals_done"
     return tmp
 
 @jsonrpc_method('achievements')
@@ -461,20 +477,47 @@ def cleanup(request):
 def events(request):
     global eventcache
     global eventcache_time
+    global event_details
     events = []
     if eventcache_time.day != timezone.now().day:
+        event_details = []
         d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
         for entry in d['entries']:
             title = re.search(r'.*: (.*)', entry['title']).group(1)
             end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
             start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
             title = title.replace("c   user", "c++ user")
+            description = entry['summary_detail']['value']
             events.append('%s (%s-%s)' % (title, start, end))
+            event_details.append({'title':title, 'start': start, 'end': end, 'description': description})
         eventcache = events
         eventcache_time = timezone.now()
     else:
         events = eventcache
     return events
+
+@jsonrpc_method('event_list')
+def event_list(request):
+    global eventcache
+    global eventcache_time
+    global event_details
+    events = []
+    if eventcache_time.day != timezone.now().day:
+        event_details = []
+        d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
+        for entry in d['entries']:
+            title = re.search(r'.*: (.*)', entry['title']).group(1)
+            end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
+            start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
+            title = title.replace("c   user", "c++ user")
+            description = entry['summary_detail']['value']
+            events.append('%s (%s-%s)' % (title, start, end))
+            event_details.append({'title':title, 'start': start, 'end': end, 'description': description})
+        eventcache = events
+        eventcache_time = timezone.now()
+    else:
+        events = eventcache
+    return event_details
 
 @jsonrpc_method('event_detail')
 def event_detail(request, id):
@@ -484,7 +527,6 @@ def event_detail(request, id):
         end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
         start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
         title = title.replace("c   user", "c++ user")
-        print title
         #events.append('%s (%s-%s)' % (title, start, end))
     return "aye"
 
@@ -494,7 +536,10 @@ def event_detail(request, id):
 
 @jsonrpc_method('monmessage')
 def monmessage(request, message):
-    monitord.message(message)
+    try:
+        monitord.message(message)
+    except:
+        pass
     return "yo"
 
 #################################################################
@@ -503,7 +548,6 @@ def monmessage(request, message):
 
 @jsonrpc_method('tts')
 def tts(request, voice, text):
-    print text
     return cout.tts(voice, text)
 
 @jsonrpc_method('r2d2')
@@ -777,7 +821,7 @@ def edit_mission(request, object_id):
 
 @jsonrpc_method('gcm_register')
 def gcm_register(request, user, regid):
-    print regid
+    #print regid
     s = Subscription()
     s.regid = regid
     s.user = getuser(user)
@@ -824,7 +868,7 @@ def test_enc(request):
     encrypted_data = crypto.EncryptWithAES("fooderbar")
     u = getuser("smile")
     s = Subscription.objects.get(user=u)
-    print encrypted_data
+    #print encrypted_data
     regids = [s.regid]
     data = {'title': "AES", 'text': encrypted_data}
     response = gcm.json_request(registration_ids=regids, data=data)
@@ -923,6 +967,12 @@ def set_stripe_speed(request, speed):
 def set_stripe_pattern(request, offset):
     return cerebrum.set_offset(offset)
 
+@jsonrpc_method('set_stripe_buffer')
+def set_stripe_buffer(request, buffer):
+    #buffer = [255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0]*32+[0,0,0,0,0,0,0,0,0,0,0,0]
+    #print buffer
+    return cerebrum.set_buffer(buffer)
+
 @jsonrpc_method('set_stripe_default')
 def set_stripe_default(request):
     global default_stripe_pattern
@@ -980,7 +1030,7 @@ def fnord(request):
 
 @jsonrpc_method('isWifiLoginEnabled()')
 def isWifiLoginEnabled(request, users):
-    print users
+    #print users
     return {user.username: user.wlanlogin for user in User.objects.filter(username__in=users)}
 
 @jsonrpc_method('set_wlan_login')
@@ -989,3 +1039,17 @@ def set_wlan_login(request, user, enabled):
     u.wlanlogin=enabled
     u.save()
     return "aye"
+
+@csrf_exempt
+def stripe_view(request):
+    if request.method == 'POST':
+        form = StripeForm(request.POST)
+        if form.is_valid():
+            form.cleaned_data["speed"]
+            form.cleaned_data["pattern"]
+            form.cleaned_data["offset"]
+            #print form
+            return render_to_response('cbeamd/stripe_form.django', {'form': form})
+    else:
+        form = StripeForm()
+        return render_to_response('cbeamd/stripe_form.django', {'form': form})
