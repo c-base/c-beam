@@ -10,8 +10,10 @@
     {% for user in user_list %}
     <li>
       <a href="/user/{{ user.id }}/">{{ user.username }}</a> 
+<!--
       {% if user.status != "online" %} (<a href="/user/login/{{ user.username }}">login</a/>){% endif %}
       {% if user.status == "online" %} (<a href="/user/logout/{{ user.username }}">logout</a/>){% endif %}
+-->
     </li>
     {% endfor %}
     </ul>
