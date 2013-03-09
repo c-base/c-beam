@@ -32,3 +32,8 @@ class MissionForm( forms.ModelForm ):
                 'description': forms.Textarea(attrs={'cols': 80, 'rows': 10})
         }
 
+class StripeForm( forms.Form ):
+    speed = forms.IntegerField(required=False)
+    pattern = forms.IntegerField(required=False)
+    offset = forms.IntegerField(required=False)
+
