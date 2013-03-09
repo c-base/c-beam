@@ -11,7 +11,8 @@
     <title>{% block title %}My amazing site{% endblock %}</title>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
     {% bootstrap_javascript_tag "dropdown" %}
-    <link href="/static/base.css" rel="stylesheet" type="text/css" />
+    <link href="/static/c-base-bootstrap/css/cyborg.css" rel="stylesheet" type="text/css" />
+    <script src="/static/c-base-bootstrap/js/bootstrap.js"></script>
 </head>
 
 <body>
