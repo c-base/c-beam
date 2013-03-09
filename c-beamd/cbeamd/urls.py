@@ -40,6 +40,7 @@ urlpatterns = patterns('',
     url(r'^missions/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail', dict(mission_dict, template_name='cbeamd/mission_detail.django'), mission_dict),
     url(r'^missions$', 'cbeamd.views.mission_list'),
     url(r'^missions/(?P<object_id>\d+)/edit$', 'cbeamd.views.edit_mission'),
+    url(r'^stripe/$', 'cbeamd.views.stripe_view'),
 )
 
 urlpatterns += patterns('', (r'^rpc/', jsonrpc_site.dispatch))
