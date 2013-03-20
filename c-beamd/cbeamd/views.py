@@ -48,6 +48,7 @@ newetalist = {}
 achievments = {}
 
 eventcache = []
+eventdetailcache = []
 eventcache_time = timezone.now() - timedelta(days=1)
 event_details = []
 
@@ -88,13 +89,15 @@ def login_with_id(request, user):
 def login(request, user):
     u = getuser(user)
     if u.logouttime + timedelta(seconds=hysterese) > timezone.now():
-        return (reply, "hysterese")
+        return reply(request, "hysterese")
     else:
         welcometts(request, u.username)
         try:
             monitord.login(u.username)
         except:
             pass
+        try: gcm_send(request, 'now boarding', user)
+        except: pass
         if u.status == "eta":
             u.eta = ""
         u.status = "online"
@@ -112,6 +115,8 @@ def force_login(request, user):
         monitord.login(u.username)
     except:
         pass
+    try: gcm_send(request, 'now boarding', user)
+    except: pass
     if u.status == "eta":
         u.eta = ""
     u.status = "online"
@@ -365,6 +370,8 @@ def seteta(request, user, eta):
         u.etatimestamp = etatimestamp
         u.status = "eta"
         u.save()
+        try: gcm_send(request, 'ETA', '%s (%s)' % (user, eta))
+        except: pass
         log_stats()
         return 'eta_set'
 
@@ -408,8 +415,8 @@ def newetas(request):
     global newetalist
     tmp = newetalist
     newetalist = {}
-    if len(tmp) > 0:
-        gcm_send(request, 'ETA', ', '.join(['%s (%s)' % (key, tmp[key]) for key in tmp.keys()]))
+    #if len(tmp) > 0:
+    #    gcm_send(request, 'ETA', ', '.join(['%s (%s)' % (key, tmp[key]) for key in tmp.keys()]))
     #print "newetas_done"
     return tmp
 
@@ -418,9 +425,9 @@ def arrivals(request):
     global newarrivallist
     tmp = newarrivallist
     newarrivallist = {}
-    if len(tmp) > 0:
-        try: gcm_send(request, 'now boarding', ', '.join(tmp.keys()))
-        except: pass
+    #if len(tmp) > 0:
+    #    try: gcm_send(request, 'now boarding', ', '.join(tmp.keys()))
+    #    except: pass
     #print "arrivals_done"
     return tmp
 
@@ -476,48 +483,14 @@ def cleanup(request):
 @jsonrpc_method('events')
 def events(request):
     global eventcache
-    global eventcache_time
-    global event_details
-    events = []
-    if eventcache_time.day != timezone.now().day:
-        event_details = []
-        d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
-        for entry in d['entries']:
-            title = re.search(r'.*: (.*)', entry['title']).group(1)
-            end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
-            start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
-            title = title.replace("c   user", "c++ user")
-            description = entry['summary_detail']['value']
-            events.append('%s (%s-%s)' % (title, start, end))
-            event_details.append({'title':title, 'start': start, 'end': end, 'description': description})
-        eventcache = events
-        eventcache_time = timezone.now()
-    else:
-        events = eventcache
-    return events
+    update_event_cache()
+    return eventcache
 
 @jsonrpc_method('event_list')
 def event_list(request):
-    global eventcache
-    global eventcache_time
-    global event_details
-    events = []
-    if eventcache_time.day != timezone.now().day:
-        event_details = []
-        d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
-        for entry in d['entries']:
-            title = re.search(r'.*: (.*)', entry['title']).group(1)
-            end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
-            start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
-            title = title.replace("c   user", "c++ user")
-            description = entry['summary_detail']['value']
-            events.append('%s (%s-%s)' % (title, start, end))
-            event_details.append({'title':title, 'start': start, 'end': end, 'description': description})
-        eventcache = events
-        eventcache_time = timezone.now()
-    else:
-        events = eventcache
-    return event_details
+    global eventdetailcache
+    update_event_cache()
+    return eventdetailcache
 
 @jsonrpc_method('event_detail')
 def event_detail(request, id):
@@ -529,6 +502,40 @@ def event_detail(request, id):
         title = title.replace("c   user", "c++ user")
         #events.append('%s (%s-%s)' % (title, start, end))
     return "aye"
+
+def update_event_cache():
+    global eventcache_time
+    global eventcache
+    global eventdetailcache
+    if eventcache_time.day == timezone.now().day:
+        return
+    events = []
+    event_details = []
+    try:
+        d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
+    except:
+        pass
+
+    if d is not None:
+        for entry in d['entries']:
+            entryid = 42
+            try:
+                entryid = re.search(r'.*&uid=(.*)@google.com', entry['id']).group(1)
+            except: pass
+            title = re.search(r'.*: (.*)', entry['title']).group(1)
+            end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
+            start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
+            title = title.replace("c   user", "c++ user")
+
+            description = entry['summary_detail']['value']
+            events.append('%s (%s-%s)' % (title, start, end))
+            event_details.append({'id': entryid, 'title':title, 'start': start, 'end': end, 'description': description})
+        eventcache = events
+        eventdetailcache = event_details
+        eventcache_time = timezone.now()
+
+def event_list_web(request):
+    return render_to_response('cbeamd/event_list.django', {'event_list': event_list(request)})
 
 #################################################################
 # scanner methods
@@ -581,6 +588,17 @@ def c_out(request):
 @jsonrpc_method('announce')
 def announce(request, text):
     return cout.announce(text)
+
+@login_required
+def c_out_web(request):
+    return render_to_response('cbeamd/c_out.django', {'sound_list': sounds(request)['result']})
+
+@login_required
+def c_out_play_web(request, sound):
+    result = play(request, sound)
+    return render_to_response('cbeamd/c_out.django', {'sound_list': sounds(request)['result'], 'result': "sound wurde abgespielt"})
+
+
 
 #################################################################
 # ToDo
@@ -748,6 +766,10 @@ def user_list(request):
     users = User.objects.all().order_by('username')
     return [user.dic() for user in users]
 
+@login_required
+def control(request):
+    return render_to_response('cbeamd/control.django', {})
+
 #################################################################
 # Web Login / Logout
 #################################################################
@@ -793,6 +815,47 @@ def mission_detail(request, mission_id):
     mission = get_object_or_404(Mission, pk=mission_id)
     return mission.dic()
     #return render_to_response('cbeamd/mission_detail.django', {'mission': mission})
+
+@jsonrpc_method('mission_assign')
+def mission_assign(request, user, mission_id):
+    u = getuser(user)
+    m = Mission.objects.get(id=mission_id)
+    if m.status == "open":
+        m.assigned_to = u
+        m.status = "assigned"
+        m.save()
+        return "success"
+    return "mission not available"
+
+@jsonrpc_method('mission_cancel')
+def mission_cancel(request, user, mission_id):
+    u = getuser(user)
+    m = Mission.objects.get(id=mission_id)
+    if m.assigned_to == u and m.status == "assigned":
+        m.assigned_to = None
+        m.status = "open"
+        m.save()
+        return "success"
+    return "not assigned to user"
+
+@jsonrpc_method('mission_complete')
+def mission_complete(request, user, mission_id):
+    u = getuser(user)
+    m = Mission.objects.get(id=mission_id)
+    if m.assigned_to == u and m.status == "assigned":
+        u.ap = u.ap + m.ap
+        u.save()
+        m.assigned_to = None
+        m.status = "completed"
+        m.save()
+        mlog = MissionLog()
+        mlog.user = u
+        mlog.mission = m
+        mlog.save()
+        return "success"
+    return "failure"
+
+
 
 @jsonrpc_method('mission_list')
 def mission_list(request):
@@ -910,6 +973,10 @@ def hwstorage(request, status):
     timer.start()
     return "aye"
 
+def hwstorage_web(request):
+    result = hwstorage(request, True)
+    return render_to_response('cbeamd/control.django', {'result': 'Software-Endlager wurde geöffnet: %s' % result})
+
 #################################################################
 # artefact handling
 #################################################################
@@ -929,6 +996,9 @@ def artefact_list(request):
     else:
         artefactlist = artefactcache
     return sorted(artefactlist)
+
+def artefact_list_web(request):
+    return render_to_response('cbeamd/artefact_list.django', {'artefact_list': artefact_list(request)})
 
 #################################################################
 # article handling
@@ -960,9 +1030,17 @@ def get_stats(request):
 def set_stripe_pattern(request, pattern_id):
     return cerebrum.set_pattern(pattern_id)
 
+def set_stripe_pattern_web(request, pattern_id):
+    print cerebrum.set_pattern(int(pattern_id))
+    return render_to_response('cbeamd/control.django', {'result': 'Pattern wurde gesetzt'})
+
 @jsonrpc_method('set_stripe_speed')
 def set_stripe_speed(request, speed):
     return cerebrum.set_speed(speed)
+
+def set_stripe_speed_web(request, speed):
+    cerebrum.set_speed(int(speed))
+    return render_to_response('cbeamd/control.django', {'result': 'Geschwindigkeit wurde gesetzt'})
 
 @jsonrpc_method('set_stripe_offset')
 def set_stripe_pattern(request, offset):
