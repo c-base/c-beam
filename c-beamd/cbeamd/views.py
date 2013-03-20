@@ -4,7 +4,7 @@ from threading import Timer
 from jsonrpc import jsonrpc_method
 from models import User
 from models import LTE
-from models import Mission, Subscription, UserStatsEntry
+from models import Mission, Subscription, UserStatsEntry, MissionLog
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 from jsonrpc.proxy import ServiceProxy
@@ -842,6 +842,7 @@ def mission_cancel(request, user, mission_id):
 def mission_complete(request, user, mission_id):
     u = getuser(user)
     m = Mission.objects.get(id=mission_id)
+    print m.assigned_to
     if m.assigned_to == u and m.status == "assigned":
         u.ap = u.ap + m.ap
         u.save()
@@ -855,16 +856,15 @@ def mission_complete(request, user, mission_id):
         return "success"
     return "failure"
 
-
-
 @jsonrpc_method('mission_list')
 def mission_list(request):
     if request.path.startswith('/rpc'):
         missions = Mission.objects.all()
         return [mission.dic() for mission in missions]
     else:
-        mission_list = Mission.objects.all()
-        return render_to_response('cbeamd/mission_list.django', {'mission_list': mission_list})
+        missions_available = Mission.objects.filter(status="open")
+        missions_in_progress = Mission.objects.filter(status="assigned")
+        return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress})
 
 def edit_mission(request, object_id):
     if request.method == "POST":
