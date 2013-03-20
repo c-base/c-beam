@@ -9,12 +9,12 @@ class LoginForm( forms.Form ):
     user_cache = None
 
     def clean( self ):
-        try:
-            username = User.objects.get( username =
-self.cleaned_data['username'] ).username
-        except:
-            raise forms.ValidationError( 'No such user exists.' )
-        self.user_cache = authenticate( username=username,
+        #try:
+            #username = User.objects.get( username =
+#self.cleaned_data['username'] ).username
+        #except:
+            #raise forms.ValidationError( 'No such user exists.' )
+        self.user_cache = authenticate( username=self.cleaned_data['username'],
 password=self.cleaned_data['password'] )
         if self.user_cache is None:
             raise forms.ValidationError( 'No such username/password exists.' )
