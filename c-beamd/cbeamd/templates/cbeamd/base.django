@@ -2,26 +2,47 @@
 {% load bootstrap_toolkit %} 
 <html lang="en">
 <head>
-    {% bootstrap_stylesheet_tag %} 
     <style type="text/css">
       body {
         padding-top: 60px;
       }
     </style>
-    <title>{% block title %}My amazing site{% endblock %}</title>
+    <title>{% block title %}c-beam web interface{% endblock %}</title>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
     {% bootstrap_javascript_tag "dropdown" %}
     <link href="/static/c-base-bootstrap/css/cyborg.css" rel="stylesheet" type="text/css" />
     <script src="/static/c-base-bootstrap/js/bootstrap.js"></script>
+    <link href="/static/c-base-bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+    <!-- link rel="shortcut icon" href="ico/favicon.ico" -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/static/c-beam-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/static/c-beam-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/static/c-beam-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="/static/c-beam-touch-icon-57-precomposed.png">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
 </head>
 
 <body>
   <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
       <div class="container">
+        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </a>
         <a class="brand" href="/">c-beam web interface</a>
+        <div class="nav-collapse">
         <ul class="nav">
           <li class="dropdown">
+          <!--
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Users<b class="caret"></b></a>
             <ul class="dropdown-menu">
               <li><a class="nav" href="/user/online">Online</a></li>
@@ -30,13 +51,21 @@
               <li><a class="nav" href="/user/all">All</a></li>
             </ul>
           </li>
-          <li><a href="/missions">Missions</a></li>
+          -->
+          <li><a href="/user/online">AN BORD</a></li>
+          <li><a href="https://c-portal.c-base.org">C-PORTAL</a></li>
+          <li><a href="/artefacts">ARTEFACTE</a></li>
+          <li><a href="/events">EVENTS</a></li>
+          <li><a href="/control">C-ONTROL</a></li>
+          <li><a href="/missions">MISSIONEN</a></li>
+          <li><a href="/c_out">C_OUT</a></li>
           <!--
           <li><a href="">Tabs &amp; Pills</a></li>
           <li><a href="">Pagination</a></li>
           <li><a href="">Contact</a></li>
           -->
         </ul>
+      </div>
       </div>
     </div>
   </div>
