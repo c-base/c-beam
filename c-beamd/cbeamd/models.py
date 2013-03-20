@@ -19,6 +19,7 @@ class User(models.Model):
     arrivesub = models.BooleanField(default=False)
     autologout = models.IntegerField(default=600)
     wlanlogin = models.BooleanField(default=False)
+    ap = models.IntegerField(default=0)
 
     def __str__(self):
         return self.username
@@ -43,12 +44,16 @@ class User(models.Model):
         dic['autologout'] = self.autologout
         dic['autologout_in'] = self.autologout_in()
         dic['wlanlogin'] = self.wlanlogin
+        dic['ap'] = self.ap
         return dic
 
     def autologout_in(self):
         autologout_at = self.logintime + timedelta(minutes=self.autologout)
         autologout_in = autologout_at - timezone.now()
         return (autologout_in.total_seconds()/60)
+
+    def online_percentage(self):
+        return "%.2f" % (self.autologout_in()/self.autologout * 100)
 
 
 class LTE(models.Model):
@@ -63,10 +68,12 @@ class Mission(models.Model):
     short_description = models.CharField(max_length=200)
     description = models.CharField(max_length=2000)
     status = models.CharField(max_length=200)
-    #assigned_to = User()
+    assigned_to = models.OneToOneField(User, null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(blank=True)
     priority = models.IntegerField(default=3, blank=True)
+    ap = models.IntegerField(default=0)
+    repeat_after_days = models.IntegerField(default=-1)
 
     def __str__(self):
          return self.short_description
@@ -81,7 +88,13 @@ class Mission(models.Model):
         dic['created_on'] = self.created_on
         dic['due_date'] = self.due_date
         dic['priority'] = self.priority
+        dic['ap'] = self.ap
         return dic
+
+class MissionLog(models.Model):
+    mission = models.OneToOneField(Mission)
+    user = models.OneToOneField(User)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
 class Subscription(models.Model):
     regid = models.CharField(max_length="2000")
