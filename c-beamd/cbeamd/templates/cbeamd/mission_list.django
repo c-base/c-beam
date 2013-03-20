@@ -1,21 +1,37 @@
 {% extends "cbeamd/base.django" %}
 
-{% load bootstrap_toolkit %}
-
 {% block content %}
 
-missions:
-{% if mission_list %}
-    <ul>
-    {% for mission in mission_list %}
-    <li>
-      <a href="/missions/{{ mission.id }}/">{{ mission.short_description }}</a>
-      (<a href="/missions/{{ mission.id }}/edit">Edit</a>)
-    </li>
-    {% endfor %}
-    </ul>
-{% else %}
-    <p>-.-</p>
-{% endif %}
+  <div class="row">
+    <div class="span12">
+<!--<div class="well">-->
+      <h1 align="center">MISSIONEN</h1>
+      <div class="accordion" id="mission_accordion">
+        {% for mission in mission_list %}
+          <div class="accordion-group">
+            <div class="accordion-heading">
+              <a class="accordion-toggle btn btn-large btn-info" 
+                  data-toggle="collapse" data-parent="#mission_accordion" 
+                  href="#CollapseMission{{ mission.id }}" >
+                {{ mission.short_description }} ({{ mission.ap }} AP)
+              </a>
+            </div>
+            <div id="CollapseMission{{ mission.id }}" class="accordion-body collapse">
+              <div class="accordion-inner">
+                {{ mission.description }}
+                 <br><br>
+                <div align="right">
+                  <input type="submit" class="btn btn-primary" data-article="4" data-target="#CreateProjectModal" data-toggle="modal" type="button" value="Mission annehmen">
+                </div>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <a class="btn btn-block btn-large btn-info"><b>zur zeit sind keine missionen verfu:gbar.</b></a>
+        {% endfor %}
+      </div>
+<!--</div>-->
+    </div> 
+  </div>
+{% endblock content%}
 
-{% endblock %}
