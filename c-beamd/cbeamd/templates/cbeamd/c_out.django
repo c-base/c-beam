@@ -1,0 +1,28 @@
+{% extends "cbeamd/base.django" %}
+
+{% block content %}
+
+  <div class="row">
+    <div class="span12">
+      <h1 align="center">C_OUT</h1>
+      <form>
+<!--
+        Text eingeben:
+        <input type="text" name="text"></input>
+        <input type="submit" class="btn btn-large btn-info" value="c_out"></input>
+        <input type="submit" class="btn btn-large btn-info" value="R2D2"></input>
+        <input type="submit" class="btn btn-large btn-info" value="Announce"></input>
+-->
+      </form>
+      {% for sound in sound_list %}
+        <a class="btn btn-block btn-large btn-info" href="/c_out/play/{{sound}}" ><b>{{sound}}</b></a>
+      {% empty %}
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if result %}
+      <script>alert("{{result}}");</script>
+  {% endif %}
+
+{% endblock content%}

@@ -1,0 +1,6 @@
+{% for event in event_list %}
+  <a class="btn btn-block btn-large btn-info" href="/events/{{ event.id }}" ><b>{{ event.title }} ({{ event.start }} - {{ event.end }})</b></a>
+{% empty %}
+  <a class="btn btn-block btn-large btn-info" ><b>fu:r heute sind leider keine events eingetragen</b></a>
+{% endfor %}
+

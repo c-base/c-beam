@@ -1,0 +1,34 @@
+{% extends "cbeamd/base.django" %}
+
+{% block content %}
+
+  <div class="row">
+    <div class="span12">
+<!--<div class="well">-->
+      <h1 align="center">EVENTS</h1>
+      <div class="accordion" id="event_accordion">
+        {% for event in event_list %}
+          <div class="accordion-group">
+            <div class="accordion-heading">
+              <a class="accordion-toggle btn btn-large btn-info" 
+                  data-toggle="collapse" data-parent="#event_accordion" 
+                  href="#CollapseEvent{{ event.id }}" >
+                {{ event.title }} ({{ event.start }}-{{ event.end }})
+              </a>
+            </div>
+            <div id="CollapseEvent{{ event.id }}" class="accordion-body collapse">
+              <div class="accordion-inner">
+                {{ event.description }}
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <a class="btn btn-block btn-large btn-info"><b>fu:r heute sind leider keine events eingetragen</b></a>
+        {% endfor %}
+      </div>
+<!--</div>-->
+    </div> 
+  </div>
+
+{% endblock content%}
+

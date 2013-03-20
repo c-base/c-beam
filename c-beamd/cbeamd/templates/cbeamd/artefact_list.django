@@ -1,0 +1,19 @@
+{% extends "cbeamd/base.django" %}
+
+{% block content %}
+
+     <div class="row">
+        <div class="span12">
+          <h1 align="center">ARTEFACTE</h1>
+          {% if artefact_list %}
+            {% for artefact in artefact_list %}
+              <a class="btn btn-block btn-large btn-info" href="http://cbag3.c-base.org/{{ artefact.slug }}" ><b>{{ artefact.name }}</b></a>
+            {% endfor %}
+          {% else %}
+              <a class="btn btn-block btn-large btn-info" href="/artefacts" ><b>No aretfacts available</b></a>
+          {% endif %}
+        </div>
+    </div>
+
+{% endblock content%}
+
