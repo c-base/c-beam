@@ -4,10 +4,9 @@
 
   <div class="row">
     <div class="span12">
-<!--<div class="well">-->
-      <h1 align="center">MISSIONEN</h1>
+      <h1 align="center">OFFENE MISSIONEN</h1>
       <div class="accordion" id="mission_accordion">
-        {% for mission in mission_list %}
+        {% for mission in missions_available %}
           <div class="accordion-group">
             <div class="accordion-heading">
               <a class="accordion-toggle btn btn-large btn-info" 
@@ -30,7 +29,36 @@
           <a class="btn btn-block btn-large btn-info"><b>zur zeit sind keine missionen verfu:gbar.</b></a>
         {% endfor %}
       </div>
-<!--</div>-->
+    </div>
+  </div>
+  <div class="row">
+    <div class="span12">
+      <h1 align="center">LAUFENDE MISSIONEN</h1>
+      <div class="accordion" id="mission_accordion">
+        {% for mission in missions_in_progress %}
+          <div class="accordion-group">
+            <div class="accordion-heading">
+              <a class="accordion-toggle btn btn-large btn-info" 
+                  data-toggle="collapse" data-parent="#mission_accordion" 
+                  href="#CollapseMission{{ mission.id }}" >
+                {{ mission.short_description }} ({{ mission.ap }} AP)
+              </a>
+            </div>
+            <div id="CollapseMission{{ mission.id }}" class="accordion-body collapse">
+              <div class="accordion-inner">
+                {{ mission.description }}
+                 <br><br>
+                Member: {{ mission.assigned_to.username }}
+                <div align="right">
+                  <input type="submit" class="btn btn-primary" data-article="4" data-target="#CreateProjectModal" data-toggle="modal" type="button" value="Mission annehmen">
+                </div>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <a class="btn btn-block btn-large btn-info"><b>zur zeit laufen keine missionen.</b></a>
+        {% endfor %}
+      </div>
     </div> 
   </div>
 {% endblock content%}
