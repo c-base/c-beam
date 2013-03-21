@@ -48,7 +48,12 @@
               <div class="accordion-inner">
                 {{ mission.description }}
                  <br><br>
-                Member: {{ mission.assigned_to.username }}
+                Member:
+                <ul>
+                {% for member in mission.assigned_to.all %}
+                    <li>{{ member.username }}
+                {% endfor %}
+                </ul>
                 <div align="right">
                   <input type="submit" class="btn btn-primary" data-article="4" data-target="#CreateProjectModal" data-toggle="modal" type="button" value="Mission annehmen">
                 </div>
