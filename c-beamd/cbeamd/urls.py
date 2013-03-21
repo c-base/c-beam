@@ -19,6 +19,8 @@ urlpatterns = patterns('',
     # Examples:
     #url(r'^$', 'cbeamd.views.index'),
     url(r'^$', 'cbeamd.views.user_online'),
+    url(r'^stats$', 'cbeamd.views.stats'),
+    url(r'^activitylog$', 'cbeamd.views.activitylog'),
     #url(r'^cbeamd/', include('cbeamd.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
