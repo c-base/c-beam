@@ -4,7 +4,7 @@ from threading import Timer
 from jsonrpc import jsonrpc_method
 from models import User
 from models import LTE
-from models import Mission, Subscription, UserStatsEntry, MissionLog
+from models import Mission, Subscription, UserStatsEntry, MissionLog, Activity, ActivityLog
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 from jsonrpc.proxy import ServiceProxy
@@ -45,6 +45,7 @@ apikey = 'AIzaSyBLk_iU8ORnHM39YQCUsHngMfG85Rg9yss'
 
 newarrivallist = {}
 newetalist = {}
+newactivities = []
 achievments = {}
 
 eventcache = []
@@ -60,6 +61,13 @@ hwstorage_state = "closed"
 default_stripe_pattern = 4
 default_stripe_speed = 3
 default_stripe_offset = 0
+
+# mission states
+mission_open = "open"
+mission_assigned = "assigned"
+mission_completed = "completed"
+
+
 
 def AddPadding(data, interrupt, pad, block_size):
     new_data = ''.join([data, interrupt])
@@ -104,6 +112,7 @@ def login(request, user):
         u.logintime=timezone.now()
         u.save()
         log_stats()
+        logactivity(request, user, "login")
         newarrivallist[u.username] = timezone.now()
     return reply(request, "%s logged in" % u.username)
 
@@ -123,6 +132,7 @@ def force_login(request, user):
     u.logintime=timezone.now()
     u.save()
     log_stats()
+    logactivity(request, user, "login")
     newarrivallist[u.username] = timezone.now()
     return reply(request, "%s logged in" % u.username)
 
@@ -135,13 +145,17 @@ def stealth_login(request, user):
     u.logintime=timezone.now()
     u.save()
     log_stats()
+    #logactivity(request, user, "login")
     newarrivallist[u.username] = timezone.now()
     return reply(request, "%s logged in" % u.username)
 
 
 @jsonrpc_method('logout')
 def logout(request, user):
-    return stealth_logout(request, user)
+    reply = stealth_logout(request, user)
+    if reply != "hysterese":
+        logactivity(request, user, "logout")
+    return reply
 
 @jsonrpc_method('stealth_logout')
 def stealth_logout(request, user):
@@ -171,6 +185,7 @@ def force_logout(request, user):
     u.logouttime = timezone.now()
     u.save()
     log_stats()
+    logactivity(request, user, "logout")
 
     return reply(request, "%s logged out" % u.username)
 
@@ -438,6 +453,13 @@ def achievements(request):
     achievements = {}
     return tmp
 
+@jsonrpc_method('activities')
+def activities(request):
+    global newactivities
+    tmp = newactivities
+    newactivities = []
+    return tmp
+
 #################################################################
 # Cleanup methods
 #################################################################
@@ -453,7 +475,7 @@ def cleanup(request):
     # remove expired users
     for u in User.objects.filter(status="online"):
         #if u.logintime + timedelta(minutes=cfg.timeoutdelta) < timezone.now():
-        if u.autologout_in() < 0:
+        if u.autologout_in() <= 0:
             autologout = True
             u.status="offline"
             u.logouttime = timezone.now()
@@ -767,6 +789,12 @@ def user_list(request):
     return [user.dic() for user in users]
 
 @login_required
+def stats(request):
+    user_list = User.objects.order_by('-ap', 'username')
+    return render_to_response('cbeamd/stats.django', {'user_list': user_list})
+
+
+@login_required
 def control(request):
     return render_to_response('cbeamd/control.django', {})
 
@@ -820,9 +848,9 @@ def mission_detail(request, mission_id):
 def mission_assign(request, user, mission_id):
     u = getuser(user)
     m = Mission.objects.get(id=mission_id)
-    if m.status == "open":
-        m.assigned_to = u
-        m.status = "assigned"
+    if m.status == mission_open or m.status == mission_assigned:
+        m.assigned_to.add(u)
+        m.status = mission_assigned
         m.save()
         return "success"
     return "mission not available"
@@ -831,9 +859,10 @@ def mission_assign(request, user, mission_id):
 def mission_cancel(request, user, mission_id):
     u = getuser(user)
     m = Mission.objects.get(id=mission_id)
-    if m.assigned_to == u and m.status == "assigned":
-        m.assigned_to = None
-        m.status = "open"
+    if u in m.assigned_to.all() and m.status == mission_assigned:
+        m.assigned_to.remove(u)
+        if m.assigned_to.count() <= 0:
+            m.status = mission_open
         m.save()
         return "success"
     return "not assigned to user"
@@ -842,12 +871,11 @@ def mission_cancel(request, user, mission_id):
 def mission_complete(request, user, mission_id):
     u = getuser(user)
     m = Mission.objects.get(id=mission_id)
-    print m.assigned_to
-    if m.assigned_to == u and m.status == "assigned":
+    if u in m.assigned_to.all() and m.status == mission_assigned:
         u.ap = u.ap + m.ap
         u.save()
-        m.assigned_to = None
-        m.status = "completed"
+        m.assigned_to.clear()
+        m.status = mission_completed
         m.save()
         mlog = MissionLog()
         mlog.user = u
@@ -856,16 +884,18 @@ def mission_complete(request, user, mission_id):
         return "success"
     return "failure"
 
+@login_required
 @jsonrpc_method('mission_list')
 def mission_list(request):
     if request.path.startswith('/rpc'):
         missions = Mission.objects.all()
         return [mission.dic() for mission in missions]
     else:
-        missions_available = Mission.objects.filter(status="open")
-        missions_in_progress = Mission.objects.filter(status="assigned")
+        missions_available = Mission.objects.filter(status="open").order_by('short_description')
+        missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
         return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress})
 
+@login_required
 def edit_mission(request, object_id):
     if request.method == "POST":
         m = Mission.objects.get(pk=object_id)
@@ -1132,3 +1162,28 @@ def stripe_view(request):
     else:
         form = StripeForm()
         return render_to_response('cbeamd/stripe_form.django', {'form': form})
+
+@login_required
+def activitylog(request):
+    al = ActivityLog.objects.order_by('-timestamp')
+    return render_to_response('cbeamd/activitylog.django', {'activitylog': al})
+
+@jsonrpc_method('logactivity')
+def logactivity(request, user, activity):
+    global newactivities
+    u = getuser(user)
+    al = ActivityLog()
+    al.user = u
+    if activity == "login":
+        al.ap = 1
+        al.activity = Activity.objects.get(activity_type="login")
+        u.ap = u.ap + 1
+        u.save()
+    if activity == "logout":
+        al.ap = 2
+        al.activity = Activity.objects.get(activity_type="logout")
+        u.ap = u.ap + 2
+        u.save()
+    al.save()
+    newactivities.append(al)
+
