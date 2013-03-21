@@ -4,21 +4,17 @@
 
 {% block content %}
 
-  <table>
-    <tr><td>Username:</td><td> {{ object.username }}</td></tr>
+  <table class="table table-condensed table-bordered table-hover">
+    <tr><td>Username:</td><td width="100%"> {{ object.username }}</td></tr>
     <tr><td>Status:</td><td> {{ object.status }}</td></tr>
-    <tr><td>logintime:</td><td> {{ object.logintime }}</td></tr>
-    <tr><td>logouttime:</td><td> {{ object.logouttime }}</td></tr>
+    <tr><td>AP:</td><td> {{ object.ap }}</td></tr>
+    <tr><td>Level:</td><td>1</td></tr>
     <tr><td>ETA:</td><td> {{ object.eta }}</td></tr>
-    <tr><td>ETA timestamp:</td><td> {{ object.etatimestamp }}</td></tr>
     <tr><td>ETD:</td><td> {{ object.etd }}</td></tr>
-    <tr><td>ETD timestamp:</td><td> {{ object.etdtimestamp }}</td></tr>
-    <tr><td>nickspell:</td><td> {{ object.nickspell }}</td></tr>
     <tr><td>reminder:</td><td> {{ object.reminder }}</td></tr>
-    <tr><td>reminder timestamp:</td><td> {{ object.remindertimestamp }}</td></tr>
     <tr><td>lastlocation:</td><td> {{ object.lastlocation }}</td></tr>
-    <tr><td>ETAsub:</td><td> {{ object.etasub }}</td></tr>
-    <tr><td>arrivesub:</td><td> {{ object.arrivesub }}</td></tr>
+    <tr><td>crewpage:</td><td><a href="http://{{ object.username }}.crew.c-base.org">http://{{ object.username }}.crew.c-base.org</a></td></tr>
+    <tr><td>c-portal-page:</td><td><a href="https://c-portal.c-base.org/members/{{ object.username }}">https://c-portal.c-base.org/members/{{ object.username }}</a></td></tr>
   </table>
 
 {% endblock%}
