@@ -50,7 +50,10 @@ class User(models.Model):
     def autologout_in(self):
         autologout_at = self.logintime + timedelta(minutes=self.autologout)
         autologout_in = autologout_at - timezone.now()
-        return (autologout_in.total_seconds()/60)
+
+        if self.status == "online" and autologout_in.total_seconds() > 0:
+            return (autologout_in.total_seconds()/60)
+        return 0
 
     def online_percentage(self):
         return "%.2f" % (self.autologout_in()/self.autologout * 100)
@@ -68,7 +71,7 @@ class Mission(models.Model):
     short_description = models.CharField(max_length=200)
     description = models.CharField(max_length=2000)
     status = models.CharField(max_length=200)
-    assigned_to = models.OneToOneField(User, null=True, blank=True)
+    assigned_to = models.ManyToManyField(User, null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(blank=True)
     priority = models.IntegerField(default=3, blank=True)
@@ -117,4 +120,25 @@ class UserStatsEntry(models.Model):
 
     def __str__(self):
         return "%s: %d" % (str(self.timestamp), self.usercount)
+
+class Activity(models.Model):
+    activity_type = models.CharField(max_length="200")
+    activity_text = models.CharField(max_length="200")
+
+    def __str__(self):
+        return self.activity_text
+
+
+class ActivityLog(models.Model):
+    timestamp = models.DateTimeField(auto_now_add=True)
+    activity = models.ForeignKey(Activity)
+    user = models.ForeignKey(User)
+    mission = models.ForeignKey(Mission,blank=True,null=True)
+    ap = models.IntegerField(default=0)
+
+    def __str__(self):
+        if self.activity.activity_type == "mission completed" and self.mission != None:
+            return "%s: %s erha:lt %d AP fu:r mission %d: %s" % (self.timestamp, self.user.username, self.ap, self.mission.id, self.mission.short_description) 
+        else:
+            return "%s: %s erha:lt %d AP fu:r %s" % (self.timestamp, self.user.username, self.ap, self.activity.activity_text)
 
