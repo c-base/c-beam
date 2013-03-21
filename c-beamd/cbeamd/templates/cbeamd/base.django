@@ -20,6 +20,7 @@
     <link href="/static/c-base-bootstrap/css/cyborg.css" rel="stylesheet" type="text/css" />
     <script src="/static/c-base-bootstrap/js/bootstrap.js"></script>
     <link href="/static/c-base-bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="/static/c-base-bootstrap/css/bootstrap.custom.css" rel="stylesheet">
     <!-- link rel="shortcut icon" href="ico/favicon.ico" -->
     <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/static/c-beam-touch-icon-144-precomposed.png">
     <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/static/c-beam-touch-icon-114-precomposed.png">
@@ -59,6 +60,8 @@
           <li><a href="/control">C-ONTROL</a></li>
           <li><a href="/missions">MISSIONEN</a></li>
           <li><a href="/c_out">C_OUT</a></li>
+          <li><a href="/stats">STATS</a></li>
+          <li><a href="/activitylog">ACTIVITA:T</a></li>
           <!--
           <li><a href="">Tabs &amp; Pills</a></li>
           <li><a href="">Pagination</a></li>
