@@ -1,0 +1,36 @@
+{% extends "cbeamd/base.django" %}
+
+{% block content %}
+  <div class="row">
+    <div class="span12">
+      <h1 align="center">C-STATS</h1>
+        <table cellpadding="8" class="table table-condensed table-bordered table-hover">
+          <thead>
+            <tr id="tablehead">
+              <th>member</th>
+              <th>AP</th>
+              <th>status</th>
+              <th>level</th>
+              <th>bordwahrscheinlichkeit</th>
+            <tr>
+          </thead>
+          {% for user in user_list %}
+            <tbody>
+              <tr>
+                <td><a href="/user/{{ user.id }}">{{ user.username }}</a></td>
+                <td class="alignright">{{ user.ap }}</td>
+                <td>{{ user.status }}</td>
+                <td class="alignright">1</td>
+                <td align="right">{{user.online_percentage}}&#37;</td>
+              <tr>
+            </tbody>
+          {% empty %}
+            <tr><td>WTF</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div> 
+  </div>
+
+{% endblock content%}
+

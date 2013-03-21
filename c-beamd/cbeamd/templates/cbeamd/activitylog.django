@@ -1,0 +1,21 @@
+{% extends "cbeamd/base.django" %}
+
+{% block content %}
+  <div class="row">
+    <div class="span12">
+      <h1 align="center">ACTIVITYLOG</h1>
+        <table cellpadding="8" class="table table-condensed table-bordered table-hover">
+          {% for entry in activitylog %}
+            <tr>
+              <td>{{ entry }}</td>
+            <tr>
+          {% empty %}
+            <tr><td>WTF</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div> 
+  </div>
+
+{% endblock content%}
+
