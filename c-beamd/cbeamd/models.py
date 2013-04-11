@@ -6,6 +6,7 @@ class User(models.Model):
     username = models.CharField(max_length=200)
     status = models.CharField(max_length=20)
     logintime = models.DateTimeField()
+    extendtime = models.DateTimeField(auto_now_add=True)
     logouttime = models.DateTimeField()
     eta = models.CharField(max_length=200, blank=True)
     etatimestamp = models.DateTimeField(auto_now_add=True)
@@ -20,6 +21,7 @@ class User(models.Model):
     autologout = models.IntegerField(default=600)
     wlanlogin = models.BooleanField(default=False)
     ap = models.IntegerField(default=0)
+    stats_enabled = models.BooleanField(default=True)
 
     def __str__(self):
         return self.username
@@ -30,6 +32,7 @@ class User(models.Model):
         dic['username'] = self.username
         dic['status'] = self.status
         dic['logintime'] = self.logintime
+        dic['extendtime'] = str(self.extendtime)
         dic['logouttime'] = self.logouttime
         dic['eta'] = self.eta
         dic['etatimestamp'] = self.etatimestamp
@@ -45,10 +48,35 @@ class User(models.Model):
         dic['autologout_in'] = self.autologout_in()
         dic['wlanlogin'] = self.wlanlogin
         dic['ap'] = self.ap
+        dic['stats_enabled'] = self.stats_enabled
+        return dic
+
+    def dic2(self):
+        dic = {}
+        dic['id'] = self.id
+        dic['username'] = self.username
+        dic['status'] = self.status
+        dic['logintime'] = str(self.logintime)
+        dic['extendtime'] = str(self.extendtime)
+        dic['logouttime'] = str(self.logouttime)
+        dic['eta'] = self.eta
+        dic['etatimestamp'] = str(self.etatimestamp)
+        dic['etd'] = self.etd
+        dic['etdtimestamp'] = str(self.etdtimestamp)
+        dic['nickspell'] = self.nickspell
+        dic['reminder'] = self.reminder
+        dic['remindertimestamp'] = str(self.remindertimestamp)
+        dic['lastlocation'] = self.lastlocation
+        dic['etasub'] = self.etasub
+        dic['arrivesub'] = self.arrivesub
+        dic['autologout'] = self.autologout
+        dic['autologout_in'] = self.autologout_in()
+        dic['wlanlogin'] = self.wlanlogin
+        dic['ap'] = self.ap
         return dic
 
     def autologout_in(self):
-        autologout_at = self.logintime + timedelta(minutes=self.autologout)
+        autologout_at = self.extendtime + timedelta(minutes=self.autologout)
         autologout_in = autologout_at - timezone.now()
 
         if self.status == "online" and autologout_in.total_seconds() > 0:
@@ -83,7 +111,6 @@ class Mission(models.Model):
 
     def dic(self):
         dic = {}
-        print self.id
         dic['id'] = self.id
         dic['short_description'] = self.short_description
         dic['description'] = self.description
@@ -92,6 +119,7 @@ class Mission(models.Model):
         dic['due_date'] = self.due_date
         dic['priority'] = self.priority
         dic['ap'] = self.ap
+        dic['assigned_to'] = [user.username for user in self.assigned_to.all()]
         return dic
 
 class MissionLog(models.Model):
@@ -128,6 +156,15 @@ class Activity(models.Model):
     def __str__(self):
         return self.activity_text
 
+class ActivityLogComment(models.Model):
+    timestamp = models.DateTimeField(auto_now_add=True)
+    comment = models.CharField(max_length=4000)
+    comment_type = models.CharField(max_length=20)
+    user = models.ForeignKey(User)
+
+    def dic(self):
+        return {'timestamp': str(self.timestamp), 'comment': self.comment, 'comment_type': self.comment_type}
+    
 
 class ActivityLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -135,10 +172,32 @@ class ActivityLog(models.Model):
     user = models.ForeignKey(User)
     mission = models.ForeignKey(Mission,blank=True,null=True)
     ap = models.IntegerField(default=0)
+    protests = models.IntegerField(default=0)
+    thanks = models.IntegerField(default=0)
+    comments = models.ManyToManyField(ActivityLogComment, null=True, blank=True)
+
+    def short_str(self):
+        if self.activity.activity_type == "mission completed" and self.mission != None:
+            return "%s %s: %d AP: mission %d: %s" % (str(self.timestamp)[11:19], self.user.username, self.ap, self.mission.id, self.mission.short_description) 
+        else:
+            return "%s %s: %d AP: %s" % (str(self.timestamp)[11:19], self.user.username, self.ap, self.activity.activity_text)
 
     def __str__(self):
         if self.activity.activity_type == "mission completed" and self.mission != None:
-            return "%s: %s erha:lt %d AP fu:r mission %d: %s" % (self.timestamp, self.user.username, self.ap, self.mission.id, self.mission.short_description) 
+            return "%s %s erha:lt %d AP fu:r mission %d: %s" % (str(self.timestamp)[:19], self.user.username, self.ap, self.mission.id, self.mission.short_description) 
         else:
-            return "%s: %s erha:lt %d AP fu:r %s" % (self.timestamp, self.user.username, self.ap, self.activity.activity_text)
+            return "%s %s erha:lt %d AP fu:r %s" % (str(self.timestamp)[:19], self.user.username, self.ap, self.activity.activity_text)
 
+    def dic(self):
+        dic = {}
+        dic['activity'] = self.activity.activity_text
+        dic['timestamp'] = str(self.timestamp)[:26]
+        dic['mission'] = {}
+        dic['ap'] = self.ap
+        dic['user'] = self.user.dic2()
+        dic['str'] = self.short_str()
+        dic['id'] = self.id
+        dic['protests'] =  self.protests
+        dic['thanks'] = self.thanks
+        dic['comments'] = [comment.dic() for comment in self.comments.order_by('-timestamp')]
+        return dic
