@@ -1,5 +1,9 @@
-import jsonrpclib
+from jsonrpc.proxy import ServiceProxy
 
-jsonrpclib.config.version = 1.0
-cbeam = jsonrpclib.Server('http://10.0.1.27:4254')
+#import jsonrpclib
+
+#jsonrpclib.config.version = 1.0
+#cbeam = jsonrpclib.Server('http://10.0.1.27:4254/rpc/')
+s = ServiceProxy('http://10.0.1.27:4254/rpc/')
+
 
