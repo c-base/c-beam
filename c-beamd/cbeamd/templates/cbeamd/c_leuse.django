@@ -1,0 +1,36 @@
+{% extends "cbeamd/base.django" %}
+
+{% block content %}
+
+     <div class="row">
+        <div class="span12">
+           <h1 align="center">c_leuse</h1>
+           <a class="btn btn-block btn-large btn-info" href="/c_leuse/set_stripe_pattern/0/"><b>Off</b></a>
+           <a class="btn btn-block btn-large btn-info" href="/c_leuse/set_stripe_pattern/1/"><b>Rainbow</b></a>
+           <a class="btn btn-block btn-large btn-info" href="/c_leuse/set_stripe_pattern/2/"><b>Gru:n</b></a>
+           <a class="btn btn-block btn-large btn-info" href="/c_leuse/set_stripe_pattern/3/"><b>Blau</b></a>
+           <a class="btn btn-block btn-large btn-info" href="/c_leuse/set_stripe_pattern/4/"><b>Rot</b></a>
+           <a class="btn btn-block btn-large btn-info" href="/c_leuse/set_stripe_pattern/5/"><b>Weiss</b></a>
+           <a class="btn btn-block btn-large btn-info" href="/c_leuse/set_stripe_pattern/6/"><b>Default</b></a>
+           <a class="btn btn-block btn-large btn-info" href="/c_leuse/set_stripe_pattern/10/"><b>Notbeleuchtung</b></a>
+           <a class="btn btn-block btn-large btn-info" href="/c_leuse/set_stripe_pattern/7/"><b>Blauer Punkt</b></a>
+           <a class="btn btn-block btn-large btn-info" href="/c_leuse/set_stripe_pattern/8/"><b>Gru:ner Punkt</b></a>
+           <a class="btn btn-block btn-large btn-info" href="/c_leuse/set_stripe_pattern/9/"><b>Roter Punkt</b></a>
+           <br>
+           <div align="center">
+               <a class="btn btn-info btn-large" href="/c_leuse/set_stripe_speed/-9"><b>-9</b></a>
+               <a class="btn btn-info btn-large" href="/c_leuse/set_stripe_speed/-6"><b>-6</b></a>
+               <a class="btn btn-info btn-large" href="/c_leuse/set_stripe_speed/-3"><b>-3</b></a>
+               <a class="btn btn-info btn-large" href="/c_leuse/set_stripe_speed/0"><b>0</b></a>
+               <a class="btn btn-info btn-large" href="/c_leuse/set_stripe_speed/3"><b>+3</b></a>
+               <a class="btn btn-info btn-large" href="/c_leuse/set_stripe_speed/6"><b>+6</b></a>
+               <a class="btn btn-info btn-large" href="/c_leuse/set_stripe_speed/9"><b>+9</b></a>
+           </div>
+        </div>
+    </div>
+    {% if result %}
+        <script>alert("{{result}}");</script>
+    {% endif %}
+
+{% endblock content%}
+

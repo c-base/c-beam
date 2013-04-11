@@ -5,9 +5,9 @@
   <div class="row">
     <div class="span12">
 <!--<div class="well">-->
-      <h1 align="center">AN BORD</h1>
+      <h1 align="center">an bord</h1>
       <div class="accordion" id="user_accordion">
-        {% for user in user_list %}
+        {% for user in user_list_online %}
           <div class="accordion-group">
             <div class="accordion-heading">
               <a class="accordion-toggle btn btn-large btn-info" 
@@ -18,21 +18,50 @@
             </div>
             <div id="CollapseUser{{ user.id }}" class="accordion-body collapse">
               <div class="accordion-inner">
-  <iframe src="http://{{ user.username }}.crew.c-base.org" width="100%" height="400px"></iframe>
-  <table>
-    <tr><td>Username:</td><td> {{ user.username }}</td></tr>
-    <tr><td>Status:</td><td> {{ user.status }}</td></tr>
-    <tr><td>ETA:</td><td> {{ user.eta }}</td></tr>
-    <tr><td>ETD:</td><td> {{ user.etd }}</td></tr>
-    <tr><td>reminder:</td><td> {{ user.reminder }}</td></tr>
-    <tr><td>lastlocation:</td><td> {{ user.lastlocation }}</td></tr>
-  </table>
+                <iframe src="http://{{ user.username }}.crew.c-base.org" width="100%" height="400px"></iframe>
+                <table>
+                  <tr><td>Username:</td><td> {{ user.username }}</td></tr>
+                  <tr><td>Status:</td><td> {{ user.status }}</td></tr>
+                  <tr><td>ETA:</td><td> {{ user.eta }}</td></tr>
+                  <tr><td>ETD:</td><td> {{ user.etd }}</td></tr>
+                  <tr><td>reminder:</td><td> {{ user.reminder }}</td></tr>
+                  <tr><td>lastlocation:</td><td> {{ user.lastlocation }}</td></tr>
+                </table>
               </div>
             </div>
           </div>
         {% empty %}
           <a class="btn btn-block btn-large btn-info"><b>Niemand angemeldet.</b></a>
         {% endfor %}
+      <h1 align="center">ETA</h1>
+      <div class="accordion" id="user_accordion">
+        {% for user in user_list_eta %}
+          <div class="accordion-group">
+            <div class="accordion-heading">
+              <a class="accordion-toggle btn btn-large btn-info" 
+                  data-toggle="collapse" data-parent="#user_accordion" 
+                  href="#CollapseUser{{ user.id }}" >
+                {{ user.username }} ({{user.eta}})
+              </a>
+            </div>
+            <div id="CollapseUser{{ user.id }}" class="accordion-body collapse">
+              <div class="accordion-inner">
+                <iframe src="http://{{ user.username }}.crew.c-base.org" width="100%" height="400px"></iframe>
+                <table>
+                  <tr><td>Username:</td><td> {{ user.username }}</td></tr>
+                  <tr><td>Status:</td><td> {{ user.status }}</td></tr>
+                  <tr><td>ETA:</td><td> {{ user.eta }}</td></tr>
+                  <tr><td>ETD:</td><td> {{ user.etd }}</td></tr>
+                  <tr><td>reminder:</td><td> {{ user.reminder }}</td></tr>
+                  <tr><td>lastlocation:</td><td> {{ user.lastlocation }}</td></tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <a class="btn btn-block btn-large btn-info"><b>momentan ist kein ETA eingetragen.</b></a>
+        {% endfor %}
+
       </div>
 <!--</div>-->
     </div> 

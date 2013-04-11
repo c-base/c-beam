@@ -1,0 +1,8 @@
+{% extends "cbeamd/base.django" %}
+
+{% block content %}
+
+  <div>diese function wurde beim absturz bescha:digt und muss noch reconstruiert werden. vielen danc fu:r deine geduld.</div>
+
+{% endblock%}
+

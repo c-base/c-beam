@@ -20,7 +20,8 @@
                 {{ mission.description }}
                  <br><br>
                 <div align="right">
-                  <input type="submit" class="btn btn-primary" data-article="4" data-target="#CreateProjectModal" data-toggle="modal" type="button" value="Mission annehmen">
+                  <a href="/missions/{{ mission.id }}/assign" class="btn btn-primary">Mission annehmen</a>
+                  <!--<input type="submit" class="btn btn-primary" data-article="4" data-target="#CreateProjectModal" data-toggle="modal" type="button" value="Mission annehmen"> -->
                 </div>
               </div>
             </div>
@@ -55,7 +56,8 @@
                 {% endfor %}
                 </ul>
                 <div align="right">
-                  <input type="submit" class="btn btn-primary" data-article="4" data-target="#CreateProjectModal" data-toggle="modal" type="button" value="Mission annehmen">
+                  <a href="/missions/{{ mission.id }}/cancel" class="btn btn-danger">Mission abbrechen</a>
+                  <a href="/missions/{{ mission.id }}/complete" class="btn btn-success">Mission abgeschlossen</a>
                 </div>
               </div>
             </div>
@@ -66,5 +68,9 @@
       </div>
     </div> 
   </div>
+
+  {% if result %}
+      <script>alert("{{result}}");</script>
+  {% endif %}
 {% endblock content%}
 

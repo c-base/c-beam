@@ -7,7 +7,7 @@
         padding-top: 60px;
       }
     </style>
-    <title>{% block title %}c-beam web interface{% endblock %}</title>
+    <title>{% block title %}c-beam{% endblock %}</title>
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,41 +34,59 @@
   <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
       <div class="container">
+
         <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </a>
-        <a class="brand" href="/">c-beam web interface</a>
+        <!--<div class="logo"></div>-->
+        <a class="brand" href="/">c-beam</a>
         <div class="nav-collapse">
-        <ul class="nav">
-          <li class="dropdown">
-          <!--
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Users<b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a class="nav" href="/user/online">Online</a></li>
-              <li><a class="nav" href="/user/offline">Offline</a></li>
-              <li><a class="nav" href="/user/eta">ETA</a></li>
-              <li><a class="nav" href="/user/all">All</a></li>
-            </ul>
-          </li>
-          -->
-          <li><a href="/user/online">AN BORD</a></li>
-          <li><a href="https://c-portal.c-base.org">C-PORTAL</a></li>
-          <li><a href="/artefacts">ARTEFACTE</a></li>
-          <li><a href="/events">EVENTS</a></li>
-          <li><a href="/control">C-ONTROL</a></li>
-          <li><a href="/missions">MISSIONEN</a></li>
-          <li><a href="/c_out">C_OUT</a></li>
-          <li><a href="/stats">STATS</a></li>
-          <li><a href="/activitylog">ACTIVITA:T</a></li>
-          <!--
-          <li><a href="">Tabs &amp; Pills</a></li>
-          <li><a href="">Pagination</a></li>
-          <li><a href="">Contact</a></li>
-          -->
-        </ul>
-      </div>
+          <ul class="nav">
+            {% if not user.is_anonymous %}
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown">c-info<b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="/user/online">an bord</a></li>
+                <li><a href="/events">events</a></li>
+                <li><a href="/artefacts">artefacts</a></li>
+                <li><a href="http://c-portal.c-base.org">c-portal</a></li>
+              </ul>
+            </li>
+            <!--
+            <li><a href="https://c-portal.c-base.org">C-PORTAL</a></li>
+            <li><a href="/artefacts">ARTEFACTE</a></li>
+            <li><a href="/events">EVENTS</a></li>
+            -->
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown">c-ontrol<b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="/c_buttons">c-no:pfe</a></li>
+                <li><a href="/c_leuse">c_leuse</a></li>
+                <li><a href="/c_out">c_out</a></li>
+              </ul>
+            </li>
+            <!-- <li><a href="/control">C-ONTROL</a></li> -->
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown">c-mission<b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="/missions">missionen</a></li>
+                <li><a href="/stats">stats</a></li>
+                <li><a href="/activitylog">activita:t</a></li>
+              </ul>
+            </li>
+            <!--<li><a href="/missions">MISSIONEN</a></li>-->
+            <!--<li><a href="/c_out">C_OUT</a></li>-->
+            <!--<li><a href="/stats">STATS</a></li>-->
+            <!--<li><a href="/activitylog">ACTIVITA:T</a></li>-->
+            <li><a href="/profile">c-profile</a></li>
+            <li><a href="/logout">c-logout</a></li>
+            {% else %}
+            <li><a href="/login">c-login</a></li>
+            {% endif %}
+          </ul>
+        </div>
       </div>
     </div>
   </div>

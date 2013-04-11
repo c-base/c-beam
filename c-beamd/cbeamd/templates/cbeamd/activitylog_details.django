@@ -1,0 +1,47 @@
+{% extends "cbeamd/base.django" %}
+
+{% block content %}
+
+  <table class="table table-condensed table-bordered table-hover">
+    <tr><td>member:</td><td width="100%"> {{ activitylog.user.username }}</td></tr>
+    <tr><td>activita:tstyp:</td><td width="100%"> {{ activitylog.activity.activity_type }}</td></tr>
+    <tr><td>activita:t:</td><td width="100%"> {{ activitylog.activity.activity_text }}</td></tr>
+    <tr><td>AP:</td><td width="100%"> {{ activitylog.ap }}</td></tr>
+    <tr><td>dankescho:ns:</td><td width="100%"> {{ activitylog.thanks }}</td></tr>
+    <tr><td>allgemeine bedenken:</td><td width="100%"> {{ activitylog.protests }}</td></tr>
+    <tr><td>bedenken wegen zu viel AP:</td><td width="100%"> {{ activitylog.ap_protests }}</td></tr>
+    <tr><td>ceitstempel:</td><td width="100%"> {{ activitylog.timestamp }}</td></tr>
+  </table>
+<!--
+  <a href="/activitylog/{{ activitylog.id }}/protest" class="btn btn-danger">bedenken anmelden</a>
+  <a href="/activitylog/{{ activitylog.id }}/protest_ap" class="btn btn-danger">zu viel AP</a>
+  <a href="/activitylog/{{ activitylog.id }}/thanks" class="btn btn-success">danke sagen</a>
+-->
+  <form action="/activitylog/{{ activitylog.id }}/postcomment" method="POST" class="form">{% csrf_token %}
+    <textarea rows="10" cols="80" name="comment" class="input-xxlarge"></textarea><br>
+    <button type="submit" name="protest" value="protest" class="btn btn-danger">bedenken anmelden</button>
+    <button type="submit" name="thanks" value="thanks" class="btn btn-success">danke sagen</button>
+  </form>
+  <div class="comments">
+    {% for comment in activitylog.comments.all %}
+      <div class="terminal">
+          <div>{{ comment.comment }}</div>
+          <hr>
+          <div class="{{ comment.comment_type }}" style="text-align: right">
+            {% if user.username == comment.user.username %}
+              <a href="/activitylog/deletecomment/{{ comment.id }}" class="btn btn-danger" style="float: left;">Delete</a>
+            {% endif %}
+            {{ comment.comment_type }}, {{ comment.user.username }}, {{ comment.timestamp }}
+          </div>
+        </table>
+      </div>
+    {% empty %}
+      
+    {% endfor %}
+  </div>
+  {% if result %}
+    <script>alert("{{result}}");</script>
+  {% endif %}
+
+{% endblock%}
+

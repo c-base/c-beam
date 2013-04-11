@@ -3,19 +3,62 @@
 {% block content %}
   <div class="row">
     <div class="span12">
-      <h1 align="center">ACTIVITYLOG</h1>
-        <table cellpadding="8" class="table table-condensed table-bordered table-hover">
-          {% for entry in activitylog %}
-            <tr>
-              <td>{{ entry }}</td>
-            <tr>
-          {% empty %}
-            <tr><td>WTF</td></tr>
-          {% endfor %}
-        </table>
+      <h1 class="center">activitylog</h1>
+      <div class="center">
+        <div class="terminal" id="terminal">
+            <div>user@c-beam&gt; tail -f activitylog</div>
+            <div class="cursor"><blink>&#x258C;</blink></div>
+        </div>
       </div>
     </div> 
   </div>
+      <h1 align="center">activita:t loggen</h1>
+      <br>
+      <div class="row-fluid">
+        <div class="span4"></div>
+        <div class="span4">
+          <form class="form-horizontal" action="/logactivity" method="POST">
+            <fieldset>
+              <div class="control-group">
+                <label class="control-label">activita:t:</label>
+                <div class="controls">
+                  <input type="text" placeholder="kurze beschreibung der activita:t" style="width: 18.5em;" name="activity">
+                </div>
+              </div>
+              <div class="control-group">
+                <label class="control-label">AP:</label>
+                <div class="controls">
+                  <input type="number" placeholder="100" style="width: 4em;" min="0" max="10000" name="ap">
+                  <button type="submit" class="btn" style="margin-left: 1.8em;">activita:t loggen</button>
+                </div>
+              </div>
+              <div class="control-group">
+                <div class="controls">
+                </div>
+              </div>
+            </fieldset>
+          </form>
+        </div>
+        <div class="span4"></div>
+      </div>
+
+  <script>
+    last_timestamp = "1970-01-01 00:00";
+    update = function() {
+      $.get("/activitylog_json", function(data, textstatus, jqxhr) {
+        $.each(data, function(key, value){
+          if(value.timestamp > last_timestamp) {
+            $("#terminal .cursor").before("<div><a href='/activitylog/" + value.id + "'>" + value.str + "</a></div>")
+          }
+        });
+        last_timestamp = data.pop().timestamp
+        setTimeout("update()", 5000);
+      });
+    }
+    $(function(){
+      update();
+    });
+  </script>
 
 {% endblock content%}
 
