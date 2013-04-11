@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
+#from django.contrib.auth.models import User as DjangoUser
 from cbeamd.models import Mission
+from cbeamd.models import User
 
 class LoginForm( forms.Form ):
     username = forms.CharField( max_length=255 )
@@ -25,6 +26,12 @@ password=self.cleaned_data['password'] )
     def get_user( self ):
         return self.user_cache
 
+class UserForm( forms.ModelForm ):
+    class Meta:
+        model = User
+        widgets = {
+        }
+
 class MissionForm( forms.ModelForm ):
     class Meta:
         model = Mission
@@ -37,3 +44,11 @@ class StripeForm( forms.Form ):
     pattern = forms.IntegerField(required=False)
     offset = forms.IntegerField(required=False)
 
+class LogActivityForm( forms.Form ):
+    activity = forms.CharField()
+    ap = forms.IntegerField()
+
+class ActivityLogCommentForm( forms.Form ):
+    comment = forms.CharField()
+    thanks = forms.CharField(required=False)
+    protest = forms.CharField(required=False)
