@@ -4,11 +4,10 @@ from threading import Timer
 from jsonrpc import jsonrpc_method
 from models import User
 from models import LTE
-from models import Mission, Subscription, UserStatsEntry, MissionLog, Activity, ActivityLog
+from models import Mission, Subscription, UserStatsEntry, MissionLog, Activity, ActivityLog, ActivityLogComment
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 from jsonrpc.proxy import ServiceProxy
-#from django.conf import settings
 import cbeamdcfg as cfg
 from ddate import DDate
 from urllib import urlopen
@@ -19,15 +18,15 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.contrib.auth import login as login_auth
 from django.contrib.auth import logout as logout_auth
 from django.contrib.auth import authenticate
-from forms import LoginForm, MissionForm, StripeForm
+from forms import LoginForm, MissionForm, StripeForm, UserForm, LogActivityForm, ActivityLogCommentForm
 from django.template.context import RequestContext
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.context_processors import csrf
 from django.views.decorators.csrf import csrf_exempt
 from gcm import GCM
 from LEDStripe import *
 
-import os, re, feedparser
+import os, re, feedparser, json
 
 import crypto
 from MyHTMLParser import MyHTMLParser
@@ -98,23 +97,7 @@ def login(request, user):
     u = getuser(user)
     if u.logouttime + timedelta(seconds=hysterese) > timezone.now():
         return reply(request, "hysterese")
-    else:
-        welcometts(request, u.username)
-        try:
-            monitord.login(u.username)
-        except:
-            pass
-        try: gcm_send(request, 'now boarding', user)
-        except: pass
-        if u.status == "eta":
-            u.eta = ""
-        u.status = "online"
-        u.logintime=timezone.now()
-        u.save()
-        log_stats()
-        logactivity(request, user, "login")
-        newarrivallist[u.username] = timezone.now()
-    return reply(request, "%s logged in" % u.username)
+    return force_login(request, user)
 
 @jsonrpc_method('force_login')
 def force_login(request, user):
@@ -128,11 +111,14 @@ def force_login(request, user):
     except: pass
     if u.status == "eta":
         u.eta = ""
+    oldstatus = u.status
     u.status = "online"
     u.logintime=timezone.now()
+    u.extendtime=timezone.now()
     u.save()
     log_stats()
-    logactivity(request, user, "login")
+    if u.logouttime + timedelta(minutes=60) < timezone.now() and oldstatus in ["offline", "eta"]:
+         logactivity(request, user, "login", 1)
     newarrivallist[u.username] = timezone.now()
     return reply(request, "%s logged in" % u.username)
 
@@ -143,6 +129,7 @@ def stealth_login(request, user):
         u.eta = ""
     u.status = "online"
     u.logintime=timezone.now()
+    u.extendtime=timezone.now()
     u.save()
     log_stats()
     #logactivity(request, user, "login")
@@ -152,10 +139,10 @@ def stealth_login(request, user):
 
 @jsonrpc_method('logout')
 def logout(request, user):
-    reply = stealth_logout(request, user)
-    if reply != "hysterese":
-        logactivity(request, user, "logout")
-    return reply
+    u = getuser(user)
+    if u.logintime + timedelta(seconds=hysterese) > timezone.now():
+        return reply(request, "hysterese")
+    return force_logout(request, user)
 
 @jsonrpc_method('stealth_logout')
 def stealth_logout(request, user):
@@ -163,15 +150,9 @@ def stealth_logout(request, user):
     if u.logintime + timedelta(seconds=hysterese) > timezone.now():
         return reply(request, "hysterese")
     else:
-        try:
-            monitord.logout(u.username)
-        except:
-            pass
         u.status = "offline"
         u.logouttime = timezone.now()
         u.save()
-        log_stats()
-
     return reply(request, "%s logged out" % u.username)
 
 @jsonrpc_method('force_logout')
@@ -181,17 +162,19 @@ def force_logout(request, user):
         monitord.logout(u.username)
     except:
         pass
+    oldstatus = u.status
     u.status = "offline"
     u.logouttime = timezone.now()
     u.save()
     log_stats()
-    logactivity(request, user, "logout")
-
+    if u.extendtime + timedelta(minutes=60) < timezone.now() and oldstatus == "online":
+        logactivity(request, user, "logout", 2)
     return reply(request, "%s logged out" % u.username)
 
 #jsonrpc_method('login_wlan')
 @jsonrpc_method('wifi_login')
 def login_wlan(request, user):
+    print "login_wlan"
     u = getuser(user)
     if is_logged_in(user):
         extend(user)
@@ -205,7 +188,7 @@ def extend(user):
     print("extend %s" % user)
     u = getuser(user)
     u.status = "online"
-    u.logintime=timezone.now()
+    u.extendtime = timezone.now()
     u.save()
     return "aye"
 
@@ -236,7 +219,7 @@ def getuser(user):
     try:
         u = User.objects.get(username=user)
     except:
-        u = User(username=user, logintime=timezone.now()-timedelta(seconds=hysterese), logouttime=timezone.now()-timedelta(seconds=hysterese), status="unknown")
+        u = User(username=user, logintime=timezone.now()-timedelta(seconds=hysterese), extendtime=timezone.now()-timedelta(seconds=hysterese), logouttime=timezone.now()-timedelta(seconds=hysterese), status="unknown")
         u.save()
     return u
 
@@ -244,6 +227,11 @@ def getuser(user):
 @jsonrpc_method('get_user_by_id')
 def get_user_by_id(request, id):
     u = User.objects.get(id=id)
+    return u.dic()
+
+@jsonrpc_method('get_user_by_name')
+def get_user_by_id(request, username):
+    u = User.objects.get(username=username)
     return u.dic()
 
 @jsonrpc_method('getnickspell')
@@ -380,7 +368,6 @@ def seteta(request, user, eta):
         if timezone.now().strftime("%H%M") > arrival:
             etatimestamp = etatimestamp + timedelta(days=1)
 
-        #print etatimestamp
         u.eta = eta
         u.etatimestamp = etatimestamp
         u.status = "eta"
@@ -432,7 +419,6 @@ def newetas(request):
     newetalist = {}
     #if len(tmp) > 0:
     #    gcm_send(request, 'ETA', ', '.join(['%s (%s)' % (key, tmp[key]) for key in tmp.keys()]))
-    #print "newetas_done"
     return tmp
 
 @jsonrpc_method('arrivals')
@@ -443,7 +429,6 @@ def arrivals(request):
     #if len(tmp) > 0:
     #    try: gcm_send(request, 'now boarding', ', '.join(tmp.keys()))
     #    except: pass
-    #print "arrivals_done"
     return tmp
 
 @jsonrpc_method('achievements')
@@ -747,7 +732,7 @@ def lte(request, user, args):
 # Web Views
 #################################################################
 
-def index(request):
+def index2(request):
     online_users_list = User.objects.filter(status="online").order_by('username')
     eta_list = User.objects.filter(status="eta").order_by('username')
     #event_list = 
@@ -757,6 +742,16 @@ def index(request):
          "eta_list": eta_list,
     })
     return HttpResponse(t.render(c))
+
+@login_required
+def index(request):
+    user_list_online = User.objects.filter(status="online").order_by('username')
+    user_list_eta = User.objects.filter(status="eta").order_by('username')
+    user_list_offline = User.objects.filter(status="offline").order_by('username')
+    al = ActivityLog.objects.order_by('-timestamp')[:20]
+    rev = list(al)
+    rev.reverse()
+    return render_to_response('cbeamd/index.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all', 'activitylog': rev})
 
 @login_required
 def user(request, user_id):
@@ -780,23 +775,58 @@ def user_eta(request):
 
 @login_required
 def user_all(request):
-    user_list = User.objects.all().order_by('username')
+    user_list_online = User.objects.all().order_by('username')
     return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'all'})
+
+@login_required
+def user_list_web(request):
+    user_list_online = User.objects.filter(status="online").order_by('username')
+    user_list_eta = User.objects.filter(status="eta").order_by('username')
+    user_list_offline = User.objects.filter(status="offline").order_by('username')
+    return render_to_response('cbeamd/user_list.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all'})
 
 @jsonrpc_method('user_list')
 def user_list(request):
     users = User.objects.all().order_by('username')
     return [user.dic() for user in users]
 
+@jsonrpc_method('stats_list')
+def stats_list(request):
+    user_list = User.objects.order_by('-ap', 'username')
+    return [user.dic() for user in user_list]
+
 @login_required
 def stats(request):
-    user_list = User.objects.order_by('-ap', 'username')
+    user_list = User.objects.filter(stats_enabled=True).exclude(ap=0).order_by('-ap', 'username')
     return render_to_response('cbeamd/stats.django', {'user_list': user_list})
 
 
 @login_required
 def control(request):
     return render_to_response('cbeamd/control.django', {})
+
+@login_required
+def c_leuse(request):
+    return render_to_response('cbeamd/c_leuse.django', {})
+
+@login_required
+def c_buttons(request):
+    return render_to_response('cbeamd/c_buttons.django', {})
+
+@login_required
+def profile_edit(request):
+    if request.method == "POST":
+        pass
+        #m = Mission.objects.get(pk=mission_id)
+        #form = MissionForm(request.POST, instance=m)
+        #if form.is_valid():
+            #form.save()
+            #return HttpResponseRedirect('/missions/%s' % mission_id)
+    else:
+        u = getuser(request.user.username)
+        form = UserForm(instance=u)
+    return render_to_response('cbeamd/user_form.django', locals(), context_instance = RequestContext(request))
+
 
 #################################################################
 # Web Login / Logout
@@ -836,7 +866,7 @@ def add_mission(request, short_description):
 
 @jsonrpc_method('missions')
 def missions(request):
-    return [str(mission) for mission in Mission.objects.all()]
+    return [str(mission) for mission in Mission.objects.order_by('status', 'short_description')]
 
 @jsonrpc_method('mission_detail')
 def mission_detail(request, mission_id):
@@ -872,39 +902,83 @@ def mission_complete(request, user, mission_id):
     u = getuser(user)
     m = Mission.objects.get(id=mission_id)
     if u in m.assigned_to.all() and m.status == mission_assigned:
-        u.ap = u.ap + m.ap
-        u.save()
         m.assigned_to.clear()
-        m.status = mission_completed
+        if m.repeat_after_days == 0:
+            m.status = mission_completed
+        else:
+            m.status = mission_open
         m.save()
-        mlog = MissionLog()
-        mlog.user = u
-        mlog.mission = m
-        mlog.save()
+        if u.stats_enabled:
+            u.ap = u.ap + m.ap
+            u.save()
+            al = ActivityLog()
+            al.user = u
+            al.ap = m.ap
+            al.activity = Activity.objects.get(activity_type="mission completed")
+            al.mission = m
+            al.save()
         return "success"
     return "failure"
+
+@login_required
+def mission_assign_web(request, mission_id):
+    missions_available = Mission.objects.filter(status="open").order_by('short_description')
+    missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
+    result = mission_assign(request, request.user.username, mission_id)
+    if result == "success":
+        result = "Mission erfolgreich gestartet"
+    else:
+        result = "Mission konnte nicht gestartet werden"
+    return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
+
+@login_required
+def mission_complete_web(request, mission_id):
+    missions_available = Mission.objects.filter(status="open").order_by('short_description')
+    missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
+    result = mission_complete(request, request.user.username, mission_id)
+    if result == "success":
+        result = "Mission erfolgreich abgeschlossen"
+    else:
+        result = "Mission konnte nicht abgeschlossen werden"
+    return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
+
+@login_required
+def mission_cancel_web(request, mission_id):
+    missions_available = Mission.objects.filter(status="open").order_by('short_description')
+    missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
+    result = mission_cancel(request, request.user.username, mission_id)
+    if result == "success":
+        result = "Mission erfolgreich abgebrochen"
+    else:
+        result = "Mission konnte nicht abgebrochen"
+    return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
+
 
 @login_required
 @jsonrpc_method('mission_list')
 def mission_list(request):
     if request.path.startswith('/rpc'):
-        missions = Mission.objects.all()
+        missions = Mission.objects.order_by('-status', 'short_description')
         return [mission.dic() for mission in missions]
     else:
         missions_available = Mission.objects.filter(status="open").order_by('short_description')
         missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
         return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress})
 
+def is_mission_editor(user):
+    return True
+
 @login_required
-def edit_mission(request, object_id):
+@user_passes_test(is_mission_editor)
+def edit_mission(request, mission_id):
     if request.method == "POST":
-        m = Mission.objects.get(pk=object_id)
+        m = Mission.objects.get(pk=mission_id)
         form = MissionForm(request.POST, instance=m)
         if form.is_valid():
             form.save()
-            return HttpResponseRedirect('/missions/%s' % object_id)
+            return HttpResponseRedirect('/missions/%s' % mission_id)
     else:
-        m = Mission.objects.get(id=object_id)
+        m = Mission.objects.get(id=mission_id)
         form = MissionForm(instance=m)
     return render_to_response('cbeamd/mission_form.django', locals(), context_instance = RequestContext(request))
 
@@ -914,7 +988,6 @@ def edit_mission(request, object_id):
 
 @jsonrpc_method('gcm_register')
 def gcm_register(request, user, regid):
-    #print regid
     s = Subscription()
     s.regid = regid
     s.user = getuser(user)
@@ -1005,7 +1078,7 @@ def hwstorage(request, status):
 
 def hwstorage_web(request):
     result = hwstorage(request, True)
-    return render_to_response('cbeamd/control.django', {'result': 'Software-Endlager wurde geöffnet: %s' % result})
+    return render_to_response('cbeamd/c_buttons.django', {'result': 'Software-Endlager wurde geöffnet: %s' % result})
 
 #################################################################
 # artefact handling
@@ -1018,7 +1091,7 @@ def artefact_list(request):
     artefactlist = {}
     if artefactcache_time + timedelta(hours=1) < timezone.now():
         parser = MyHTMLParser()
-        parser.feed(urlopen("http://cbag3.c-base.org/artefact/").read())
+        parser.feed(urlopen("http://10.0.1.44/artefact/").read())
         artefacts = parser.get_artefacts()
         artefactlist = [{'name': key, 'slug': artefacts[key]} for key in artefacts.keys()]
         artefactcache = artefactlist
@@ -1061,8 +1134,7 @@ def set_stripe_pattern(request, pattern_id):
     return cerebrum.set_pattern(pattern_id)
 
 def set_stripe_pattern_web(request, pattern_id):
-    print cerebrum.set_pattern(int(pattern_id))
-    return render_to_response('cbeamd/control.django', {'result': 'Pattern wurde gesetzt'})
+    return render_to_response('cbeamd/c_leuse.django', {'result': 'Pattern wurde gesetzt'})
 
 @jsonrpc_method('set_stripe_speed')
 def set_stripe_speed(request, speed):
@@ -1070,7 +1142,7 @@ def set_stripe_speed(request, speed):
 
 def set_stripe_speed_web(request, speed):
     cerebrum.set_speed(int(speed))
-    return render_to_response('cbeamd/control.django', {'result': 'Geschwindigkeit wurde gesetzt'})
+    return render_to_response('cbeamd/c_leuse.django', {'result': 'Geschwindigkeit wurde gesetzt'})
 
 @jsonrpc_method('set_stripe_offset')
 def set_stripe_pattern(request, offset):
@@ -1157,33 +1229,130 @@ def stripe_view(request):
             form.cleaned_data["speed"]
             form.cleaned_data["pattern"]
             form.cleaned_data["offset"]
-            #print form
             return render_to_response('cbeamd/stripe_form.django', {'form': form})
     else:
         form = StripeForm()
         return render_to_response('cbeamd/stripe_form.django', {'form': form})
 
-@login_required
+@jsonrpc_method('activitylog')
 def activitylog(request):
-    al = ActivityLog.objects.order_by('-timestamp')
-    return render_to_response('cbeamd/activitylog.django', {'activitylog': al})
+    al = ActivityLog.objects.order_by('-timestamp')[:40]
+    rev = list(al)
+    rev.reverse()
+    return [ale.dic() for ale in rev]
+
+@login_required
+def activitylog_web(request):
+    al = ActivityLog.objects.order_by('-timestamp')[:40]
+    rev = list(al)
+    rev.reverse()
+    return render_to_response('cbeamd/activitylog.django', {'activitylog': rev})
+
+@login_required
+def activitylog_details_web(request, activitylog_id):
+    al = ActivityLog.objects.get(id=activitylog_id)
+    c = RequestContext(request, {
+            'activitylog': al, 
+            })
+    c.update(csrf(request))
+    return render_to_response('cbeamd/activitylog_details.django', c)
+
+@csrf_exempt
+@login_required
+def logactivity_web(request):
+    u = getuser(request.user.username)
+    if request.method == 'POST':
+        form = LogActivityForm(request.POST)
+        if form.is_valid():
+            act = form.cleaned_data["activity"]
+            ap = form.cleaned_data["ap"]
+            logactivity(request, request.user.username, act, ap)
+            return render_to_response('cbeamd/activitylog.django', {'form': form, 'result': 'SUCCESS'})
+    #else:
+        #form = StripeForm()
+        #return render_to_response('cbeamd/stripe_form.django', {'form': form})
+
+    return render_to_response('cbeamd/activitylog.django', {'result': 'FAIL'})
 
 @jsonrpc_method('logactivity')
-def logactivity(request, user, activity):
+def logactivity(request, user, activity, ap):
+    print "log..."
     global newactivities
     u = getuser(user)
+    u.ap = u.ap + ap
+    u.save()
+    if not u.stats_enabled:
+        return "stats disabled for user"
     al = ActivityLog()
     al.user = u
+    al.ap = ap
     if activity == "login":
-        al.ap = 1
         al.activity = Activity.objects.get(activity_type="login")
-        u.ap = u.ap + 1
-        u.save()
-    if activity == "logout":
-        al.ap = 2
+    elif activity == "logout":
         al.activity = Activity.objects.get(activity_type="logout")
-        u.ap = u.ap + 2
-        u.save()
+    else:
+        act = Activity()
+        act.activity_type = "custom"
+        act.activity_text = activity
+        act.save()
+        al.activity = act
     al.save()
     newactivities.append(al)
 
+@jsonrpc_method('app_data')
+def app_data(request):
+    missions = [mission.dic() for mission in  Mission.objects.order_by('-status', 'short_description')]
+    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'articles': portal.api.list_articles()['result']}
+    #return {'user': user_list(request), 'events': event_list(request), 
+    #'artefacts': artefact_list(request), 'mission': mission_list(request), 
+    #'activitylog': activitylog(request), 'stats': stats(request)}
+
+@login_required
+def activitylog_json(request):
+    al = ActivityLog.objects.order_by('-timestamp')[:40]
+    rev = list(al)
+    rev.reverse()
+    return HttpResponse(json.dumps([ale.dic() for ale in rev]), mimetype="application/json")
+
+def not_implemented(request):
+    return render_to_response('cbeamd/not_implemented.django', {})
+
+@login_required
+def activitylog_post_comment(request, activitylog_id):
+    result = "WTF"
+    if request.method == 'POST':
+        form = ActivityLogCommentForm(request.POST)
+        ale = ActivityLog.objects.get(id=activitylog_id)
+        u = getuser(request.user.username)
+        users = [comment.user.username for comment in ale.comments.all()]
+        if u.username in users:
+            result = "commentar connte nicht gespeichert werden, du hast diese aktivita:t bereits commentiert"
+        else:
+            alc = ActivityLogComment()
+
+            if form.is_valid():
+                alc.comment = form.cleaned_data["comment"]
+                alc.user = u
+                if form.cleaned_data["protest"] == "protest":
+                    ale.protests += 1
+                    alc.comment_type = "protest"
+                elif form.cleaned_data["thanks"] == "thanks":
+                    ale.thanks += 1
+                    alc.comment_type = "thanks"
+                alc.save()
+                ale.comments.add(alc)
+                ale.save()
+                result = "dance fu:r deinen commentar"
+    c = RequestContext(request, {
+            'activitylog': ale, 
+            'result': result,
+            })
+    #c.update(csrf(request))
+    return render_to_response('cbeamd/activitylog_details.django', c)
+
+@login_required
+def activitylog_delete_comment(request, comment_id):
+    alc = ActivityLogComment.objects.get(id=comment_id)
+    u = getuser(request.user.username)
+    if alc.user == u:
+        alc.delete()
