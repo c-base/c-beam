@@ -1,0 +1,5 @@
+from jsonrpc.proxy import ServiceProxy
+from LEDStripe import *
+s = ServiceProxy('http://10.0.1.27:4254/rpc/')
+
+
