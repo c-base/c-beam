@@ -47,8 +47,14 @@
     update = function() {
       $.get("/activitylog_json", function(data, textstatus, jqxhr) {
         $.each(data, function(key, value){
+          cls = null;
+          if(value.thanks > value.protests) {
+            cls = "thanks";
+          } else if(value.thanks < value.protests) {
+            cls = "protest";
+          }
           if(value.timestamp > last_timestamp) {
-            $("#terminal .cursor").before("<div><a href='/activitylog/" + value.id + "'>" + value.str + "</a></div>")
+            $("#terminal .cursor").before("<div" + (cls ? " class='" + cls + "'" : "") + "><a href='/activitylog/" + value.id + "'>" + value.str + "</a></div>")
           }
         });
         last_timestamp = data.pop().timestamp
