@@ -41,6 +41,7 @@ portal = ServiceProxy('https://c-portal.c-base.org/rpc/')
 monitord = ServiceProxy('http://10.0.1.27:9090/')
 culd = ServiceProxy('http://localhost:4339/')
 apikey = 'AIzaSyBLk_iU8ORnHM39YQCUsHngMfG85Rg9yss'
+artefact_base_url = "http://[2a02:f28:4::6b39:2d00]/artefact/"
 
 newarrivallist = {}
 newetalist = {}
@@ -66,7 +67,7 @@ mission_open = "open"
 mission_assigned = "assigned"
 mission_completed = "completed"
 
-
+c_out_volume = 0
 
 def AddPadding(data, interrupt, pad, block_size):
     new_data = ''.join([data, interrupt])
@@ -136,6 +137,10 @@ def stealth_login(request, user):
     newarrivallist[u.username] = timezone.now()
     return reply(request, "%s logged in" % u.username)
 
+@login_required
+def login_web(request):
+    result = force_login(request, request.user.username)
+    return render_to_response('cbeamd/c_buttons.django', {'result': 'du wurdest angemeldet'})
 
 @jsonrpc_method('logout')
 def logout(request, user):
@@ -167,14 +172,19 @@ def force_logout(request, user):
     u.logouttime = timezone.now()
     u.save()
     log_stats()
-    if u.extendtime + timedelta(minutes=60) < timezone.now() and oldstatus == "online":
+    if u.logintime + timedelta(minutes=60) < timezone.now() and oldstatus == "online":
         logactivity(request, user, "logout", 2)
     return reply(request, "%s logged out" % u.username)
+
+@login_required
+def logout_web(request):
+    result = force_logout(request, request.user.username)
+    return render_to_response('cbeamd/c_buttons.django', {'result': 'du wurdest abgemeldet'})
+
 
 #jsonrpc_method('login_wlan')
 @jsonrpc_method('wifi_login')
 def login_wlan(request, user):
-    print "login_wlan"
     u = getuser(user)
     if is_logged_in(user):
         extend(user)
@@ -199,6 +209,15 @@ def tagevent(request, user):
     else:
         return login(request, user)
 
+@jsonrpc_method('unknown_tag')
+def unknown_tag(request, rfid):
+    u = User.objects.filter(rfid__icontains=rfid)
+    if len(u) > 0:
+        return tagevent(request, u[0].username)
+    else:
+        return monmessage(request, rfid)
+
+
 def welcometts(request, user):
     #if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
     #    os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
@@ -222,7 +241,6 @@ def getuser(user):
         u = User(username=user, logintime=timezone.now()-timedelta(seconds=hysterese), extendtime=timezone.now()-timedelta(seconds=hysterese), logouttime=timezone.now()-timedelta(seconds=hysterese), status="unknown")
         u.save()
     return u
-
 
 @jsonrpc_method('get_user_by_id')
 def get_user_by_id(request, id):
@@ -479,6 +497,11 @@ def cleanup(request):
 
     if autologout:
         set_stripe_default(request)
+
+    for mission in Mission.objects.filter(status="completed").filter(repeat_after_days__gte=0):
+        if mission.completed_on + timedelta(mission.repeat_after_days) > timezone.now():
+            mission.status = "open"
+            mission.save()
 
     return 0
 
@@ -792,13 +815,14 @@ def user_list(request):
 
 @jsonrpc_method('stats_list')
 def stats_list(request):
-    user_list = User.objects.order_by('-ap', 'username')
+    user_list = User.objects.filter(stats_enabled=True).exclude(ap=0).order_by('-ap', 'username')
     return [user.dic() for user in user_list]
 
 @login_required
 def stats(request):
     user_list = User.objects.filter(stats_enabled=True).exclude(ap=0).order_by('-ap', 'username')
-    return render_to_response('cbeamd/stats.django', {'user_list': user_list})
+    return render_to_response('cbeamd/stats.django', {'user_list': [user.dic() for user in user_list]})
+    #return render_to_response('cbeamd/stats.django', {'user_list': user_list})
 
 
 @login_required
@@ -816,11 +840,12 @@ def c_buttons(request):
 @login_required
 def profile_edit(request):
     if request.method == "POST":
-        pass
+        u = getuser(request.user.username)
+        form = UserForm(request.POST, instance=u)
         #m = Mission.objects.get(pk=mission_id)
         #form = MissionForm(request.POST, instance=m)
-        #if form.is_valid():
-            #form.save()
+        if form.is_valid():
+            form.save()
             #return HttpResponseRedirect('/missions/%s' % mission_id)
     else:
         u = getuser(request.user.username)
@@ -902,21 +927,26 @@ def mission_complete(request, user, mission_id):
     u = getuser(user)
     m = Mission.objects.get(id=mission_id)
     if u in m.assigned_to.all() and m.status == mission_assigned:
-        m.assigned_to.clear()
-        if m.repeat_after_days == 0:
-            m.status = mission_completed
-        else:
-            m.status = mission_open
+        #m.assigned_to.clear()
+        m.assigned_to.remove(u)
+        if m.assigned_to.count() <= 0:
+            if m.repeat_after_days == 0:
+                m.status = mission_completed
+            else:
+                m.status = mission_open
         m.save()
         if u.stats_enabled:
-            u.ap = u.ap + m.ap
-            u.save()
             al = ActivityLog()
             al.user = u
             al.ap = m.ap
             al.activity = Activity.objects.get(activity_type="mission completed")
             al.mission = m
             al.save()
+            #u.ap = u.ap + m.ap
+            u.ap = u.calc_ap()
+            u.save()
+            gcm_send_mission(request, "mission completed", al.notification_str())
+
         return "success"
     return "failure"
 
@@ -929,7 +959,15 @@ def mission_assign_web(request, mission_id):
         result = "Mission erfolgreich gestartet"
     else:
         result = "Mission konnte nicht gestartet werden"
-    return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
+    #return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
+    c = RequestContext(request, {
+            'missions_available': missions_available,
+            'missions_in_progress': missions_in_progress,
+            'cuser': getuser(request.user.username),
+            'result': result,
+    })
+    c.update(csrf(request))
+    return render_to_response('cbeamd/mission_list.django', c)
 
 @login_required
 def mission_complete_web(request, mission_id):
@@ -940,7 +978,15 @@ def mission_complete_web(request, mission_id):
         result = "Mission erfolgreich abgeschlossen"
     else:
         result = "Mission konnte nicht abgeschlossen werden"
-    return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
+    #return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
+    c = RequestContext(request, {
+            'missions_available': missions_available,
+            'missions_in_progress': missions_in_progress,
+            'cuser': getuser(request.user.username),
+            'result': result,
+    })
+    c.update(csrf(request))
+    return render_to_response('cbeamd/mission_list.django', c)
 
 @login_required
 def mission_cancel_web(request, mission_id):
@@ -951,7 +997,16 @@ def mission_cancel_web(request, mission_id):
         result = "Mission erfolgreich abgebrochen"
     else:
         result = "Mission konnte nicht abgebrochen"
-    return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
+
+    #return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
+    c = RequestContext(request, {
+            'missions_available': missions_available,
+            'missions_in_progress': missions_in_progress,
+            'cuser': getuser(request.user.username),
+            'result': result,
+    })
+    c.update(csrf(request))
+    return render_to_response('cbeamd/mission_list.django', c)
 
 
 @login_required
@@ -963,7 +1018,14 @@ def mission_list(request):
     else:
         missions_available = Mission.objects.filter(status="open").order_by('short_description')
         missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
-        return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress})
+        print request
+        c = RequestContext(request, {
+                'missions_available': missions_available,
+                'missions_in_progress': missions_in_progress,
+                'cuser': getuser(request.META['USER']),
+                })
+        c.update(csrf(request))
+        return render_to_response('cbeamd/mission_list.django', c)
 
 def is_mission_editor(user):
     return True
@@ -976,7 +1038,16 @@ def edit_mission(request, mission_id):
         form = MissionForm(request.POST, instance=m)
         if form.is_valid():
             form.save()
-            return HttpResponseRedirect('/missions/%s' % mission_id)
+            result = "Mission gespeichert"
+            c = RequestContext(request, {
+                    'missions_available': missions_available,
+                    'missions_in_progress': missions_in_progress,
+                    'cuser': getuser(request.META['USER']),
+                    'result': result,
+            })
+            c.update(csrf(request))
+            return render_to_response('cbeamd/mission_list.django', c)
+            #return HttpResponseRedirect('/missions/%s' % mission_id)
     else:
         m = Mission.objects.get(id=mission_id)
         form = MissionForm(instance=m)
@@ -996,6 +1067,7 @@ def gcm_register(request, user, regid):
 
 @jsonrpc_method('gcm_update')
 def gcm_update(request, user, regid):
+    print "gcm_update()"
     u = getuser(user)
     subs = Subscription.objects.filter(user=u)
     if len(subs) < 1:
@@ -1013,7 +1085,27 @@ def gcm_update(request, user, regid):
 # @jsonrpc_method('gcm_send')
 def gcm_send(request, title, text):
     gcm = GCM(apikey)
-    subscriptions = Subscription.objects.all()
+    if title == "now boarding":
+        users = User.objects.filter(push_boarding=True)
+    elif title == "ETA":
+        users = User.objects.filter(push_eta=True)
+    elif title == "mission completed":
+        users = User.objects.filter(push_missions=True,stats_enabled=True)
+    else:
+        #users = User.objects.all()
+        users = []
+        return
+    subscriptions = Subscription.objects.filter(user__in=users)
+    regids = [subscription.regid for subscription in subscriptions]
+    data = {'title': title, 'text': text}
+    response = gcm.json_request(registration_ids=regids, data=data)
+    return response
+
+def gcm_send_mission(request, title, text):
+    gcm = GCM(apikey)
+    users = User.objects.filter(stats_enabled=True,push_missions=True)
+    #users = User.objects.filter(username="smile")
+    subscriptions = Subscription.objects.filter(user__in=users)
     regids = [subscription.regid for subscription in subscriptions]
     data = {'title': title, 'text': text}
     response = gcm.json_request(registration_ids=regids, data=data)
@@ -1035,7 +1127,6 @@ def test_enc(request):
     encrypted_data = crypto.EncryptWithAES("fooderbar")
     u = getuser("smile")
     s = Subscription.objects.get(user=u)
-    #print encrypted_data
     regids = [s.regid]
     data = {'title': "AES", 'text': encrypted_data}
     response = gcm.json_request(registration_ids=regids, data=data)
@@ -1088,17 +1179,26 @@ def hwstorage_web(request):
 def artefact_list(request):
     global artefactcache
     global artefactcache_time
+    global artefact_base_url
     artefactlist = {}
     if artefactcache_time + timedelta(hours=1) < timezone.now():
         parser = MyHTMLParser()
-        parser.feed(urlopen("http://10.0.1.44/artefact/").read())
-        artefacts = parser.get_artefacts()
-        artefactlist = [{'name': key, 'slug': artefacts[key]} for key in artefacts.keys()]
-        artefactcache = artefactlist
-        artefactcache_time = timezone.now()
+        try:
+            parser.feed(urlopen("http://[2a02:f28:4::6b39:2d00]/artefact/").read())
+            artefacts = parser.get_artefacts()
+            artefactlist = [{'name': key, 'slug': artefacts[key]} for key in artefacts.keys()]
+            artefactcache = artefactlist
+            artefactcache_time = timezone.now()
+        except: pass
     else:
         artefactlist = artefactcache
     return sorted(artefactlist)
+
+@jsonrpc_method('artefact_base_url')
+def artefact_base_url(request):
+    global artefact_base_url
+    return [artefact_base_url]
+
 
 def artefact_list_web(request):
     return render_to_response('cbeamd/artefact_list.django', {'artefact_list': artefact_list(request)})
@@ -1151,7 +1251,6 @@ def set_stripe_pattern(request, offset):
 @jsonrpc_method('set_stripe_buffer')
 def set_stripe_buffer(request, buffer):
     #buffer = [255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0]*32+[0,0,0,0,0,0,0,0,0,0,0,0]
-    #print buffer
     return cerebrum.set_buffer(buffer)
 
 @jsonrpc_method('set_stripe_default')
@@ -1211,7 +1310,6 @@ def fnord(request):
 
 @jsonrpc_method('isWifiLoginEnabled()')
 def isWifiLoginEnabled(request, users):
-    #print users
     return {user.username: user.wlanlogin for user in User.objects.filter(username__in=users)}
 
 @jsonrpc_method('set_wlan_login')
@@ -1276,11 +1374,9 @@ def logactivity_web(request):
 
 @jsonrpc_method('logactivity')
 def logactivity(request, user, activity, ap):
-    print "log..."
     global newactivities
     u = getuser(user)
-    u.ap = u.ap + ap
-    u.save()
+    #u.ap = u.ap + ap
     if not u.stats_enabled:
         return "stats disabled for user"
     al = ActivityLog()
@@ -1297,7 +1393,10 @@ def logactivity(request, user, activity, ap):
         act.save()
         al.activity = act
     al.save()
+    u.ap = u.calc_ap()
+    u.save()
     newactivities.append(al)
+    return "aye"
 
 @jsonrpc_method('app_data')
 def app_data(request):
@@ -1356,3 +1455,57 @@ def activitylog_delete_comment(request, comment_id):
     u = getuser(request.user.username)
     if alc.user == u:
         alc.delete()
+
+@jsonrpc_method('set_stats_enabled')
+def set_stats_enabled(request, user, is_enabled):
+    u = getuser(user)
+    u.stats_enabled = is_enabled
+    u.save()
+    return "aye"
+
+@jsonrpc_method('set_push_missions')
+def set_push_missions(request, user, is_enabled):
+    u = getuser(user)
+    u.push_missions = is_enabled
+    u.save()
+    return "aye"
+
+@jsonrpc_method('set_push_boarding')
+def set_push_boarding(request, user, is_enabled):
+    u = getuser(user)
+    u.push_boarding = is_enabled
+    u.save()
+    return "aye"
+
+@jsonrpc_method('set_push_eta')
+def set_push_eta(request, user, is_enabled):
+    u = getuser(user)
+    u.push_eta = is_enabled
+    u.save()
+    return "aye"
+
+@login_required
+def c_out_volume_web(request):
+    c = RequestContext(request, {
+            'volume': c_out_volume, 
+            })
+    c.update(csrf(request))
+    return render_to_response('cbeamd/c_out_volume.django', c)
+
+
+@login_required
+def c_out_volume_json(request):
+    return HttpResponse(json.dumps({'volume': c_out_volume}), mimetype="application/json")
+
+def c_out_volume_set(request, volume):
+    global c_out_volume
+    c_out_volume = volume
+    print volume
+    return HttpResponse(json.dumps({'result': "OK"}), mimetype="application/json")
+
+@jsonrpc_method('barschnur')
+def barschnur(request, position, state):
+    print position
+    print state
+
+
