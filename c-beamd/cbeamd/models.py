@@ -21,7 +21,11 @@ class User(models.Model):
     autologout = models.IntegerField(default=600)
     wlanlogin = models.BooleanField(default=False)
     ap = models.IntegerField(default=0)
-    stats_enabled = models.BooleanField(default=True)
+    stats_enabled = models.BooleanField(default=False)
+    rfid = models.CharField(max_length=200, default="")
+    push_missions = models.BooleanField(default=True)
+    push_boarding = models.BooleanField(default=True)
+    push_eta = models.BooleanField(default=True)
 
     def __str__(self):
         return self.username
@@ -47,8 +51,12 @@ class User(models.Model):
         dic['autologout'] = self.autologout
         dic['autologout_in'] = self.autologout_in()
         dic['wlanlogin'] = self.wlanlogin
-        dic['ap'] = self.ap
+        dic['ap'] = self.calc_ap()
         dic['stats_enabled'] = self.stats_enabled
+        dic['push_missions'] = self.push_missions
+        dic['push_boarding'] = self.push_boarding
+        dic['push_eta'] = self.push_eta
+        dic['rfid'] = self.rfid
         return dic
 
     def dic2(self):
@@ -72,7 +80,12 @@ class User(models.Model):
         dic['autologout'] = self.autologout
         dic['autologout_in'] = self.autologout_in()
         dic['wlanlogin'] = self.wlanlogin
-        dic['ap'] = self.ap
+        dic['ap'] = self.calc_ap()
+        dic['stats_enabled'] = self.stats_enabled
+        dic['push_missions'] = self.push_missions
+        dic['push_boarding'] = self.push_boarding
+        dic['push_eta'] = self.push_eta
+        dic['rfid'] = self.rfid
         return dic
 
     def autologout_in(self):
@@ -86,6 +99,10 @@ class User(models.Model):
     def online_percentage(self):
         return "%.2f" % (self.autologout_in()/self.autologout * 100)
 
+    def calc_ap(self):
+        sum = 0
+        for activity in ActivityLog.objects.filter(user=self): sum += activity.ap
+        return sum
 
 class LTE(models.Model):
     day = models.CharField(max_length=2)
@@ -105,6 +122,7 @@ class Mission(models.Model):
     priority = models.IntegerField(default=3, blank=True)
     ap = models.IntegerField(default=0)
     repeat_after_days = models.IntegerField(default=-1)
+    completed_on = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
          return self.short_description
@@ -181,6 +199,12 @@ class ActivityLog(models.Model):
             return "%s %s: %d AP: mission %d: %s" % (str(self.timestamp)[11:19], self.user.username, self.ap, self.mission.id, self.mission.short_description) 
         else:
             return "%s %s: %d AP: %s" % (str(self.timestamp)[11:19], self.user.username, self.ap, self.activity.activity_text)
+
+    def notification_str(self):
+        if self.activity.activity_type == "mission completed" and self.mission != None:
+            return "%s: %d AP: mission %d: %s" % (self.user.username, self.ap, self.mission.id, self.mission.short_description) 
+        else:
+            return "%s: %d AP: %s" % (self.user.username, self.ap, self.activity.activity_text)
 
     def __str__(self):
         if self.activity.activity_type == "mission completed" and self.mission != None:
