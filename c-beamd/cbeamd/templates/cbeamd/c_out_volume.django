@@ -1,0 +1,36 @@
+{% extends "cbeamd/base.django" %}
+
+{% block content %}
+
+  <form class="form">
+    <label>c_out lautsta:rke:</label>
+    <input type="range" name="volume" min="0" max="100" step="1" value="{{ volume }}">
+  </form>
+
+  <script>
+    $(function() {
+      updating = true;
+      focus=function(){ updating = false; }
+      blur=function(){ updating = true; }
+      update=function(){
+        $.getJSON("/c_out_volume_json", function(data){
+          console.log(data); 
+          if(updating) {
+            $("form input").val(data.volume);
+          }
+          setTimeout(update, 1000);
+        });
+      }
+      update();
+      $("form input").on("touchstart", focus);
+      $("form input").on("mousedown", focus);
+      $("form input").on("touchend", blur);
+      $("form input").on("mouseup", blur);
+      $("form input").on("change", function(){
+        console.log($("form input").val());
+        $.get("/c_out_volume_set/" + $("form input").val());
+      });
+    });
+  </script>
+{% endblock%}
+
