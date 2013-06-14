@@ -2,10 +2,29 @@
 
 {% block content %}
 
-  <form action="/profile" method="POST">
+  <div class="row">
+    <div class="span12">
+      <div class="row-fluid">
+  <form action="/profile" method="POST" class="form">
     {% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit">
+    <table>
+      <tr>
+        <td><label>aussprache des nicknames:</label></td>
+        <td>{{ form.nickspell }}</td>
+      </tr>
+      <tr>
+        <td><label>autologout nach:</label></td>
+        <td>{{ form.autologout }} min.</td>
+      </tr>
+      <tr>
+        <td><label>c-game stats aktivieren:</label></td>
+        <td>{{ form.stats_enabled }}</td>
+      </tr>
+    </table>
+    <button class="btn" type="submit">speichern</button>
   </form>
+</div>
+</div>
+</div>
 
 {% endblock%}

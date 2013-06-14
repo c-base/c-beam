@@ -26,4 +26,4 @@ def login(user, timeoutdelta):
     return server.tagevent(user)
 
 def unknowntag(rfid):
-    return server.monmessage(rfid)
+    return server.unknown_tag(rfid)

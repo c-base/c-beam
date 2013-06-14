@@ -94,16 +94,15 @@
       {% block content %}Empty Page{% endblock %}
       <p><hr></p>
       <footer class="row">
-        <div class="span6">
-        </div>
-        <div class="span6" style="text-align:right">
-          <p>
-          </p>
+        <div class="span12" style="text-align:center">
+          <div style="text-align:center"><a href="https://play.google.com/store/apps/details?id=org.c_base.c_beam"><img src="/static/android-app-on-google-play.png"></a></div>
+          <br>
         </div>
       </footer>
 
 </div> <!-- container -->
 
+<script src="/static/c-base-bootstrap/js/html5slider.js"></script>
 
 </body>
 </html>

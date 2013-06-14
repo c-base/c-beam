@@ -5,6 +5,8 @@
      <div class="row">
         <div class="span12">
            <h1 align="center">c-no:pfe</h1>
+           <a class="btn btn-block btn-large btn-info" href="/c_buttons/login"><b>Anmelden</b></a>
+           <a class="btn btn-block btn-large btn-info" href="/c_buttons/logout"><b>Abmelden</b></a>
            <a class="btn btn-block btn-large btn-info" href="/c_buttons/softwareendlager"><b>Software-Endlager</b></a>
            <a class="btn btn-block btn-large btn-info" href="/c_buttons"><b>Erde absprengen</b></a>
            <a class="btn btn-block btn-large btn-info" href="/c_buttons"><b>Erde abstossen</b></a>

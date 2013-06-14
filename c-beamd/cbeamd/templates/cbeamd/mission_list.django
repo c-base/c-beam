@@ -20,8 +20,11 @@
                 {{ mission.description }}
                  <br><br>
                 <div align="right">
+                  {% if user.username == "smile" %}
+                    <a href="/missions/{{ mission.id }}/edit" class="btn btn-primary">Mission bearbeiten</a>
+                  {% else %}
+                  {% endif %}
                   <a href="/missions/{{ mission.id }}/assign" class="btn btn-primary">Mission annehmen</a>
-                  <!--<input type="submit" class="btn btn-primary" data-article="4" data-target="#CreateProjectModal" data-toggle="modal" type="button" value="Mission annehmen"> -->
                 </div>
               </div>
             </div>
@@ -55,9 +58,16 @@
                     <li>{{ member.username }}
                 {% endfor %}
                 </ul>
+{{ cuser }}
                 <div align="right">
-                  <a href="/missions/{{ mission.id }}/cancel" class="btn btn-danger">Mission abbrechen</a>
-                  <a href="/missions/{{ mission.id }}/complete" class="btn btn-success">Mission abgeschlossen</a>
+                  <a href="/missions/{{ mission.id }}/edit" class="btn btn-primary">Mission bearbeiten</a>
+                    {% if cuser in mission.assigned_to.all %}
+                      <a href="/missions/{{ mission.id }}/cancel" class="btn btn-danger">Mission abbrechen</a>
+                      <a href="/missions/{{ mission.id }}/complete" class="btn btn-success">Mission abgeschlossen</a>
+                    {% else %}
+                      <a href="/missions/{{ mission.id }}/assign" class="btn btn-primary">Mission annehmen</a>
+                    {% endif %}
+
                 </div>
               </div>
             </div>

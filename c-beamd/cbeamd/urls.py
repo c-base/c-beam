@@ -66,9 +66,14 @@ urlpatterns = patterns('',
     url(r'^c_buttons$', 'cbeamd.views.c_buttons'),
     url(r'^control/softwareendlager$', 'cbeamd.views.hwstorage_web'),
     url(r'^c_buttons/softwareendlager$', 'cbeamd.views.hwstorage_web'),
+    url(r'^c_buttons/login$', 'cbeamd.views.login_web'),
+    url(r'^c_buttons/logout$', 'cbeamd.views.logout_web'),
     url(r'^c_out$', 'cbeamd.views.c_out_web'),
     url(r'^c_out/play/(?P<sound>.+)$', 'cbeamd.views.c_out_play_web'),
     url(r'^activitylog/', 'cbeamd.views.not_implemented'),
+    url(r'^c_out_volume$', 'cbeamd.views.c_out_volume_web'),
+    url(r'^c_out_volume_json$', 'cbeamd.views.c_out_volume_json'),
+    url(r'^c_out_volume_set/(?P<volume>\d+)$', 'cbeamd.views.c_out_volume_set'),
 )
 
 urlpatterns += patterns('', (r'^rpc/', jsonrpc_site.dispatch))
