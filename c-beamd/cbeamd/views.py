@@ -339,11 +339,11 @@ def eta(request, user, text):
         #return lte(bot, ievent)
 
     if text in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
-        etaval = datetime.datetime.now() + datetime.timedelta(minutes=30)
+        etaval = datetime.now() + timedelta(minutes=30)
         eta = etaval.strftime("%H%M")
     elif text.startswith('+'):
         foo = int(text[1:])
-        etaval = datetime.datetime.now() + datetime.timedelta(minutes=foo)
+        etaval = datetime.now() + timedelta(minutes=foo)
         eta = etaval.strftime("%H%M")
     #elif ievent.rest == 'heute nicht mehr':
      #   eta = "0"
@@ -1150,8 +1150,8 @@ def darkwall(REQUEST):
     return culd.bluewall(False)
 
 #@jsonrpc_method('hwstorage(Boolean)', authenticated=True, validate=True)
-@jsonrpc_method('hwstorage(bool)')
-def hwstorage(request, status):
+@jsonrpc_method('hwstorage')
+def hwstorage(request):
     global timer
     #global hwstorage_state
     #if hwstorage_state == "open":
@@ -1231,13 +1231,21 @@ def get_stats(request):
 
 @jsonrpc_method('set_stripe_pattern')
 def set_stripe_pattern(request, pattern_id):
-    return cerebrum.set_pattern(pattern_id)
+    print pattern_id
+    pattern_id = int(pattern_id)
+    result = cerebrum.set_pattern(pattern_id)
+    if result['result'] == "aye":
+        result['result'] = "pattern has been set"
+    else:
+        result['result'] = "failed to set pattern"
+    return result
 
 def set_stripe_pattern_web(request, pattern_id):
     return render_to_response('cbeamd/c_leuse.django', {'result': 'Pattern wurde gesetzt'})
 
 @jsonrpc_method('set_stripe_speed')
 def set_stripe_speed(request, speed):
+    speed = int(speed)
     return cerebrum.set_speed(speed)
 
 def set_stripe_speed_web(request, speed):
@@ -1246,6 +1254,7 @@ def set_stripe_speed_web(request, speed):
 
 @jsonrpc_method('set_stripe_offset')
 def set_stripe_pattern(request, offset):
+    offset = int(offset)
     return cerebrum.set_offset(offset)
 
 @jsonrpc_method('set_stripe_buffer')
@@ -1381,7 +1390,7 @@ def logactivity(request, user, activity, ap):
         return "stats disabled for user"
     al = ActivityLog()
     al.user = u
-    al.ap = ap
+    al.ap = int(ap)
     if activity == "login":
         al.activity = Activity.objects.get(activity_type="login")
     elif activity == "logout":
@@ -1396,12 +1405,13 @@ def logactivity(request, user, activity, ap):
     u.ap = u.calc_ap()
     u.save()
     newactivities.append(al)
+    # TODO filter anmelden an bord gcm_send_mission(request, "mission completed", al.notification_str())
     return "aye"
 
 @jsonrpc_method('app_data')
 def app_data(request):
     missions = [mission.dic() for mission in  Mission.objects.order_by('-status', 'short_description')]
-    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'articles': portal.api.list_articles()['result']}
+    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'articles': portal.api.list_articles()['result'], 'sounds': sounds(request)['result']}
     #return {'user': user_list(request), 'events': event_list(request), 
     #'artefacts': artefact_list(request), 'mission': mission_list(request), 
     #'activitylog': activitylog(request), 'stats': stats(request)}
@@ -1508,4 +1518,13 @@ def barschnur(request, position, state):
     print position
     print state
 
+@jsonrpc_method('c_portal.notify')
+def c_portal_notify(request, notification):
+    print notification
+
+@jsonrpc_method("trafotron")
+def trafotron(request, value):
+    print "trafotron: %d" % value
+    newval = (value * 100) / 170
+    os.system("amixer -c 1 set Speaker %d%%" % newval)
 
