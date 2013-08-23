@@ -26,7 +26,7 @@ from django.views.decorators.csrf import csrf_exempt
 from gcm import GCM
 from LEDStripe import *
 
-import os, re, feedparser, json
+import os, re, feedparser, json, random
 
 import crypto
 from MyHTMLParser import MyHTMLParser
@@ -1233,11 +1233,30 @@ def get_stats(request):
 def set_stripe_pattern(request, pattern_id):
     print pattern_id
     pattern_id = int(pattern_id)
+    if pattern_id == 0:
+        return cerebrum.partymode()
+    #if pattern_id == 4:
+        #return cerebrum.flimmer()
+    if pattern_id == 7:
+        return cerebrum.statics()
+    if pattern_id == 3:
+        patterns = cerebrum.get_patterns()['result']
+        print patterns
+        return cerebrum.set_pattern(random.choice(patterns))
+    #if pattern_id < 20:
     result = cerebrum.set_pattern(pattern_id)
-    if result['result'] == "aye":
-        result['result'] = "pattern has been set"
-    else:
-        result['result'] = "failed to set pattern"
+    #if pattern_id == 20:
+        #result = cerebrum.flimmer()
+    #if pattern_id == 21:
+        #result = cerebrum.senso()
+    #if pattern_id == 22:
+        #result = cerebrum.blink()
+    #if pattern_id == 23:
+        #result = cerebrum.partymode()
+    #if result['result'] == "aye":
+        #result['result'] = "pattern has been set"
+    #else:
+        #result['result'] = "failed to set pattern"
     return result
 
 def set_stripe_pattern_web(request, pattern_id):
@@ -1253,7 +1272,7 @@ def set_stripe_speed_web(request, speed):
     return render_to_response('cbeamd/c_leuse.django', {'result': 'Geschwindigkeit wurde gesetzt'})
 
 @jsonrpc_method('set_stripe_offset')
-def set_stripe_pattern(request, offset):
+def set_stripe_offset(request, offset):
     offset = int(offset)
     return cerebrum.set_offset(offset)
 
@@ -1526,5 +1545,5 @@ def c_portal_notify(request, notification):
 def trafotron(request, value):
     print "trafotron: %d" % value
     newval = (value * 100) / 170
-    os.system("amixer -c 1 set Speaker %d%%" % newval)
+    os.system("amixer -c 0 set Master %d%%" % newval)
 
