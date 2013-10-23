@@ -101,7 +101,11 @@ class User(models.Model):
 
     def calc_ap(self):
         sum = 0
-        for activity in ActivityLog.objects.filter(user=self): sum += activity.ap
+        for activity in ActivityLog.objects.filter(user=self).filter(timestamp__gt=timezone.now()-timedelta(days=90)): sum += activity.ap
+        # TODO fixme
+        #if self.ap != sum:
+            #self.ap = sum
+            #self.save()
         return sum
 
 class LTE(models.Model):
