@@ -56,6 +56,9 @@ event_details = []
 artefactcache = {}
 artefactcache_time = timezone.now() - timedelta(days=1)
 
+cerebrum_state = {}
+cerebrum_state['nerdctrl'] = {}
+
 hwstorage_state = "closed"
 
 default_stripe_pattern = 4
@@ -332,6 +335,8 @@ def who(request):
 @jsonrpc_method('eta')
 def eta(request, user, text):
     eta = "0"
+    if user == 'bernd':
+        return "meh"
 
     # if the first argument is a weekday, delegate to LTE
     #TODO
@@ -815,12 +820,14 @@ def user_list(request):
 
 @jsonrpc_method('stats_list')
 def stats_list(request):
-    user_list = User.objects.filter(stats_enabled=True).exclude(ap=0).order_by('-ap', 'username')
+    #user_list = User.objects.filter(stats_enabled=True).exclude(ap=0).order_by('-ap', 'username')
+    user_list = sorted(list(User.objects.filter(stats_enabled=True).exclude(ap=0)), key=lambda x: x.calc_ap(), reverse=True)
     return [user.dic() for user in user_list]
 
 @login_required
 def stats(request):
-    user_list = User.objects.filter(stats_enabled=True).exclude(ap=0).order_by('-ap', 'username')
+    #user_list = User.objects.filter(stats_enabled=True).exclude(ap=0).order_by('-ap', 'username')
+    user_list = sorted(list(User.objects.filter(stats_enabled=True).exclude(ap=0)), key=lambda x: x.calc_ap(), reverse=True)
     return render_to_response('cbeamd/stats.django', {'user_list': [user.dic() for user in user_list]})
     #return render_to_response('cbeamd/stats.django', {'user_list': user_list})
 
@@ -1488,29 +1495,57 @@ def activitylog_delete_comment(request, comment_id):
 @jsonrpc_method('set_stats_enabled')
 def set_stats_enabled(request, user, is_enabled):
     u = getuser(user)
-    u.stats_enabled = is_enabled
+    if type(is_enabled) is bool:
+        u.stats_enabled = is_enabled
+    else:
+        if is_enabled == "true":
+            u.stats_enabled = True
+        else:
+            u.stats_enabled = False
     u.save()
+    print u.stats_enabled
     return "aye"
 
 @jsonrpc_method('set_push_missions')
 def set_push_missions(request, user, is_enabled):
     u = getuser(user)
-    u.push_missions = is_enabled
+    if type(is_enabled) is bool:
+        u.push_missions = is_enabled
+    else:
+        if is_enabled == "true":
+            u.push_missions = True
+        else:
+            u.push_missions = False
     u.save()
+    print u.push_missions
     return "aye"
 
 @jsonrpc_method('set_push_boarding')
 def set_push_boarding(request, user, is_enabled):
     u = getuser(user)
-    u.push_boarding = is_enabled
+    if type(is_enabled) is bool:
+        u.push_boarding = is_enabled
+    else:
+        if is_enabled == "true":
+            u.push_boarding = True
+        else:
+            u.push_boarding = False
     u.save()
+    print u.push_boarding
     return "aye"
 
 @jsonrpc_method('set_push_eta')
 def set_push_eta(request, user, is_enabled):
     u = getuser(user)
-    u.push_eta = is_enabled
+    if type(is_enabled) is bool:
+        u.push_eta = is_enabled
+    else:
+        if is_enabled == "true":
+            u.push_eta = True
+        else:
+            u.push_eta = False
     u.save()
+    print u.push_eta
     return "aye"
 
 @login_required
@@ -1546,4 +1581,13 @@ def trafotron(request, value):
     print "trafotron: %d" % value
     newval = (value * 100) / 170
     os.system("amixer -c 0 set Master %d%%" % newval)
+
+@jsonrpc_method("cerebrumNotify")
+def cerebrumNotify(request, device_name, event_source_path, new_state):
+    cerebrum_state[device_name][event_source_path] = new_state
+    print "%s %s %s" % (device_name, cerebrum_state, new_state)
+
+@jsonrpc_method("barstatus")
+def barstatus(request, status):
+    print "barstatus: %s" % status
 
