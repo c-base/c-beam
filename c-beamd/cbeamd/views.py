@@ -1119,9 +1119,9 @@ def gcm_send_mission(request, title, text):
     return response
 
 @jsonrpc_method('gcm_send_test')
-def gcm_send_test(request, title, text):
+def gcm_send_test(request, title, text, username):
     gcm = GCM(apikey)
-    u = getuser("smile")
+    u = getuser(username)
     subscriptions = Subscription.objects.filter(user=u)
     regids = [subscription.regid for subscription in subscriptions]
     data = {'title': title, 'text': text}
