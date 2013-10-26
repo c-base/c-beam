@@ -229,3 +229,8 @@ class ActivityLog(models.Model):
         dic['thanks'] = self.thanks
         dic['comments'] = [comment.dic() for comment in self.comments.order_by('-timestamp')]
         return dic
+
+class Status(models.Model):
+    bar_open = models.BooleanField(default=False)
+    airlock_stripe_mode = models.IntegerField(default=1)
+    airlock_volume = models.IntegerField(default=42)
