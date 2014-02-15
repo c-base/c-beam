@@ -26,6 +26,8 @@ class User(models.Model):
     push_missions = models.BooleanField(default=True)
     push_boarding = models.BooleanField(default=True)
     push_eta = models.BooleanField(default=True)
+    stealthmode = models.DateTimeField(auto_now_add=True, blank=True)
+    no_google = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username
