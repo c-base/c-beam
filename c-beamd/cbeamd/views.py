@@ -4,7 +4,7 @@ from threading import Timer
 from jsonrpc import jsonrpc_method
 from models import User
 from models import LTE
-from models import Mission, Subscription, UserStatsEntry, MissionLog, Activity, ActivityLog, ActivityLogComment
+from models import Mission, Subscription, UserStatsEntry, MissionLog, Activity, ActivityLog, ActivityLogComment, Status
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 from jsonrpc.proxy import ServiceProxy
@@ -26,27 +26,38 @@ from django.views.decorators.csrf import csrf_exempt
 from gcm import GCM
 from LEDStripe import *
 
+from random import choice
+
+import mosquitto
+import string
+
 import os, re, feedparser, json, random
 
 import crypto
 from MyHTMLParser import MyHTMLParser
 
+import smtplib
+from email.mime.text import MIMEText
+
 hysterese = 15
 eta_timeout=120
 
-
+mqtt = mosquitto.Mosquitto("c-beam")
+mqttserver = "127.0.0.1"
 cout = ServiceProxy('http://10.0.1.13:1775/')
+nerdctrl_cout = ServiceProxy('http://10.0.0.185:1775/')
 cerebrum = ServiceProxy('http://10.0.1.27:7777/')
 portal = ServiceProxy('https://c-portal.c-base.org/rpc/')
 monitord = ServiceProxy('http://10.0.1.27:9090/')
-culd = ServiceProxy('http://localhost:4339/')
+c_leuse_c_out = ServiceProxy('http://10.0.1.27:1775/')
+culd = ServiceProxy('http://10.0.1.27:4339/')
 apikey = 'AIzaSyBLk_iU8ORnHM39YQCUsHngMfG85Rg9yss'
 artefact_base_url = "http://[2a02:f28:4::6b39:2d00]/artefact/"
 
 newarrivallist = {}
 newetalist = {}
 newactivities = []
-achievments = {}
+achievements = {}
 
 eventcache = []
 eventdetailcache = []
@@ -96,8 +107,12 @@ def reply(request, text):
 def login_with_id(request, user):
     return "not implemented yet"
 
+
 @jsonrpc_method('login')
 def login(request, user):
+    """
+    login in to c-beam
+    """
     u = getuser(user)
     if u.logouttime + timedelta(seconds=hysterese) > timezone.now():
         return reply(request, "hysterese")
@@ -111,8 +126,10 @@ def force_login(request, user):
         monitord.login(u.username)
     except:
         pass
-    try: gcm_send(request, 'now boarding', user)
-    except: pass
+    if not u.no_google:
+        try: gcm_send(request, 'now boarding', user)
+        except: pass
+    publish("user/boarding", str(u.username))
     if u.status == "eta":
         u.eta = ""
     oldstatus = u.status
@@ -128,6 +145,9 @@ def force_login(request, user):
 
 @jsonrpc_method('stealth_login')
 def stealth_login(request, user):
+    """
+    log in to c-beam without text-to-speech greeting
+    """
     u = getuser(user)
     if u.status == "eta":
         u.eta = ""
@@ -147,6 +167,9 @@ def login_web(request):
 
 @jsonrpc_method('logout')
 def logout(request, user):
+    """
+    log out from c-beam
+    """
     u = getuser(user)
     if u.logintime + timedelta(seconds=hysterese) > timezone.now():
         return reply(request, "hysterese")
@@ -154,6 +177,9 @@ def logout(request, user):
 
 @jsonrpc_method('stealth_logout')
 def stealth_logout(request, user):
+    """
+    log out from c-beam without text-to-speech greeting
+    """
     u = getuser(user)
     if u.logintime + timedelta(seconds=hysterese) > timezone.now():
         return reply(request, "hysterese")
@@ -165,11 +191,15 @@ def stealth_logout(request, user):
 
 @jsonrpc_method('force_logout')
 def force_logout(request, user):
+    """
+    log out from c-beam ignoring the current status
+    """
     u = getuser(user)
     try:
         monitord.logout(u.username)
     except:
         pass
+    publish("user/leaving", u.username)
     oldstatus = u.status
     u.status = "offline"
     u.logouttime = timezone.now()
@@ -188,17 +218,21 @@ def logout_web(request):
 #jsonrpc_method('login_wlan')
 @jsonrpc_method('wifi_login')
 def login_wlan(request, user):
+    """
+    login to c-beam via wifi
+    """
     u = getuser(user)
+    if u.stealthmode > timezone.now():
+        return "user in stealth mode"
     if is_logged_in(user):
         extend(user)
     else:
-        if u.logouttime + timedelta(minutes=5) < timezone.now():
+        if u.logouttime + timedelta(minutes=30) < timezone.now():
             login(request, user)
         else:
-            print "hysterese"
+            pass
 
 def extend(user):
-    print("extend %s" % user)
     u = getuser(user)
     u.status = "online"
     u.extendtime = timezone.now()
@@ -236,6 +270,7 @@ def welcometts(request, user):
 #################################################################
 
 def getuser(user):
+    user = user.lower().rstrip()
     if user == "nielc": user = "keiner"
     if user == "azt": user = "pille"
     try:
@@ -245,13 +280,29 @@ def getuser(user):
         u.save()
     return u
 
+def getuser_eta(user):
+    user = user.lower().rstrip()
+    if user == "nielc": user = "keiner"
+    if user == "azt": user = "pille"
+    try:
+        u = User.objects.get(username=user)
+    except:
+        return None
+    return u
+
 @jsonrpc_method('get_user_by_id')
 def get_user_by_id(request, id):
+    """
+    get information about a user using his id
+    """
     u = User.objects.get(id=id)
     return u.dic()
 
 @jsonrpc_method('get_user_by_name')
 def get_user_by_id(request, username):
+    """
+    get information about a user using his nickname
+    """
     u = User.objects.get(username=username)
     return u.dic()
 
@@ -335,6 +386,9 @@ def who(request):
 @jsonrpc_method('eta')
 def eta(request, user, text):
     eta = "0"
+    u = getuser_eta(user)
+    if u is None:
+        return "meh"
     if user == 'bernd':
         return "meh"
 
@@ -370,7 +424,10 @@ def eta(request, user, text):
 @jsonrpc_method('seteta')
 def seteta(request, user, eta):
     #data['newetas'][user] = eta
-    u = getuser(user)
+
+    u = getuser_eta(user)
+    if u is None:
+        return "you do not exist"
 
     newetalist[user] = eta
     if eta == '0':
@@ -395,8 +452,10 @@ def seteta(request, user, eta):
         u.etatimestamp = etatimestamp
         u.status = "eta"
         u.save()
-        try: gcm_send(request, 'ETA', '%s (%s)' % (user, eta))
-        except: pass
+        if not u.no_google:
+            try: gcm_send(request, 'ETA', '%s (%s)' % (user, eta))
+            except: pass
+        publish("user/eta", '%s (%s)' % (user, eta))
         log_stats()
         return 'eta_set'
 
@@ -440,8 +499,6 @@ def newetas(request):
     global newetalist
     tmp = newetalist
     newetalist = {}
-    #if len(tmp) > 0:
-    #    gcm_send(request, 'ETA', ', '.join(['%s (%s)' % (key, tmp[key]) for key in tmp.keys()]))
     return tmp
 
 @jsonrpc_method('arrivals')
@@ -449,9 +506,6 @@ def arrivals(request):
     global newarrivallist
     tmp = newarrivallist
     newarrivallist = {}
-    #if len(tmp) > 0:
-    #    try: gcm_send(request, 'now boarding', ', '.join(tmp.keys()))
-    #    except: pass
     return tmp
 
 @jsonrpc_method('achievements')
@@ -508,7 +562,7 @@ def cleanup(request):
             mission.status = "open"
             mission.save()
 
-    return 0
+    return "aye"
 
 
 #################################################################
@@ -590,7 +644,13 @@ def monmessage(request, message):
 
 @jsonrpc_method('tts')
 def tts(request, voice, text):
-    return cout.tts(voice, text)
+    result = "aye"
+    print publish("c_out/%s" % voice, str(text))
+    try:
+        result = cout.tts(voice, text)
+    except:
+        pass
+    return result
 
 @jsonrpc_method('r2d2')
 def r2d2(request, text):
@@ -598,7 +658,13 @@ def r2d2(request, text):
 
 @jsonrpc_method('play')
 def play(request, file):
-    return cout.play(file)
+    result = "aye"
+    publish("c_out/play", str(file))
+    try:
+        result = cout.play(file)
+    except:
+        pass
+    return result
 
 @jsonrpc_method('setvolume')
 def setvolume(request, volume):
@@ -614,7 +680,10 @@ def voices(request):
 
 @jsonrpc_method('sounds')
 def sounds(request):
-    return cout.sounds()
+    result = []
+    try: result = cout.sounds()['result']
+    except: pass
+    return result
 
 @jsonrpc_method('c_out')
 def c_out(request):
@@ -622,16 +691,22 @@ def c_out(request):
 
 @jsonrpc_method('announce')
 def announce(request, text):
-    return cout.announce(text)
+    result = "aye"
+    publish("c_out/announce", str(text))
+    try:
+        result = cout.announce(text)
+    except:
+        pass
+    return result
 
 @login_required
 def c_out_web(request):
-    return render_to_response('cbeamd/c_out.django', {'sound_list': sounds(request)['result']})
+    return render_to_response('cbeamd/c_out.django', {'sound_list': sounds(request)})
 
 @login_required
 def c_out_play_web(request, sound):
     result = play(request, sound)
-    return render_to_response('cbeamd/c_out.django', {'sound_list': sounds(request)['result'], 'result': "sound wurde abgespielt"})
+    return render_to_response('cbeamd/c_out.django', {'sound_list': sounds(request), 'result': "sound wurde abgespielt"})
 
 
 
@@ -952,7 +1027,10 @@ def mission_complete(request, user, mission_id):
             #u.ap = u.ap + m.ap
             u.ap = u.calc_ap()
             u.save()
-            gcm_send_mission(request, "mission completed", al.notification_str())
+            if not u.no_google:
+                try: gcm_send_mission(request, "mission completed", al.notification_str())
+                except: pass
+            publish("mission/completed", str(al.notification_str()))
 
         return "success"
     return "failure"
@@ -1025,7 +1103,6 @@ def mission_list(request):
     else:
         missions_available = Mission.objects.filter(status="open").order_by('short_description')
         missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
-        print request
         c = RequestContext(request, {
                 'missions_available': missions_available,
                 'missions_in_progress': missions_in_progress,
@@ -1074,7 +1151,6 @@ def gcm_register(request, user, regid):
 
 @jsonrpc_method('gcm_update')
 def gcm_update(request, user, regid):
-    print "gcm_update()"
     u = getuser(user)
     subs = Subscription.objects.filter(user=u)
     if len(subs) < 1:
@@ -1191,7 +1267,8 @@ def artefact_list(request):
     if artefactcache_time + timedelta(hours=1) < timezone.now():
         parser = MyHTMLParser()
         try:
-            parser.feed(urlopen("http://[2a02:f28:4::6b39:2d00]/artefact/").read())
+            #parser.feed(urlopen("http://[2a02:f28:4::6b39:2d00]/artefact/").read())
+            parser.feed(urlopen("http://10.0.1.44/artefact/").read())
             artefacts = parser.get_artefacts()
             artefactlist = [{'name': key, 'slug': artefacts[key]} for key in artefacts.keys()]
             artefactcache = artefactlist
@@ -1238,17 +1315,15 @@ def get_stats(request):
 
 @jsonrpc_method('set_stripe_pattern')
 def set_stripe_pattern(request, pattern_id):
-    print pattern_id
     pattern_id = int(pattern_id)
-    if pattern_id == 0:
-        return cerebrum.partymode()
+    #if pattern_id == 0:
+        #return cerebrum.partymode()
     #if pattern_id == 4:
         #return cerebrum.flimmer()
     if pattern_id == 7:
         return cerebrum.statics()
     if pattern_id == 3:
         patterns = cerebrum.get_patterns()['result']
-        print patterns
         return cerebrum.set_pattern(random.choice(patterns))
     #if pattern_id < 20:
     result = cerebrum.set_pattern(pattern_id)
@@ -1431,16 +1506,21 @@ def logactivity(request, user, activity, ap):
     u.ap = u.calc_ap()
     u.save()
     newactivities.append(al)
-    # TODO filter anmelden an bord gcm_send_mission(request, "mission completed", al.notification_str())
     return "aye"
+
+def list_portal_articles():
+    result = []
+    #try: result = portal.api.list_articles()['result']
+    #except: pass
+    return result
 
 @jsonrpc_method('app_data')
 def app_data(request):
+    """
+    returns a large data structure that contains all current status information that is required by the c-beam app
+    """
     missions = [mission.dic() for mission in  Mission.objects.order_by('-status', 'short_description')]
-    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'articles': portal.api.list_articles()['result'], 'sounds': sounds(request)['result']}
-    #return {'user': user_list(request), 'events': event_list(request), 
-    #'artefacts': artefact_list(request), 'mission': mission_list(request), 
-    #'activitylog': activitylog(request), 'stats': stats(request)}
+    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'barstatus': get_barstatus(request), 'articles': list_portal_articles(), 'sounds': sounds(request)}
 
 @login_required
 def activitylog_json(request):
@@ -1494,6 +1574,9 @@ def activitylog_delete_comment(request, comment_id):
 
 @jsonrpc_method('set_stats_enabled')
 def set_stats_enabled(request, user, is_enabled):
+    """
+    enable or disable c-game stats
+    """
     u = getuser(user)
     if type(is_enabled) is bool:
         u.stats_enabled = is_enabled
@@ -1503,11 +1586,13 @@ def set_stats_enabled(request, user, is_enabled):
         else:
             u.stats_enabled = False
     u.save()
-    print u.stats_enabled
     return "aye"
 
 @jsonrpc_method('set_push_missions')
 def set_push_missions(request, user, is_enabled):
+    """
+    enable or disable push notifications for completed missions
+    """
     u = getuser(user)
     if type(is_enabled) is bool:
         u.push_missions = is_enabled
@@ -1517,11 +1602,13 @@ def set_push_missions(request, user, is_enabled):
         else:
             u.push_missions = False
     u.save()
-    print u.push_missions
     return "aye"
 
 @jsonrpc_method('set_push_boarding')
 def set_push_boarding(request, user, is_enabled):
+    """
+    enable or disable push notifications for boarding members
+    """
     u = getuser(user)
     if type(is_enabled) is bool:
         u.push_boarding = is_enabled
@@ -1531,11 +1618,13 @@ def set_push_boarding(request, user, is_enabled):
         else:
             u.push_boarding = False
     u.save()
-    print u.push_boarding
     return "aye"
 
 @jsonrpc_method('set_push_eta')
 def set_push_eta(request, user, is_enabled):
+    """
+    enable or disable push notifications for ETAs
+    """
     u = getuser(user)
     if type(is_enabled) is bool:
         u.push_eta = is_enabled
@@ -1545,7 +1634,6 @@ def set_push_eta(request, user, is_enabled):
         else:
             u.push_eta = False
     u.save()
-    print u.push_eta
     return "aye"
 
 @login_required
@@ -1564,7 +1652,6 @@ def c_out_volume_json(request):
 def c_out_volume_set(request, volume):
     global c_out_volume
     c_out_volume = volume
-    print volume
     return HttpResponse(json.dumps({'result': "OK"}), mimetype="application/json")
 
 @jsonrpc_method('barschnur')
@@ -1580,14 +1667,137 @@ def c_portal_notify(request, notification):
 def trafotron(request, value):
     print "trafotron: %d" % value
     newval = (value * 100) / 170
-    os.system("amixer -c 0 set Master %d%%" % newval)
+    #os.system("amixer -c 0 set Master %d%%" % newval)
+    c_leuse_c_out.setvolume(newval)
 
 @jsonrpc_method("cerebrumNotify")
 def cerebrumNotify(request, device_name, event_source_path, new_state):
     cerebrum_state[device_name][event_source_path] = new_state
-    print "%s %s %s" % (device_name, cerebrum_state, new_state)
+    #print "%S %s %s" % (device_name, event_source_path, new_state)
+    print "%s %s %s" % (device_name, event_source_path, new_state)
+
+    print "'%s'" % event_source_path
+    if event_source_path == '/schaltergang/1':
+        print nerdctrl_cout.play('clamp.mp3') 
+    if event_source_path == '/schaltergang/2':
+        print nerdctrl_cout.play('carbon.mp3') 
+    if event_source_path == '/schaltergang/3':
+        print nerdctrl_cout.play('cience.mp3') 
+    if event_source_path == '/schaltergang/4':
+        print nerdctrl_cout.play('creatv.mp3') 
+    if event_source_path == '/schaltergang/5':
+        print nerdctrl_cout.play('cultur.mp3') 
+    if event_source_path == '/schaltergang/6':
+        print nerdctrl_cout.play('com.mp3') 
+    if event_source_path == '/schaltergang/7':
+        print nerdctrl_cout.play('core.mp3') 
+    if event_source_path == '/schaltergang/8':
+        print nerdctrl_cout.announce('die schalter sind kein spielzeug!') 
+    if event_source_path == '/schaltergang/12':
+        print nerdctrl_cout.tts('julia', 'huch!') 
+    if event_source_path == '/schaltergang/15':
+        print nerdctrl_cout.tts('julia', 'finger weg!') 
+    if event_source_path == '/schaltergang/18':
+        print nerdctrl_cout.play('Spock_hat_keinen_Bock.mp3') 
+    if event_source_path == '/schaltergang/19':
+        print nerdctrl_cout.play('kommtihrelendendaten.mp3') 
+    if event_source_path == '/schaltergang/20':
+        print nerdctrl_cout.play('darth.mp3') 
+    if event_source_path == '/schaltergang/21':
+        print nerdctrl_cout.play('faszinierend.mp3') 
+    if event_source_path == '/schaltergang/22':
+        print nerdctrl_cout.play('zugangzummastercontrollprogramm.mp3') 
+    if event_source_path == '/schaltergang/23':
+        print nerdctrl_cout.tts('julia', 'alles zweifelhafte muss angezweifelt werden') 
 
 @jsonrpc_method("barstatus")
 def barstatus(request, status):
+    """
+    set the bar status to status
+    status can be "open" or "closed"
+    """
+    status_object = Status.objects.get()
+    if status == "open":
+        status_object.bar_open = True
+        status_object.save()
+        notify_bar_opening()
+    if status == "closed":
+        status_object.bar_open = False
+        status_object.save()
+        notify_bar_closing()
     print "barstatus: %s" % status
 
+@jsonrpc_method("get_barstatus")
+def get_barstatus(request):
+    """
+    get the current bar status
+    """
+    return Status.objects.get().bar_open
+
+def notify_bar_opening():
+    publish("bar/status", "opening")
+
+def notify_bar_closing():
+    publish("bar/status", "closing")
+
+def publish(topic, payload):
+    try:
+        mqtt.connect(mqttserver) 
+        mqtt.publish(topic, payload)
+    except: pass
+
+def create_random_password(length):
+    chars = string.letters + string.digits
+    return ''.join(choice(chars) for _ in range(length))
+
+@jsonrpc_method('set_first_password')
+def set_first_password(request, user):
+    u = getuser(user)
+    # u.tmp_password = create_random_password(16)
+    # u.save()
+    # send mail to "%s@c-base.org" % u.username including u.tmp_password
+    recipient = '%s@c-base.org' % u.username 
+    token = 'generierteseinmaltoken'
+    text = 'hallo %s\n\n' % u.username
+    text += '$jemand, wahrscheinlich du selbst, hat dein c-beam initialpasswort gesetzt.\n\nklicke auf den folgenden link, '
+    text += 'um das passwort zu aktivieren:\n\n'
+    text += 'https://ein-link-der-von-ueberall-erreichbar-sein-sollte.org/approve/%s\n\n' % token
+    text += 'du solltest dein initialpasswort mo:glchst bald unter https://member.cbrp3.c-base.org und in der app a:ndern.\n\n'
+    text += 'dance fu:r die beachtung der sicherheitshinweise\nihr bordcomputer\n\n'
+    send_mail(recipient, text)
+
+def send_mail(recipient, text):
+    msg = MIMEText(text)
+    msg['Subject'] = 'c-beam passwort gesetzt / c-beam password has been set'
+    msg['From'] = "c-beam@c-base.org"
+    msg['To'] = recipient
+
+    s = smtplib.SMTP('localhost')
+    s.sendmail("c-beam@c-base.org", [recipient], msg.as_string())
+    s.quit()
+
+    return "aye"
+
+@jsonrpc_method('set_stealthmode')
+def set_stealthmode(request, user, duration):
+    """
+    enable stealthmode for user for duration in hours
+    """
+    u = getuser(user)
+    u.stealthmode = timezone.now() + timedelta(hours=duration)
+    u.save()
+    return "aye"
+
+#@jsonrpc_method('get_stealthmode')
+def get_stealthmode(request, user):
+    u = getuser(user)
+    return str(u.stealthmode)
+
+
+@jsonrpc_method('toggle_burningman')
+def toggle_burningman(request):
+    try:
+        monitord.burningman("foo")
+    except:
+        pass
+    return HttpResponse("OK")
