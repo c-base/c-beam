@@ -20,7 +20,12 @@
         <td><label>c-game stats aktivieren:</label></td>
         <td>{{ form.stats_enabled }}</td>
       </tr>
+      <tr>
+        <td><label>do not send any information via google cloud messaging:</label></td>
+        <td>{{ form.no_google }}</td>
+      </tr>
     </table>
+    <br>
     <button class="btn" type="submit">speichern</button>
   </form>
 </div>
