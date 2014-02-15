@@ -120,6 +120,9 @@ def login(request, user):
 
 @jsonrpc_method('force_login')
 def force_login(request, user):
+    """
+    login in to c-beam ignoring the current online state
+    """
     u = getuser(user)
     welcometts(request, u.username)
     try:
@@ -385,6 +388,9 @@ def who(request):
 
 @jsonrpc_method('eta')
 def eta(request, user, text):
+    """
+    set eta for user to the time specified in text (HHMM free text)
+    """
     eta = "0"
     u = getuser_eta(user)
     if u is None:
@@ -423,6 +429,9 @@ def eta(request, user, text):
 
 @jsonrpc_method('seteta')
 def seteta(request, user, eta):
+    """
+    set eta for user to the time specified in eta (HHMM)
+    """
     #data['newetas'][user] = eta
 
     u = getuser_eta(user)
@@ -472,24 +481,36 @@ def extract_eta(text):
 
 @jsonrpc_method('subeta')
 def subeta(request, user):
+    """
+    subscripe to ETA notifications via XMPP/IRC
+    """
     u = getuser(user)
     u.etasub = True
     u.save()
 
 @jsonrpc_method('unsubeta')
 def unsubeta(request, user):
+    """
+    unsubscripe to ETA notifications via XMPP/IRC
+    """
     u = getuser(user)
     u.etasub = False
     u.save()
 
 @jsonrpc_method('subarrive')
 def subarrive(request, user):
+    """
+    subscribe to boarding notifications via XMPP/IRC
+    """
     u = getuser(user)
     u.arrivesub = True
     u.save()
 
 @jsonrpc_method('unsubarrive')
 def unsubarrive(request, user):
+    """
+    unsubscribe to boarding notifications via XMPP/IRC
+    """
     u = getuser(user)
     u.arrivesub = False
     u.save()
@@ -571,18 +592,27 @@ def cleanup(request):
 
 @jsonrpc_method('events')
 def events(request):
+    """
+    get todays events
+    """
     global eventcache
     update_event_cache()
     return eventcache
 
 @jsonrpc_method('event_list')
 def event_list(request):
+    """
+    get todays events with details
+    """
     global eventdetailcache
     update_event_cache()
     return eventdetailcache
 
 @jsonrpc_method('event_detail')
 def event_detail(request, id):
+    """
+    get details for event with id id
+    """
     d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
     for entry in d['entries']:
         title = re.search(r'.*: (.*)', entry['title']).group(1)
@@ -632,6 +662,9 @@ def event_list_web(request):
 
 @jsonrpc_method('monmessage')
 def monmessage(request, message):
+    """
+    display message on the display in the airlock (c_leuse)
+    """
     try:
         monitord.message(message)
     except:
@@ -644,6 +677,9 @@ def monmessage(request, message):
 
 @jsonrpc_method('tts')
 def tts(request, voice, text):
+    """
+    perform text-to-speech over c_out with voice saying text
+    """
     result = "aye"
     print publish("c_out/%s" % voice, str(text))
     try:
@@ -654,10 +690,16 @@ def tts(request, voice, text):
 
 @jsonrpc_method('r2d2')
 def r2d2(request, text):
+    """
+    perform text-to-r2d2 over c_out with voice saying text
+    """
     return cout.r2d2(text)
 
 @jsonrpc_method('play')
 def play(request, file):
+    """
+    play sound file via c_out
+    """
     result = "aye"
     publish("c_out/play", str(file))
     try:
@@ -668,18 +710,30 @@ def play(request, file):
 
 @jsonrpc_method('setvolume')
 def setvolume(request, volume):
+    """
+    set c_out volume to volume
+    """
     return cout.setvolume(volume)
 
 @jsonrpc_method('getvolume')
 def getvolume(request, volume):
+    """
+    get the current c_out volume
+    """
     return cout.getvolume(volume)
 
 @jsonrpc_method('voices')
 def voices(request):
+    """
+    get a list of available voices for text-to-speech
+    """
     return cout.voices()
 
 @jsonrpc_method('sounds')
 def sounds(request):
+    """
+    returns a list of sounds available to play via c_out
+    """
     result = []
     try: result = cout.sounds()['result']
     except: pass
@@ -687,10 +741,16 @@ def sounds(request):
 
 @jsonrpc_method('c_out')
 def c_out(request):
+    """
+    plays a random sound via c_out
+    """
     return cout.c_out()
 
 @jsonrpc_method('announce')
 def announce(request, text):
+    """
+    perform a text-to-speech announcement via c_out
+    """
     result = "aye"
     publish("c_out/announce", str(text))
     try:
@@ -967,22 +1027,34 @@ def auth_logout( request ):
 
 @jsonrpc_method('add_mission')
 def add_mission(request, short_description):
+    """
+    add a new mission with a short_description
+    """
     m = Mission(short_description=short_description)
     m.save()
     return "aye"
 
 @jsonrpc_method('missions')
 def missions(request):
+    """
+    returns a list of available missions
+    """
     return [str(mission) for mission in Mission.objects.order_by('status', 'short_description')]
 
 @jsonrpc_method('mission_detail')
 def mission_detail(request, mission_id):
+    """
+    returns the details for the mission specified with mission_id
+    """
     mission = get_object_or_404(Mission, pk=mission_id)
     return mission.dic()
     #return render_to_response('cbeamd/mission_detail.django', {'mission': mission})
 
 @jsonrpc_method('mission_assign')
 def mission_assign(request, user, mission_id):
+    """
+    assign the mission with mission_id to user
+    """
     u = getuser(user)
     m = Mission.objects.get(id=mission_id)
     if m.status == mission_open or m.status == mission_assigned:
@@ -994,6 +1066,9 @@ def mission_assign(request, user, mission_id):
 
 @jsonrpc_method('mission_cancel')
 def mission_cancel(request, user, mission_id):
+    """
+    cancel the mission with mission_id for user
+    """
     u = getuser(user)
     m = Mission.objects.get(id=mission_id)
     if u in m.assigned_to.all() and m.status == mission_assigned:
@@ -1006,6 +1081,9 @@ def mission_cancel(request, user, mission_id):
 
 @jsonrpc_method('mission_complete')
 def mission_complete(request, user, mission_id):
+    """
+    complete the mission with mission_id for user
+    """
     u = getuser(user)
     m = Mission.objects.get(id=mission_id)
     if u in m.assigned_to.all() and m.status == mission_assigned:
@@ -1097,6 +1175,9 @@ def mission_cancel_web(request, mission_id):
 @login_required
 @jsonrpc_method('mission_list')
 def mission_list(request):
+    """
+    returns a list of available missions
+    """
     if request.path.startswith('/rpc'):
         missions = Mission.objects.order_by('-status', 'short_description')
         return [mission.dic() for mission in missions]
@@ -1260,6 +1341,9 @@ def hwstorage_web(request):
 
 @jsonrpc_method('artefact_list')
 def artefact_list(request):
+    """
+    returns a list of available artefacts
+    """
     global artefactcache
     global artefactcache_time
     global artefact_base_url
@@ -1280,6 +1364,9 @@ def artefact_list(request):
 
 @jsonrpc_method('artefact_base_url')
 def artefact_base_url(request):
+    """
+    returns the base URL for artefacts
+    """
     global artefact_base_url
     return [artefact_base_url]
 
@@ -1293,6 +1380,9 @@ def artefact_list_web(request):
 
 @jsonrpc_method('list_articles')
 def list_articles(request):
+    """
+    returns a list of c_portal articles
+    """
     return portal.api.list_articles()
 
 
@@ -1306,6 +1396,9 @@ def log_stats():
 
 @jsonrpc_method('get_stats')
 def get_stats(request):
+    """
+    returns the currents user stats
+    """
     return str(UserStatsEntry.objects.all())
 
 
@@ -1315,6 +1408,9 @@ def get_stats(request):
 
 @jsonrpc_method('set_stripe_pattern')
 def set_stripe_pattern(request, pattern_id):
+    """
+    set the airlock led stripe pattern to pattern_id
+    """
     pattern_id = int(pattern_id)
     #if pattern_id == 0:
         #return cerebrum.partymode()
@@ -1346,6 +1442,9 @@ def set_stripe_pattern_web(request, pattern_id):
 
 @jsonrpc_method('set_stripe_speed')
 def set_stripe_speed(request, speed):
+    """
+    set the airlock led stripe speed
+    """
     speed = int(speed)
     return cerebrum.set_speed(speed)
 
@@ -1355,16 +1454,25 @@ def set_stripe_speed_web(request, speed):
 
 @jsonrpc_method('set_stripe_offset')
 def set_stripe_offset(request, offset):
+    """
+    set the airlock led stripe pattern offset
+    """
     offset = int(offset)
     return cerebrum.set_offset(offset)
 
 @jsonrpc_method('set_stripe_buffer')
 def set_stripe_buffer(request, buffer):
+    """
+    set the airlock led stripe pattern buffer
+    """
     #buffer = [255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0]*32+[0,0,0,0,0,0,0,0,0,0,0,0]
     return cerebrum.set_buffer(buffer)
 
 @jsonrpc_method('set_stripe_default')
 def set_stripe_default(request):
+    """
+    set the airlock led stripe pattern to the default pattern
+    """
     global default_stripe_pattern
     global default_stripe_speed
     global default_stripe_offset
@@ -1382,6 +1490,9 @@ def set_stripe_default(request):
 
 @jsonrpc_method('notbeleuchtung')
 def notbeleuchtung(request):
+    """
+    set the airlock led stripe pattern to emergency lights
+    """
     global default_stripe_pattern
     global default_stripe_speed
     default_stripe_pattern = 10
@@ -1391,6 +1502,9 @@ def notbeleuchtung(request):
 
 @jsonrpc_method('rainbow')
 def rainbow(request):
+    """
+    set the airlock led stripe pattern to rainbow
+    """
     global default_stripe_pattern
     global default_stripe_speed
     default_stripe_pattern = 1
@@ -1409,6 +1523,9 @@ def setdigitalmeter(request, meterid, value):
 
 @jsonrpc_method('ddate')
 def ddate(request):
+    """
+    returns the current ddate
+    """
     now = DDate()
     now.fromDate(date.today())
     return "Today is "+str(now)
@@ -1444,6 +1561,9 @@ def stripe_view(request):
 
 @jsonrpc_method('activitylog')
 def activitylog(request):
+    """
+    returns the current c-game activitylog
+    """
     al = ActivityLog.objects.order_by('-timestamp')[:40]
     rev = list(al)
     rev.reverse()
@@ -1484,6 +1604,9 @@ def logactivity_web(request):
 
 @jsonrpc_method('logactivity')
 def logactivity(request, user, activity, ap):
+    """
+    log an activity for user with the description activity and ap activity points
+    """
     global newactivities
     u = getuser(user)
     #u.ap = u.ap + ap
