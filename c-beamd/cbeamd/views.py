@@ -45,7 +45,7 @@ eta_timeout=120
 mqtt = mosquitto.Mosquitto("c-beam")
 mqttserver = "127.0.0.1"
 cout = ServiceProxy('http://10.0.1.13:1775/')
-nerdctrl_cout = ServiceProxy('http://10.0.0.185:1775/')
+nerdctrl_cout = ServiceProxy('http://nerdctrl.cbrp3.c-base.org:1775/')
 cerebrum = ServiceProxy('http://10.0.1.27:7777/')
 portal = ServiceProxy('https://c-portal.c-base.org/rpc/')
 monitord = ServiceProxy('http://10.0.1.27:9090/')
@@ -1172,7 +1172,7 @@ def mission_cancel_web(request, mission_id):
     return render_to_response('cbeamd/mission_list.django', c)
 
 
-@login_required
+#@login_required
 @jsonrpc_method('mission_list')
 def mission_list(request):
     """
@@ -1795,11 +1795,11 @@ def trafotron(request, value):
 
 @jsonrpc_method("cerebrumNotify")
 def cerebrumNotify(request, device_name, event_source_path, new_state):
+    print "%s %s %s" % (device_name, event_source_path, new_state)
     cerebrum_state[device_name][event_source_path] = new_state
     #print "%S %s %s" % (device_name, event_source_path, new_state)
-    print "%s %s %s" % (device_name, event_source_path, new_state)
 
-    print "'%s'" % event_source_path
+    print "'%s: %s'" % (event_source_path, new_state)
     if event_source_path == '/schaltergang/1':
         print nerdctrl_cout.play('clamp.mp3') 
     if event_source_path == '/schaltergang/2':
@@ -1816,6 +1816,30 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
         print nerdctrl_cout.play('core.mp3') 
     if event_source_path == '/schaltergang/8':
         print nerdctrl_cout.announce('die schalter sind kein spielzeug!') 
+    if event_source_path == '/schaltergang/9':
+        if new_state == 0:
+            publish("nerdctrl/open", "http://www.c-base.org")
+        if new_state == 1:
+            publish("nerdctrl/open", "http://logbuch.c-base.org/")
+        if new_state == 2:
+            publish("nerdctrl/open", "http://c-portal.c-base.org")
+        if new_state == 3:
+            publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/events")
+    if event_source_path == '/schaltergang/10':
+        if new_state == 0:
+            publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/c-base-map")
+        if new_state == 1:
+            publish("nerdctrl/open", "http://cbag3.c-base.org/artefact")
+        if new_state == 2:
+            publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/missions")
+        if new_state == 3:
+            publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/weather")
+    if event_source_path == '/schaltergang/11':
+        if new_state == 0:
+            publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/bvg")
+        else:
+            publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/nerdctrl")
+
     if event_source_path == '/schaltergang/12':
         print nerdctrl_cout.tts('julia', 'huch!') 
     if event_source_path == '/schaltergang/15':
@@ -1924,3 +1948,13 @@ def toggle_burningman(request):
     except:
         pass
     return HttpResponse("OK")
+
+def nerdctrl(request):
+    return render_to_response('cbeamd/nerdctrl.django', {})
+
+def weather(request):
+    return render_to_response('cbeamd/weather.django', {})
+
+def bvg(request):
+    return render_to_response('cbeamd/bvg.django', {})
+
