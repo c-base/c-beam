@@ -14,9 +14,9 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-
     <script src="/static/jquery/jquery.min.js"></script>
-    <script src="/static/c-base-bootstrap/js/bootstrap-dropdown.js"></script>
+    {% bootstrap_javascript_tag "dropdown" %}
+    <!--<script src="/static/c-base-bootstrap/js/bootstrap-dropdown.js"></script>-->
     <link href="/static/c-base-bootstrap/css/cyborg.css" rel="stylesheet" type="text/css" />
     <script src="/static/c-base-bootstrap/js/bootstrap.js"></script>
     <link href="/static/c-base-bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
