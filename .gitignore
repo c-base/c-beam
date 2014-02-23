@@ -3,3 +3,7 @@ tageventor/tagEventor/Debug
 tageventor/tagEventor/Release
 tageventor/tagReader/Debug
 tageventor/tagReader/Release
+c-beamd/cbeamd/templates/cbeamd/weather.django
+c-beamd/cbeamd/static/rainradar.gif
+c-beamd/cbeamd/static/solar_img.jpg
+c-beamd/cbeamd/doc/_build/
