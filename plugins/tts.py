@@ -23,6 +23,8 @@ import sys
 import jsonrpclib
 import datetime
 
+from jsonrpc.proxy import ServiceProxy
+
 ## defines
 
 
@@ -34,8 +36,9 @@ usermap = eval(open('%s/usermap' % cfg.get('datadir')).read())
 ttsdata = eval(open('%s/ttsdata' % cfg.get('datadir')).read())
 ttslog = '%s/botlogs/tts.log' % cfg.get('datadir')
 
-jsonrpclib.config.version = 1.0
-server = jsonrpclib.Server(cfg.get('rpcurl'))
+#jsonrpclib.config.version = 1.0
+#server = jsonrpclib.Server(cfg.get('rpcurl'))
+server = ServiceProxy(cfg.get('rpcurl'))
 
 def getuser(ievent):
     if ievent.channel in usermap:
@@ -86,7 +89,7 @@ def handle_tts(bot, ievent, voice):
             #os.system("echo %s | festival --tts" % ievent.rest)
             os.system("tts.py %s %s | xargs mpg123" % (voice, urllib.quote(text)))
         else:
-            ievent.reply(server.tts(voice, urllib.quote(text)))
+            ievent.reply(server.tts(voice, urllib.quote(text))['result']['result'])
              
     except:
         ievent.reply(str(sys.exc_info()[0]))

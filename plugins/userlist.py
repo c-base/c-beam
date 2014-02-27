@@ -52,7 +52,7 @@ else:
         'login_success': ['hallo %s, willkommen auf der c-base.', 'hallo %s, willkommen an bord!'],
         'login_remind': ['Denk daran: %s'],
         'logout_success': ['danke, daC du dich abgemeldet hast %s.', 'danke und guten heimflug %s.'],
-        'no_one_there': ['derceit hat sich keine cohlenstoffeinheit bei mir angemeldet.', 'ga:hnende leere'],
+        'no_one_there': ['derceit hat sich keine cohlenstoffeinheit bei mir angemeldet.', 'ga:hnende leere', 'an bord: keiner!'],
         'eta_set': ['danke, daC du bescheid sagst %s. [ETA: %s]'],
         'eta_removed': ['c_ade, daC du doch nicht kommen cannst %s. [ETA: %s]'],
         'lte_set': ['danke %s, dein LTE wurde gespeichert. [%s]'],
@@ -112,6 +112,8 @@ def getuser2(user):
         return user[:-11]
     elif user.endswith('@shell.c-base.org'):
         return user[1:-17]
+    elif user.endswith('@176.74.60.210'):
+        return user[1:-14]
     elif user.startswith('c-base/crew/'):
         return user[12:]
     elif user.startswith('pdpc/supporter/professional/'):
@@ -130,6 +132,8 @@ def getuser(ievent):
         return usermap[ievent.ruserhost]
     elif ievent.auth.endswith('@shell.c-base.org'):
         return ievent.auth[:-17]
+    elif ievent.auth.endswith('@176.74.60.210'):
+        return ievent.auth[1:-14]
     elif ievent.channel.find('@c-base.org') > -1:
         return ievent.channel[:-11]
     elif ievent.fromm and ievent.fromm.find('c-base.org') > -1:
@@ -222,14 +226,17 @@ class UserlistWatcher(TimedLoop):
 
         # check if new users have arrived
         arrivals = server.arrivals()['result']
-	print arrivals
         if len(arrivals) > 0:
             for arrivesub in etaitem.data.arrivesubs:
                 arrivelist = ', '.join(sorted(arrivals.keys()))
                 if bot and bot.type == "sxmpp":
                     bot.say(arrivesub, 'Now boarding: ' + arrivelist)
         
-            
+        # activities
+	activities = server.activities()['result']
+        if len(activities) > 0:
+            print activities
+
         usercount = len(whoresult['available'])
         if self.lastcount == 0 and usercount > 0:
             if bot and bot.type == "sxmpp":
@@ -470,6 +477,21 @@ def handle_userlist_eta(bot, ievent):
     print result
     ievent.reply(getmessage(result) % (user, eta))
 
+def handle_userlist_stealthmode(bot, ievent):
+    user = getuser(ievent)
+    if not user: return ievent.reply(getmessage('unknown_nick'))
+
+    if len(ievent.args) == 0:
+        result = server.get_stealthmode(user)['result']
+        return ievent.reply(result)
+
+    stealthtime = int(ievent.rest)
+    print "stealhtmode %s %d" % (user, stealthtime)
+    result = server.set_stealthmode(user, stealthtime)['result']
+    print result
+    #ievent.reply(getmessage(result) % (user, eta))
+    ievent.reply(result)
+
 def handle_userlist_watch_start(bot, ievent):
     if not cfg.get('watcher-enabled'):
         ievent.reply('watcher not enabled, use "!%s-cfg watcher-enabled 1" to enable and reload the plugin' % os.path.basename(__file__)[:-3])
@@ -513,6 +535,7 @@ cmnds.add('ul-subscribe', handle_userlist_subeta, ['GUEST', 'USER'])
 cmnds.add('ul-unsubscribe', handle_userlist_unsubeta, ['GUEST', 'USER'])
 cmnds.add('ul-lssub', handle_userlist_lssub, ['ULADM', 'OPER'])
 cmnds.add('userlist', handle_userlist, ['GUEST', 'USER'])
+cmnds.add('stealthmode', handle_userlist_stealthmode, ['GUEST', 'USER'])
 
 cmnds.add('userlist-watch-start', handle_userlist_watch_start, 'ULADM')
 cmnds.add('userlist-watch-stop',  handle_userlist_watch_stop, 'ULADM')
