@@ -74,6 +74,10 @@ urlpatterns = patterns('',
     url(r'^c_out_volume$', 'cbeamd.views.c_out_volume_web'),
     url(r'^c_out_volume_json$', 'cbeamd.views.c_out_volume_json'),
     url(r'^c_out_volume_set/(?P<volume>\d+)$', 'cbeamd.views.c_out_volume_set'),
+    url(r'^burningman$', 'cbeamd.views.toggle_burningman'),
+    url(r'^nerdctrl$', 'cbeamd.views.nerdctrl'),
+    url(r'^weather$', 'cbeamd.views.weather'),
+    url(r'^bvg$', 'cbeamd.views.bvg'),
 )
 
 urlpatterns += patterns('', (r'^rpc/', jsonrpc_site.dispatch))

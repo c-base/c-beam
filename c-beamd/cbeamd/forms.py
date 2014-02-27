@@ -29,7 +29,7 @@ password=self.cleaned_data['password'] )
 class UserForm( forms.ModelForm ):
     class Meta:
         model = User
-        fields = ['nickspell', 'stats_enabled', 'autologout']
+        fields = ['nickspell', 'stats_enabled', 'autologout', 'no_google']
         widgets = {
         }
 

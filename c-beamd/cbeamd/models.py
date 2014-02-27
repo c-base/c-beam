@@ -26,6 +26,8 @@ class User(models.Model):
     push_missions = models.BooleanField(default=True)
     push_boarding = models.BooleanField(default=True)
     push_eta = models.BooleanField(default=True)
+    stealthmode = models.DateTimeField(auto_now_add=True, blank=True)
+    no_google = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username
@@ -101,7 +103,11 @@ class User(models.Model):
 
     def calc_ap(self):
         sum = 0
-        for activity in ActivityLog.objects.filter(user=self): sum += activity.ap
+        for activity in ActivityLog.objects.filter(user=self).filter(timestamp__gt=timezone.now()-timedelta(days=90)): sum += activity.ap
+        # TODO fixme
+        #if self.ap != sum:
+            #self.ap = sum
+            #self.save()
         return sum
 
 class LTE(models.Model):
@@ -225,3 +231,8 @@ class ActivityLog(models.Model):
         dic['thanks'] = self.thanks
         dic['comments'] = [comment.dic() for comment in self.comments.order_by('-timestamp')]
         return dic
+
+class Status(models.Model):
+    bar_open = models.BooleanField(default=False)
+    airlock_stripe_mode = models.IntegerField(default=1)
+    airlock_volume = models.IntegerField(default=42)

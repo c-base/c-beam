@@ -17,7 +17,7 @@
             </div>
             <div id="CollapseUser{{ user.id }}" class="accordion-body collapse">
               <div class="accordion-inner">
-                <iframe src="http://{{ user.username }}.crew.c-base.org" width="100%" height="400px"></iframe>
+                <iframe src="https://{{ user.username }}.crew.c-base.org" width="100%" height="400px"></iframe>
                 <table>
                   <tr><td>Username:</td><td> {{ user.username }}</td></tr>
                   <tr><td>Status:</td><td> {{ user.status }}</td></tr>
@@ -45,7 +45,7 @@
             </div>
             <div id="CollapseUser{{ user.id }}" class="accordion-body collapse">
               <div class="accordion-inner">
-                <iframe src="http://{{ user.username }}.crew.c-base.org" width="100%" height="400px"></iframe>
+                <iframe src="https://{{ user.username }}.crew.c-base.org" width="100%" height="400px"></iframe>
                 <table>
                   <tr><td>Username:</td><td> {{ user.username }}</td></tr>
                   <tr><td>Status:</td><td> {{ user.status }}</td></tr>
