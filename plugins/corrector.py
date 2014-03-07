@@ -46,13 +46,21 @@ def precorrector(bot, event):
     m = re.findall('(^|\W)(c-?base)(\W|$)', event.txt, re.IGNORECASE)
     for match in m:
 	if match[1] != 'c-base':
-        c.privmsg(target, "It's c-base, not "+match[1]+'. '+random.choice(INSULTS))
-        if event.channel == '#c-base':
-            bot.say("#c-base", 'es heisst c-base und nicht '+match[1]+'. dance fu:r die beachtung aller sicherheitshinweise.')
-        else:
-            pass
-        return True
+            if event.channel == '#c-base':
+                #bot.say("#c-base", 'es heisst c-base und nicht '+match[1]+'. dance fu:r die beachtung aller sicherheitshinweise.')
+                bot.say("#c-base", "it's c-base - NOT "+match[1]+', you '+insult())
+            else:
+                pass
+            return True
     return False
+
+def insult():
+    s1 = ['dribbling ', 'snivelling ', 'braindead ', 'tentacled ', 'three eyed ', 'one dimensional ', 'borg loving ', 'slime sucking ', 'borg sniffing ', 'bug eyed ', 'single celled ', 'gargleblasting ', 'hallucinating ', '']
+    s2 = ['', '', 'son of a ', 'clone of a ', 'excuse for a ', 'hologram of a ', 'apology for a ']
+    s3 = ['', 'mutant ', 'parasitic ', 'vat-grown ', 'ferengi ', 'radiation damaged ', 'deranged ', 'space sick ', 'warp sick ', 'deviant ', 'clockwork ', 'useless ', 'superfluous ', 'stinking ' ]
+    s4 = ['star goat', 'space weevil', 'toilet cleaning droid', 'bilge spore', 'nose worm', 'hyper slug', 'replicant', 'android', 'garbage droid', 'cyborg', 'pleasure droid', 'person', 'humanoid', 'bag of water', 'scumbag', 'idiot', 'douchebag', 'dumbass', 'collection of atoms']
+    return random.choice(s1)+random.choice(s2)+random.choice(s3)+random.choice(s4)+"!"
+
 
 ## corrector-callbacks
 
@@ -66,11 +74,15 @@ callbacks.add('CONVORE', correctorcb, precorrector)
 
 ## corrector command
 
-def handle_corrector(bot, event):
-    warning = random.choice(quotes.values())
-    if ievent.channel == "#c-base":
-        bot.say(ievent.channel, warning)
-    else:
-        ievent.reply(warning)
+def handle_corrector(bot, ievent):
+    insult_text = ievent.nick + ": you are are " + insult()
+    if len(ievent.rest) > 0 and re.search("c-beam", ievent.rest, re.IGNORECASE) == None:
+        insult_text = ievent.rest + " is a " + insult()
 
-#cmnds.add('corrector', handle_corrector, ['OPER', 'USER', 'GUEST'])
+    if ievent.channel == "#c-base":
+        bot.say(ievent.channel, insult_text)
+        pass
+    else:
+        ievent.reply(insult_text)
+
+cmnds.add('insult', handle_corrector, ['OPER', 'USER', 'GUEST'])
