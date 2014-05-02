@@ -1,0 +1,64 @@
+{% extends "cbeamd/nerdctrl.django" %}
+
+{% block content %}
+
+    <canvas id="chart" width="1160" height="780"></canvas>
+
+{% endblock content%}
+
+{% block extra_js %}
+
+    <script type="text/javascript" src="/static/smoothie.js"></script>
+    <script type="text/javascript">
+
+      // Randomly add a data point every 500ms
+      var random = new TimeSeries();
+      var random2 = new TimeSeries();
+      setInterval(function() {
+        random.append(new Date().getTime(), Math.random() * 10000);
+        random2.append(new Date().getTime(), Math.random() * 10000);
+      }, 500);
+
+      function createTimeline() {
+        var chart = new SmoothieChart();
+        chart.addTimeSeries(random, { strokeStyle: 'rgba(0, 255, 0, 1)', fillStyle: 'rgba(0, 255, 0, 0.2)', lineWidth: 4 });
+        chart.streamTo(document.getElementById("chart"), 500);
+        var chart2 = new SmoothieChart();
+        chart2.addTimeSeries(random2, { strokeStyle: 'rgba(0, 0, 255, 1)', fillStyle: 'rgba(0, 0, 255, 0.2)', lineWidth: 4 });
+        chart2.streamTo(document.getElementById("chart"), 500);
+      }
+
+      $(document).ready(function() {
+        //createTimeline();
+      });
+    </script>
+
+    <script type="text/javascript">
+      var dataSet1 = new TimeSeries(),
+          dataSet2 = new TimeSeries(),
+          dataSet3 = new TimeSeries(),
+          dataSet4 = new TimeSeries(),
+          delayMillis = 1000;
+
+      var addDataItems = function () {
+        var now = new Date().getTime();
+        dataSet1.append(now, Math.random());
+        dataSet2.append(now, Math.random());
+        dataSet3.append(now, Math.random());
+        dataSet4.append(now, Math.random());
+      };
+      addDataItems();
+      setInterval(addDataItems, delayMillis);
+
+      // Build the timeline
+      var smoothie = new SmoothieChart({ minValue: 0.0, maxValue: 1.0, millisPerPixel: 20, grid: { fillStyle: '#000', strokeStyle: '#555', lineWidth: 1, millisPerLine: 1000, verticalSections: 4 }});
+      smoothie.addTimeSeries(dataSet1, { strokeStyle: 'rgba(255, 0, 0, 1)',   fillStyle: 'rgba(255, 0, 0, 0.2)',   lineWidth: 2 });
+      smoothie.addTimeSeries(dataSet2, { strokeStyle: 'rgba(0, 255, 0, 1)',   fillStyle: 'rgba(0, 255, 0, 0.2)',   lineWidth: 2 });
+      smoothie.addTimeSeries(dataSet3, { strokeStyle: 'rgba(0, 0, 255, 1)',   fillStyle: 'rgba(0, 0, 255, 0.2)',   lineWidth: 2 });
+      smoothie.addTimeSeries(dataSet4, { strokeStyle: 'rgba(255, 255, 0, 1)', fillStyle: 'rgba(255, 255, 0, 0.2)', lineWidth: 2 });
+      smoothie.streamTo(document.getElementById('chart'), delayMillis);
+
+    </script>
+
+
+{% endblock extra_js %}
