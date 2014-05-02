@@ -78,6 +78,12 @@ urlpatterns = patterns('',
     url(r'^nerdctrl$', 'cbeamd.views.nerdctrl'),
     url(r'^weather$', 'cbeamd.views.weather'),
     url(r'^bvg$', 'cbeamd.views.bvg'),
+    url(r'^sensors$', 'cbeamd.views.dash'),
+    url(r'^dash$', 'cbeamd.views.dash'),
+    url(r'^ceitloch$', 'cbeamd.views.ceitlochclocc'),
+    url(r'^donut$', 'cbeamd.views.donut'),
+    url(r'^reddit$', 'cbeamd.views.reddit'),
+    url(r'^welcome/(?P<user>.+)$', 'cbeamd.views.welcome'),
 )
 
 urlpatterns += patterns('', (r'^rpc/', jsonrpc_site.dispatch))

@@ -45,6 +45,7 @@ eta_timeout=120
 mqtt = mosquitto.Mosquitto("c-beam")
 mqttserver = "127.0.0.1"
 cout = ServiceProxy('http://10.0.1.13:1775/')
+ampelrpc = ServiceProxy('http://10.0.1.24:1337/')
 nerdctrl_cout = ServiceProxy('http://nerdctrl.cbrp3.c-base.org:1775/')
 cerebrum = ServiceProxy('http://10.0.1.27:7777/')
 portal = ServiceProxy('https://c-portal.c-base.org/rpc/')
@@ -133,6 +134,7 @@ def force_login(request, user):
         try: gcm_send(request, 'now boarding', user)
         except: pass
     publish("user/boarding", str(u.username))
+    #publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/welcome/%s" % str(u.username))
     if u.status == "eta":
         u.eta = ""
     oldstatus = u.status
@@ -354,6 +356,9 @@ def set_autologout(request, user, autologout):
 
 def userlist():
     return [str(user) for user in User.objects.filter(status="online").order_by('username')]
+
+def userlist_with_online_percentage():
+    return [str(user)+" ("+user.online_percentage()+"%)" for user in User.objects.filter(status="online").order_by('username')]
 
 @jsonrpc_method('available')
 def available(request):
@@ -1819,29 +1824,44 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
     if event_source_path == '/schaltergang/9':
         if new_state == 0:
             publish("nerdctrl/open", "http://www.c-base.org")
-        if new_state == 1:
+        elif new_state == 1:
             publish("nerdctrl/open", "http://logbuch.c-base.org/")
-        if new_state == 2:
+        elif new_state == 2:
             publish("nerdctrl/open", "http://c-portal.c-base.org")
-        if new_state == 3:
+        elif new_state == 3:
             publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/events")
     if event_source_path == '/schaltergang/10':
         if new_state == 0:
             publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/c-base-map")
-        if new_state == 1:
+        elif new_state == 1:
             publish("nerdctrl/open", "http://cbag3.c-base.org/artefact")
-        if new_state == 2:
+        elif new_state == 2:
             publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/missions")
-        if new_state == 3:
+        elif new_state == 3:
             publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/weather")
     if event_source_path == '/schaltergang/11':
         if new_state == 0:
             publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/bvg")
+        elif new_state == 1:
+            publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/sensors")
+        elif new_state == 2:
+            publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/rickshaw/examples/fixed.html")
         else:
             publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/nerdctrl")
-
     if event_source_path == '/schaltergang/12':
+        if new_state == 0:
+            publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/ceitloch")
+        elif new_state == 1:
+            publish("nerdctrl/open", "http://visibletweets.com/#query=@cbase&animation=2")
+        elif new_state == 2:
+            publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/reddit")
+        else:
+            publish("nerdctrl/open", "http://vimeo.com/cbase/videos")
+
+    if event_source_path == '/schaltergang/13':
         print nerdctrl_cout.tts('julia', 'huch!') 
+    if event_source_path == '/schaltergang/14':
+        print nerdctrl_cout.tts('julia', 'ACHTUNG! ALLES TURISTEN UND NONTEKNISCHEN LOOKENPEEPERS! DAS KOMPUTERMASCHINE IST NICHT FUER DER GEFINGERPOKEN UND MITTENGRABEN!') 
     if event_source_path == '/schaltergang/15':
         print nerdctrl_cout.tts('julia', 'finger weg!') 
     if event_source_path == '/schaltergang/18':
@@ -1889,7 +1909,7 @@ def notify_bar_closing():
 
 def publish(topic, payload):
     try:
-        mqtt.connect(mqttserver) 
+        mqtt.connect(mqttserver)
         mqtt.publish(topic, payload)
     except: pass
 
@@ -1958,3 +1978,46 @@ def weather(request):
 def bvg(request):
     return render_to_response('cbeamd/bvg.django', {})
 
+def welcome(request, user):
+    return render_to_response('cbeamd/welcome.django', {'user': user})
+
+def sensors(request):
+    return render_to_response('cbeamd/sensors.django', {})
+
+def fakelevels():
+    levels = {}
+    levels['oxygen'] = random.choice(['kritisch', 'bedenklich', 'N/A', 'ööhm'])
+    levels['carbon'] = random.choice(['eher so mittel', 'kuschelig', '0.234254 CE/m^3'])
+    levels['conscience'] = random.choice(['entspannt', 'erweitert', 'erheitert', 'passt schon'])
+    return levels;
+
+def dash(request):
+    al = ActivityLog.objects.order_by('-timestamp')[:20]
+    rev = list(al)
+    rev.reverse()
+    return render_to_response('cbeamd/dash.django', {'activitylog': rev, 'users': userlist_with_online_percentage(), 'barstatus': get_barstatus(request), 'levels': fakelevels()})
+
+def ceitlochclocc(request):
+    return render_to_response('cbeamd/ceitloch.django', {})
+
+def donut(request):
+    return render_to_response('cbeamd/donut.django', {})
+
+@jsonrpc_method('reddit')
+def reddit(request):
+    d = feedparser.parse('http://www.reddit.com/r/cbase/.rss')
+    return render_to_response('cbeamd/reddit.django', {'entries': d['entries']})
+
+@jsonrpc_method('ampel')
+def ampel(request, red, yellow, green):
+    try: 
+        print ampelrpc.ampel(red, yellow, green)
+    except: pass
+    return "aye"
+
+@jsonrpc_method('ampelblink')
+def ampelblink(request, program):
+    try:
+        print ampelrpc.ampel(program)
+    except: pass
+    return "aye"
