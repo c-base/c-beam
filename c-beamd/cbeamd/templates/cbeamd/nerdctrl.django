@@ -4,7 +4,7 @@
 <head>
     <style type="text/css">
       body {
-        padding-top: 60px;
+        padding-top: 20px;
       }
     </style>
     <title>{% block title %}c-beam{% endblock %}</title>
@@ -43,5 +43,6 @@
 
 <script src="/static/c-base-bootstrap/js/html5slider.js"></script>
 
+{% block extra_js %}{% endblock %}
 </body>
 </html>
