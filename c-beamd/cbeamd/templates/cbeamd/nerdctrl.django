@@ -5,6 +5,7 @@
     <style type="text/css">
       body {
         padding-top: 20px;
+        background-image: url("/static/c-base-bootstrap/img/bg.jpg");
       }
     </style>
     <title>{% block title %}c-beam{% endblock %}</title>

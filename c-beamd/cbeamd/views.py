@@ -39,6 +39,8 @@ from MyHTMLParser import MyHTMLParser
 import smtplib
 from email.mime.text import MIMEText
 
+from ldapNrf24 import LdapNrf24Check
+
 hysterese = 15
 eta_timeout=120
 
@@ -821,16 +823,17 @@ def c_out_play_web(request, sound):
 @jsonrpc_method('r0ketseen')
 def r0ketseen(request, r0ketid, sensor, payload, signal):
     timestamp = 42
+    user = getr0ketuser(request, r0ketid)
+    if user:
 #    if r0ketid in data['r0ketids'].keys():
 #        #data['r0ketmap'][r0ketid] = [sensor, payload, signal, timestamp]
 #        print 'r0ket %s detected, logging in %s (%s)' % (r0ketid, data['r0ketids'][r0ketid], sensor)
-#        user = data['r0ketids'][r0ketid]
 #        data['lastlocation'][user] = sensor
-#        result = login(user)
-#    else:
-#        print 'saw unknown r0ket: %s (%s)' % (r0ketid, sensor)
+        result = login_wlan(request, user)
+    else:
+        print 'saw unknown r0ket: %s (%s)' % (r0ketid, sensor)
 #    save()
-#    return "aye"
+    return "aye"
 #
 #def getr0ketmap():
 #    return data['r0ketmap']
@@ -840,8 +843,13 @@ def r0ketseen(request, r0ketid, sensor, payload, signal):
 #    save()
 #    return "aye"
 #
-#def getr0ketuser(r0ketid):
-#    return data['r0ketids'][r0ketid]
+@jsonrpc_method('getr0ketuser')
+def getr0ketuser(request, r0ketid):
+    f = LdapNrf24Check("ldap://10.0.1.7:389/", 'ou=crew,dc=c-base,dc=org', '', '', 'nrf24', '(memberOf=cn=crew,ou=groups,dc=c-base,dc=org)')
+    m = re.search("uid=(.*?),ou.*", f.getUserForNrf24(r0ketid))
+    return m.group(1)
+    #return "ID: "+f.getUserForNrf24(r0ketid)
+    #return data['r0ketids'][r0ketid]
 
 #################################################################
 # reminder methods
@@ -1876,6 +1884,12 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
         print nerdctrl_cout.play('zugangzummastercontrollprogramm.mp3') 
     if event_source_path == '/schaltergang/23':
         print nerdctrl_cout.tts('julia', 'alles zweifelhafte muss angezweifelt werden') 
+    if event_source_path == '/schaltergang/17':
+        print nerdctrl_cout.tts('julia', 'achtung, achtung, hier spricht der bordcomputer. huhu!')
+    if event_source_path == '/schaltergang/26':
+        if new_state == 0:
+            if cerebrum_state[device_name]['/schaltergang/24'] == 0:
+                print nerdctrl_cout.play('rocket_countdown_short') 
 
 @jsonrpc_method("barstatus")
 def barstatus(request, status):
@@ -2007,6 +2021,10 @@ def donut(request):
 def reddit(request):
     d = feedparser.parse('http://www.reddit.com/r/cbase/.rss')
     return render_to_response('cbeamd/reddit.django', {'entries': d['entries']})
+
+@jsonrpc_method('barbutton')
+def barbutton(request, pressed):
+    return "aye"
 
 @jsonrpc_method('ampel')
 def ampel(request, red, yellow, green):
