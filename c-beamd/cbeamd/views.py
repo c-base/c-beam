@@ -1205,7 +1205,8 @@ def mission_list(request):
         c = RequestContext(request, {
                 'missions_available': missions_available,
                 'missions_in_progress': missions_in_progress,
-                'cuser': getuser(request.META['USER']),
+                'cuser': request.user.username,
+                #'cuser': getuser(request.META['USER']),
                 })
         c.update(csrf(request))
         return render_to_response('cbeamd/mission_list.django', c)
