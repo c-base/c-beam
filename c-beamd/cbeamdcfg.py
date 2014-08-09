@@ -12,4 +12,6 @@ timeoutdelta = 600
 ttsgreeting = "hallo %s, willkommen an bord"
 ttsenabled = 1
 sampledir = "/home/c-beam"
+mqtt_client_name = "c-beam"
+mqtt_client_password = "weiugfhoaeg8z3hO87GVH3O4VH34OVhRELBVHUAEFUVDSLIUVHhwfoiuhgwg78h43gflrewiuhaeohg2"
 # CONFIG END ########################################################################
