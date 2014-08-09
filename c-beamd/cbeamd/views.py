@@ -28,7 +28,9 @@ from LEDStripe import *
 
 from random import choice
 
-import mosquitto
+from handTranslate import HandTranslate
+
+import paho.mqtt.client as paho
 import string
 
 import os, re, feedparser, json, random
@@ -40,11 +42,12 @@ import smtplib
 from email.mime.text import MIMEText
 
 from ldapNrf24 import LdapNrf24Check
+import urllib2
 
 hysterese = 15
 eta_timeout=120
 
-mqtt = mosquitto.Mosquitto("c-beam")
+mqtt = paho.Client("c-beam")
 mqttserver = "127.0.0.1"
 cout = ServiceProxy('http://10.0.1.13:1775/')
 ampelrpc = ServiceProxy('http://10.0.1.24:1337/')
@@ -85,6 +88,8 @@ mission_assigned = "assigned"
 mission_completed = "completed"
 
 c_out_volume = 0
+
+hand = HandTranslate()
 
 def AddPadding(data, interrupt, pad, block_size):
     new_data = ''.join([data, interrupt])
@@ -1804,7 +1809,10 @@ def trafotron(request, value):
     print "trafotron: %d" % value
     newval = (value * 100) / 170
     #os.system("amixer -c 0 set Master %d%%" % newval)
-    c_leuse_c_out.setvolume(newval)
+    try:
+        print c_leuse_c_out.setvolume(newval)
+    except Exception as e:
+        print e
 
 @jsonrpc_method("cerebrumNotify")
 def cerebrumNotify(request, device_name, event_source_path, new_state):
@@ -1923,9 +1931,12 @@ def notify_bar_closing():
 
 def publish(topic, payload):
     try:
+        mqtt.username_pw_set(cfg.mqtt_client_name, password=cfg.mqtt_client_password)
         mqtt.connect(mqttserver)
         mqtt.publish(topic, payload)
-    except: pass
+    except Exception as e: 
+        print e
+        pass
 
 def create_random_password(length):
     chars = string.letters + string.digits
@@ -2028,7 +2039,7 @@ def barbutton(request, pressed):
 
 @jsonrpc_method('ampel')
 def ampel(request, red, yellow, green):
-    try: 
+    try:
         print ampelrpc.ampel(red, yellow, green)
     except: pass
     return "aye"
@@ -2039,3 +2050,22 @@ def ampelblink(request, program):
         print ampelrpc.ampel(program)
     except: pass
     return "aye"
+
+@jsonrpc_method('issues')
+def issues(request):
+    url = "https://api.github.com/repos/c-base/meta/issues?state=open"
+    issues = urllib2.urlopen(url).read()
+    return issues
+
+@jsonrpc_method('hand_help')
+def hand_help(request):
+    return hand.getHandHelp()
+
+@jsonrpc_method('hand_commands')
+def hand_commands(request):
+    return hand.getHandCommands()
+
+@jsonrpc_method('hand_translate')
+def hand_translate(request, command):
+    return hand.translate(command)
+
