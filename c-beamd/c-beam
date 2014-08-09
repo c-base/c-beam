@@ -3,7 +3,7 @@
 ### BEGIN INIT INFO
 # Provides:          c-beam daemon
 # Required-Start:    $syslog
-# Required-Stop:     $syslog
+# Required-Stop:     $syslog33
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Start c-beam daemon at boot time
