@@ -8,8 +8,8 @@
       <div class="accordion" id="user_accordion">
         {% for user in user_list_online %}
           <div class="accordion-group">
-            <div class="accordion-heading">
-              <a class="accordion-toggle btn btn-large btn-info" 
+            <div class="accordion-heading" width="100%">
+              <a class="accordion-toggle btn btn-lg btn-default btn-block" 
                   data-toggle="collapse" data-parent="#user_accordion" 
                   href="#CollapseUser{{ user.id }}" >
                 {{ user.username }} ({{user.online_percentage}}&#37;)
@@ -18,7 +18,7 @@
             <div id="CollapseUser{{ user.id }}" class="accordion-body collapse">
               <div class="accordion-inner">
                 <iframe src="https://{{ user.username }}.crew.c-base.org" width="100%" height="400px"></iframe>
-                <table>
+                <table class="table">
                   <tr><td>Username:</td><td> {{ user.username }}</td></tr>
                   <tr><td>Status:</td><td> {{ user.status }}</td></tr>
                   <tr><td>ETA:</td><td> {{ user.eta }}</td></tr>
@@ -58,7 +58,7 @@
             </div>
           </div>
         {% empty %}
-          <a class="btn btn-block btn-large btn-info"><b>momentan ist kein ETA eingetragen.</b></a>
+          <a class="btn btn-block btn-lg btn-default"><b>momentan ist kein ETA eingetragen.</b></a>
         {% endfor %}
       <h1 align="center">activitylog</h1>
       <div class="center">
