@@ -4,13 +4,13 @@
 <head>
     <style type="text/css">
       body {
-        padding-top: 60px;
         background-image: url("/static/c-base-bootstrap/img/bg.jpg");
       }
     </style>
     <title>{% block title %}c-beam{% endblock %}</title>
 
     <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -31,83 +31,78 @@
 </head>
 
 <body>
-  <div class="navbar navbar-default">
+  <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container">
       <div class="navbar-header">
-
-        <a class="btn btn-navbar" data-toggle="collapse" data-target=".navbar-collapse">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
-        </a>
-      </div>
+        </button>
         <a class="navbar-brand" href="/">c-beam</a>
-        <div class="navbar-collapse collapse navbar-responsive-collapse">
-          <ul class="nav navbar-nav">
-            {% if not user.is_anonymous %}
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown">c-info<b class="caret"></b></a>
-              <ul class="dropdown-menu">
-                <li><a href="/user/online">an bord</a></li>
-                <li><a href="/events">events</a></li>
-                <li><a href="/artefacts">artefacts</a></li>
-                <li><a href="http://c-portal.c-base.org">c-portal</a></li>
-              </ul>
-            </li>
-            <!--
-            <li><a href="https://c-portal.c-base.org">C-PORTAL</a></li>
-            <li><a href="/artefacts">ARTEFACTE</a></li>
-            <li><a href="/events">EVENTS</a></li>
-            -->
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown">c-ontrol<b class="caret"></b></a>
-              <ul class="dropdown-menu">
-                <li><a href="/c_buttons">c-no:pfe</a></li>
-                <li><a href="/c_leuse">c_leuse</a></li>
-                <li><a href="/c_out">c_out</a></li>
-              </ul>
-            </li>
-            <!-- <li><a href="/control">C-ONTROL</a></li> -->
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown">c-mission<b class="caret"></b></a>
-              <ul class="dropdown-menu">
-                <li><a href="/missions">missionen</a></li>
-                <li><a href="/stats">stats</a></li>
-                <li><a href="/activitylog">activita:t</a></li>
-              </ul>
-            </li>
-            <!--<li><a href="/missions">MISSIONEN</a></li>-->
-            <!--<li><a href="/c_out">C_OUT</a></li>-->
-            <!--<li><a href="/stats">STATS</a></li>-->
-            <!--<li><a href="/activitylog">ACTIVITA:T</a></li>-->
-            <li><a href="/profile">c-profile</a></li>
-            <li><a href="/logout">c-logout</a></li>
-            {% else %}
-            <li><a href="/login">c-login</a></li>
-            {% endif %}
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown">help<b class="caret"></b></a>
-              <ul class="dropdown-menu">
-                <li align="right"><a href="/doc">API</a></li>
-              </ul>
-            </li>
-
-          </ul>
-        </div>
+      </div>
+      <div class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+          {% if not user.is_anonymous %}
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">c-info<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="/user/online">an bord</a></li>
+              <li><a href="/events">events</a></li>
+              <li><a href="/artefacts">artefacts</a></li>
+              <li><a href="http://c-portal.c-base.org">c-portal</a></li>
+            </ul>
+          </li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">c-ontrol<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="/c_buttons">c-no:pfe</a></li>
+              <li><a href="/c_leuse">c_leuse</a></li>
+              <li><a href="/c_out">c_out</a></li>
+            </ul>
+          </li>
+          <!-- <li><a href="/control">C-ONTROL</a></li> -->
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">c-mission<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="/missions">missionen</a></li>
+              <li><a href="/stats">stats</a></li>
+              <li><a href="/activitylog">activita:t</a></li>
+            </ul>
+          </li>
+          <!--<li><a href="/missions">MISSIONEN</a></li>-->
+          <!--<li><a href="/c_out">C_OUT</a></li>-->
+          <!--<li><a href="/stats">STATS</a></li>-->
+          <!--<li><a href="/activitylog">ACTIVITA:T</a></li>-->
+          <li><a href="/profile">c-profile</a></li>
+          <li><a href="/logout">c-logout</a></li>
+          {% else %}
+          <li><a href="/login">c-login</a></li>
+          {% endif %}
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">help<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li align="right"><a href="/doc">API</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
   <div class="container">
-      {% block content %}Empty Page{% endblock %}
-      <p><hr></p>
-      <footer class="row">
-        <div class="col-md-12" style="text-align:center">
-          <div style="text-align:center"><a href="https://play.google.com/store/apps/details?id=org.c_base.c_beam"><img src="/static/android-app-on-google-play.png"></a></div>
-          <br>
-        </div>
-      </footer>
+    {% block content %}Empty Page{% endblock %}
+    <p><hr></p>
+    <footer class="row">
+      <div class="col-md-12" style="text-align:center">
+        <div style="text-align:center"><a href="https://play.google.com/store/apps/details?id=org.c_base.c_beam"><img src="/static/android-app-on-google-play.png"></a></div>
+        <br>
+      </div>
+    </footer>
 
-</div> <!-- container -->
+    </div> <!-- container -->
 
-<script src="/static/c-base-bootstrap/js/html5slider.js"></script>
+    <script src="/static/c-base-bootstrap/js/html5slider.js"></script>
 
-</body>
+  </body>
 </html>
