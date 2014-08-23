@@ -33,7 +33,7 @@ from handTranslate import HandTranslate
 import paho.mqtt.client as paho
 import string
 
-import os, re, feedparser, json, random
+import os, re, feedparser, json, random, ssl
 
 import crypto
 from MyHTMLParser import MyHTMLParser
@@ -1278,9 +1278,11 @@ def gcm_send(request, title, text):
         #users = User.objects.all()
         users = []
         return
+    now = timezone.localtime(timezone.now())
+    timestamp = "%d:%d" % (now.hour, now.minute)
     subscriptions = Subscription.objects.filter(user__in=users)
     regids = [subscription.regid for subscription in subscriptions]
-    data = {'title': title, 'text': text}
+    data = {'title': title, 'text': text, 'timestamp': timestamp}
     response = gcm.json_request(registration_ids=regids, data=data)
     return response
 
@@ -1298,9 +1300,11 @@ def gcm_send_mission(request, title, text):
 def gcm_send_test(request, title, text, username):
     gcm = GCM(apikey)
     u = getuser(username)
+    now = timezone.localtime(timezone.now())
+    timestamp = "%d:%d" % (now.hour, now.minute)
     subscriptions = Subscription.objects.filter(user=u)
     regids = [subscription.regid for subscription in subscriptions]
-    data = {'title': title, 'text': text}
+    data = {'title': title, 'text': text, 'timestamp': timestamp}
     response = gcm.json_request(registration_ids=regids, data=data)
     return response
 
@@ -1329,8 +1333,8 @@ def bluewall(request):
     return culd.bluewall(True)
 
 @jsonrpc_method('darkwall()')#, authenticated=True, validate=True)
-def darkwall(REQUEST):
-    return culd.bluewall(False)
+def darkwall(request):
+    return culd.darkwall(False)
 
 #@jsonrpc_method('hwstorage(Boolean)', authenticated=True, validate=True)
 @jsonrpc_method('hwstorage')
@@ -1933,7 +1937,12 @@ def notify_bar_closing():
 def publish(topic, payload):
     try:
         mqtt.username_pw_set(cfg.mqtt_client_name, password=cfg.mqtt_client_password)
-        mqtt.connect(mqttserver)
+        if cfg.mqtt_server_tls:
+            mqtt.tls_set(cfg.mqtt_server_cert, cert_reqs=ssl.CERT_OPTIONAL)
+            mqtt.connect(cfg.mqtt_server, port=1884)
+        else:
+            mqtt.connect(cfg.mqtt_server, port=1883)
+
         mqtt.publish(topic, payload)
     except Exception as e: 
         print e
@@ -1997,6 +2006,9 @@ def toggle_burningman(request):
 
 def nerdctrl(request):
     return render_to_response('cbeamd/nerdctrl.django', {})
+
+def cbeamviewer(request):
+    return render_to_response('cbeamd/cbeamviewer.django', {})
 
 def weather(request):
     return render_to_response('cbeamd/weather.django', {})
