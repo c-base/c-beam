@@ -4,12 +4,12 @@
 
 {% block content %}
 
-<form action="/login?next={{redirect_to}}" method="post" class="form">
+<form action="/login?next={{redirect_to}}" method="post" class="formi col-md-3">
     {% csrf_token %}
     {% bootstrap_form form %}
     {% buttons %}
         <button type="submit" class="btn btn-primary">
-            {% bootstrap_icon "star" %} Login
+            Login
         </button>
     {% endbuttons %}
 </form>

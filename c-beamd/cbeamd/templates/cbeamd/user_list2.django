@@ -3,7 +3,7 @@
 {% block content %}
 
   <div class="row">
-    <div class="span12">
+    <div class="col-md-12">
 <!--<div class="well">-->
       <h1 align="center">an bord</h1>
       <div class="accordion" id="user_accordion">

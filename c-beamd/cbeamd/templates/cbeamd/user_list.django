@@ -5,7 +5,7 @@
   <div class="row">
     <div class="col-md-12">
 <!--<div class="well">-->
-      <h1 align="center">an bord</h1>
+      <h1 align="center">AN BORD</h1>
       <div class="panel-group" id="user_accordion">
         {% for user in user_list_online %}
           <div class="panel">

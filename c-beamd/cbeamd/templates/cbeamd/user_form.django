@@ -5,33 +5,33 @@
 {% block content %}
 
   <div class="row">
-    <div class="col-md-12">
-      <div class="row-fluid">
-  <form action="/profile" method="POST" class="form">
-    {% csrf_token %}
-    <table class="table">
-      <tr>
-        <td>{% bootstrap_label 'aussprache des nicknames:' %}</td>
-        <td>{% bootstrap_field form.nickspell %}</td>
-      </tr>
-      <tr>
-        <td>{% bootstrap_label 'autologout nach:' %}</td>
-        <td>{% bootstrap_field form.autologout %} min.</td>
-      </tr>
-      <tr>
-        <td>{% bootstrap_label 'c-game stats aktivieren:' %}</td>
-        <td>{% bootstrap_field form.stats_enabled %}</td>
-      </tr>
-      <tr>
-        <td>{% bootstrap_label 'keine informationen über google cloud messaging versenden:' %}</td>
-        <td>{% bootstrap_field form.no_google %}</td>
-      </tr>
-    </table>
-    <br>
-    <button class="btn" type="submit">speichern</button>
-  </form>
-</div>
-</div>
-</div>
+    <div class="col-md-2">
+    </div>
+    <div class="col-md-6">
+        <form action="/profile" method="POST" class="form">
+          {% csrf_token %}
+          <table class="table">
+            <tr>
+              <td>{% bootstrap_label 'aussprache des nicknames:' %}</td>
+              <td>{% bootstrap_field form.nickspell %}</td>
+            </tr>
+            <tr>
+              <td>{% bootstrap_label 'autologout nach:' %}</td>
+              <td>{% bootstrap_field form.autologout %} min.</td>
+            </tr>
+            <tr>
+              <td>{% bootstrap_label 'c-game stats aktivieren:' %}</td>
+              <td>{% bootstrap_field form.stats_enabled %}</td>
+            </tr>
+            <tr>
+              <td>{% bootstrap_label 'keine informationen über google cloud messaging versenden:' %}</td>
+              <td>{% bootstrap_field form.no_google %}</td>
+            </tr>
+          </table>
+          <br>
+          <button class="btn btn-default btn-lg" type="submit">speichern</button>
+        </form>
+    </div>
+  </div>
 
 {% endblock%}

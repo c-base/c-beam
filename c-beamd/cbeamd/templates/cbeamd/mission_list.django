@@ -7,7 +7,7 @@
       <h1 align="center">OFFENE MISSIONEN</h1>
       <div class="panel-group" id="mission_accordion">
         {% for mission in missions_available %}
-          <div class="panel panel-default">
+          <div class="panel">
               <a class="panel-heading btn btn-lg btn-default btn-block" 
                   data-toggle="collapse" data-parent="#mission_accordion" 
                   href="#CollapseMission{{ mission.id }}" >

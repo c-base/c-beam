@@ -3,7 +3,7 @@
 {% block content %}
 
      <div class="row">
-        <div class="span12">
+        <div class="col-md-12">
            <h1 align="center">C-ONTROL</h1>
            <a class="btn btn-block btn-large btn-info" href="/control/softwareendlager"><b>Software-Endlager</b></a>
            <a class="btn btn-block btn-large btn-info" href="/control/"><b>Erde absprengen</b></a>
