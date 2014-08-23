@@ -19,11 +19,10 @@
           <div>user@c-beam&gt;&nbsp;<blink>_</blink></div>
       </div>
       <div class="col-md-6 terminal transparent">
-          <h4>bar-status</h4>
           {% if barstatus %}
-              <div class="btn btn-success"><h4>bar open</h4></div>
+              <div class="btn btn-success btn-block"><h4>bar open</h4></div>
           {% else %}
-              <div class="btn btn-danger"><h4>bar closed</h4></div>
+              <div class="btn btn-danger btn-block"><h4>bar closed</h4></div>
           {% endif %}
       </div>
 <!--
@@ -74,8 +73,8 @@
           {% endfor %}
           <div>user@c-beam&gt;&nbsp;<blink>_</blink></div>
       </div>
--->
   </div>
+-->
 
 
 {% endblock content%}
