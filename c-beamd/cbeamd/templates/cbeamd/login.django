@@ -1,13 +1,17 @@
 {% extends 'cbeamd/base.django' %}
 
+{% load bootstrap3 %}
+
 {% block content %}
 
-<form class="form-horizontal" action="/login?next={{redirect_to}}" method="post">
-  {% csrf_token %}
-  {{form.as_p}}
-  <div class="form-actions">
-    <input class="btn" type="submit" value="login" />
-  </div>
+<form action="/login?next={{redirect_to}}" method="post" class="form">
+    {% csrf_token %}
+    {% bootstrap_form form %}
+    {% buttons %}
+        <button type="submit" class="btn btn-primary">
+            {% bootstrap_icon "star" %} Login
+        </button>
+    {% endbuttons %}
 </form>
 
 {% endblock content %}

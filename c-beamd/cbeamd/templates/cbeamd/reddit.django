@@ -3,30 +3,27 @@
 {% block content %}
 
   <div class="row">
-    <div class="span12">
+    <div class="col-md-12">
       <h1 align="center">REDDIT POSTS</h1>
       <br>
 
-      <div class="accordion" id="entry_accordion">
+      <div class="panel-group" id="entry_accordion">
         {% for entry in entries %}
-          <div class="accordion-group">
-            <div class="accordion-heading">
-              <div class="accordion-toggle btn btn-large btn-info">
+          <div class="panel panel-default">
+              <div class="panel-heading btn btn-lg btn-default btn-block">
                 <b>{{ entry.title }}</b><br><br>
                 <div align="left">
                   {% autoescape off %}
                     {{ entry.summary_detail.value }}
                   {% endautoescape %}
                 </div>
-              </div>
             </div>
-            <div id="CollapseMission{{ entry.id }}" class="accordion-body collapse">
-              <div class="accordion-inner">
-              </div>
+            <div id="CollapseMission{{ entry.id }}" class="panel-collapse collapse">
+            
             </div>
           </div>
         {% empty %}
-          <a class="btn btn-block btn-large btn-info"><b>zur zeit sind keine reddit posts verfu:gbar.</b></a>
+          <a class="btn btn-block btn-lg btn-default btn-block"><b>zur zeit sind keine reddit posts verfu:gbar.</b></a>
         {% endfor %}
       </div>
     </div>

@@ -1,20 +1,23 @@
 {% extends "cbeamd/base.django" %}
 
+{% load bootstrap3 %}
+
 {% block content %}
 
   <div class="row">
     <div class="col-md-12">
       <div class="row-fluid">
-  <form action="/profile" method="POST" class="form-horizontal">
+  <form action="/profile" method="POST" class="form">
     {% csrf_token %}
+    {% bootstrap_form form %}
     <table class="table">
       <tr>
-        <td><label>aussprache des nicknames:</label></td>
-        <td>{{ form.nickspell }}</td>
+        <td>{% bootstrap_label form.nickspell %}</td>
+        <td>{% bootstrap_field form.nickspell %}</td>
       </tr>
       <tr>
         <td><label>autologout nach:</label></td>
-        <td>{{ form.autologout }} min.</td>
+        <td>{% bootstrap_field form.autologout %} min.</td>
       </tr>
       <tr>
         <td><label>c-game stats aktivieren:</label></td>

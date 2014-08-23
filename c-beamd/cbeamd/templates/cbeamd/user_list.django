@@ -33,7 +33,7 @@
       <div class="panel-group" id="eta_accordion">
         {% for user in user_list_eta %}
           <div class="panel">
-            <a class="accordion-toggle btn btn-lg btn-default" 
+            <a class="accordion-toggle btn btn-lg btn-default btn-block" 
                 data-toggle="collapse" data-parent="#user_accordion" 
                 href="#CollapseUser{{ user.id }}" >
               {{ user.username }} ({{user.eta}})

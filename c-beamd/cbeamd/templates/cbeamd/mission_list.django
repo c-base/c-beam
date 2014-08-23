@@ -8,7 +8,7 @@
       <div class="panel-group" id="mission_accordion">
         {% for mission in missions_available %}
           <div class="panel panel-default">
-              <a class="btn btn-lg btn-default btn-block" 
+              <a class="panel-heading btn btn-lg btn-default btn-block" 
                   data-toggle="collapse" data-parent="#mission_accordion" 
                   href="#CollapseMission{{ mission.id }}" >
                 {{ mission.short_description }} ({{ mission.ap }} AP)
