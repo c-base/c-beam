@@ -14,7 +14,9 @@
               {{ event.title }} ({{ event.start }}-{{ event.end }})
             </a>
             <div id="CollapseEvent{{ event.id }}" class="panel-collapse collapse">
-              {{ event.description }}
+              <div class="terminal">
+                {{ event.description }}
+              </div>
             </div>
           </div>
         {% empty %}

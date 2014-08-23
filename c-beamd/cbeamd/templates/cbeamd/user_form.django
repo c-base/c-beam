@@ -9,23 +9,22 @@
       <div class="row-fluid">
   <form action="/profile" method="POST" class="form">
     {% csrf_token %}
-    {% bootstrap_form form %}
     <table class="table">
       <tr>
-        <td>{% bootstrap_label form.nickspell %}</td>
+        <td>{% bootstrap_label 'aussprache des nicknames:' %}</td>
         <td>{% bootstrap_field form.nickspell %}</td>
       </tr>
       <tr>
-        <td><label>autologout nach:</label></td>
+        <td>{% bootstrap_label 'autologout nach:' %}</td>
         <td>{% bootstrap_field form.autologout %} min.</td>
       </tr>
       <tr>
-        <td><label>c-game stats aktivieren:</label></td>
-        <td>{{ form.stats_enabled }}</td>
+        <td>{% bootstrap_label 'c-game stats aktivieren:' %}</td>
+        <td>{% bootstrap_field form.stats_enabled %}</td>
       </tr>
       <tr>
-        <td><label>do not send any information via google cloud messaging:</label></td>
-        <td>{{ form.no_google }}</td>
+        <td>{% bootstrap_label 'keine informationen über google cloud messaging versenden:' %}</td>
+        <td>{% bootstrap_field form.no_google %}</td>
       </tr>
     </table>
     <br>

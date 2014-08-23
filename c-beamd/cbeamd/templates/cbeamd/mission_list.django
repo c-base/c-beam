@@ -14,6 +14,7 @@
                 {{ mission.short_description }} ({{ mission.ap }} AP)
               </a>
             <div id="CollapseMission{{ mission.id }}" class="panel-collapse collapse">
+              <div class="terminal">
                 {{ mission.description }}
                  <br><br>
                 <div align="right">
@@ -22,6 +23,7 @@
                   {% else %}
                   {% endif %}
                   <a href="/missions/{{ mission.id }}/assign" class="btn btn-primary">Mission annehmen</a>
+               </div>
               </div>
             </div>
           </div>
@@ -34,18 +36,16 @@
   <div class="row">
     <div class="col-md-12">
       <h1 align="center">LAUFENDE MISSIONEN</h1>
-      <div class="accordion" id="mission_accordion">
+      <div class="panel-group" id="mission_accordion">
         {% for mission in missions_in_progress %}
-          <div class="accordion-group">
-            <div class="accordion-heading">
-              <a class="accordion-toggle btn btn-lg btn-default btn-block" 
+          <div class="panel">
+              <a class="panel-heading btn btn-lg btn-default btn-block" 
                   data-toggle="collapse" data-parent="#mission_accordion" 
                   href="#CollapseMission{{ mission.id }}" >
                 {{ mission.short_description }} ({{ mission.ap }} AP)
               </a>
-            </div>
-            <div id="CollapseMission{{ mission.id }}" class="accordion-body collapse">
-              <div class="accordion-inner">
+            <div id="CollapseMission{{ mission.id }}" class="panel-collapse collapse">
+              <div class="terminal">
                 {{ mission.description }}
                  <br><br>
                 Member:
