@@ -123,7 +123,8 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'cbeamd',
     'south',
-    'bootstrap_toolkit',
+    #'bootstrap_toolkit',
+    'bootstrap3',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:

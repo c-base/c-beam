@@ -4,6 +4,8 @@ from django.contrib.auth import authenticate
 from cbeamd.models import Mission
 from cbeamd.models import User
 
+from django.utils.translation import ugettext_lazy as _
+
 class LoginForm( forms.Form ):
     username = forms.CharField( max_length=255 )
     password = forms.CharField( max_length=255, widget=forms.PasswordInput )
@@ -30,6 +32,12 @@ class UserForm( forms.ModelForm ):
     class Meta:
         model = User
         fields = ['nickspell', 'stats_enabled', 'autologout', 'no_google']
+        labels = {
+            'nickspell': 'foo',
+            'stats_enabled': 'foo',
+            'autologout': 'foo',
+            'no_google': 'foo',
+        }
         widgets = {
         }
 
