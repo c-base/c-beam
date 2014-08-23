@@ -1,6 +1,6 @@
 {% extends "cbeamd/base.django" %}
 
-{% load bootstrap_toolkit %}
+{% load bootstrap3 %}
 
 {% block content %}
 
