@@ -4,6 +4,7 @@
 <head>
     <style type="text/css">
       body {
+        padding-top: 40px;
         background-image: url("/static/c-base-bootstrap/img/bg.jpg");
       }
     </style>
