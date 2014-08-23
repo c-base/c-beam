@@ -32,17 +32,17 @@
 </head>
 
 <body>
-  <div class="navbar-nav">
-      <div class="container">
+  <div class="navbar navbar-default">
+      <div class="navbar-header">
 
         <a class="btn btn-navbar" data-toggle="collapse" data-target=".navbar-collapse">
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </a>
-        <!--<div class="logo"></div>-->
-        <a class="brand" href="/">c-beam</a>
-        <div class="navbar-collapse">
+      </div>
+        <a class="navbar-brand" href="/">c-beam</a>
+        <div class="navbar-collapse collapse navbar-responsive-collapse">
           <ul class="nav navbar-nav">
             {% if not user.is_anonymous %}
             <li class="dropdown">

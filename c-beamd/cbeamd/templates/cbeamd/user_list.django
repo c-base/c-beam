@@ -3,14 +3,14 @@
 {% block content %}
 
   <div class="row">
-    <div class="span12">
+    <div class="col-md-12">
 <!--<div class="well">-->
       <h1 align="center">an bord</h1>
       <div class="accordion" id="user_accordion">
         {% for user in user_list_online %}
           <div class="accordion-group">
             <div class="accordion-heading">
-              <a class="accordion-toggle btn btn-large btn-info" 
+              <a class="accordion-toggle btn btn-lg btn-default btn-block" 
                   data-toggle="collapse" data-parent="#user_accordion" 
                   href="#CollapseUser{{ user.id }}" >
                 {{ user.username }} ({{user.online_percentage}}&#37;)
@@ -31,14 +31,14 @@
             </div>
           </div>
         {% empty %}
-          <a class="btn btn-block btn-large btn-info"><b>Niemand angemeldet.</b></a>
+          <a class="btn btn-block btn-lg btn-default btn-block"><b>Niemand angemeldet.</b></a>
         {% endfor %}
       <h1 align="center">ETA</h1>
       <div class="accordion" id="user_accordion">
         {% for user in user_list_eta %}
           <div class="accordion-group">
             <div class="accordion-heading">
-              <a class="accordion-toggle btn btn-large btn-info" 
+              <a class="accordion-toggle btn btn-lg btn-default" 
                   data-toggle="collapse" data-parent="#user_accordion" 
                   href="#CollapseUser{{ user.id }}" >
                 {{ user.username }} ({{user.eta}})
@@ -59,13 +59,14 @@
             </div>
           </div>
         {% empty %}
-          <a class="btn btn-block btn-large btn-info"><b>momentan ist kein ETA eingetragen.</b></a>
+          <a class="btn btn-block btn-lg btn-default"><b>momentan ist kein ETA eingetragen.</b></a>
         {% endfor %}
 
       </div>
 <!--</div>-->
     </div> 
   </div>
+  <br>
 
 {% endblock content%}
 

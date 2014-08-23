@@ -10,7 +10,7 @@
         {% for event in event_list %}
           <div class="accordion-group">
             <div class="accordion-heading">
-              <a class="accordion-toggle btn btn-large btn-info" 
+              <a class="accordion-toggle btn btn-lg btn-default btn-block" 
                   data-toggle="collapse" data-parent="#event_accordion" 
                   href="#CollapseEvent{{ event.id }}" >
                 {{ event.title }} ({{ event.start }}-{{ event.end }})
@@ -23,7 +23,7 @@
             </div>
           </div>
         {% empty %}
-          <a class="btn btn-block btn-large btn-info"><b>fu:r heute sind leider keine events eingetragen</b></a>
+          <a class="btn btn-block btn-lg btn-default btn-block"><b>fu:r heute sind leider keine events eingetragen</b></a>
         {% endfor %}
       </div>
 <!--</div>-->
