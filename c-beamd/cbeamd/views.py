@@ -138,7 +138,7 @@ def force_login(request, user):
     except:
         pass
     if not u.no_google:
-        try: gcm_send(request, 'now boarding', user)
+        try: gcm_send(request, 'now boarding', u.username)
         except: pass
     publish("user/boarding", str(u.username))
     #publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/welcome/%s" % str(u.username))
