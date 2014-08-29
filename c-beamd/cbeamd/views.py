@@ -725,6 +725,7 @@ def setvolume(request, volume):
     """
     set c_out volume to volume
     """
+    print volume
     return cout.setvolume(volume)
 
 @jsonrpc_method('getvolume')
@@ -1330,11 +1331,13 @@ def smile(request):
 
 @jsonrpc_method('bluewall()')#, authenticated=True, validate=True)
 def bluewall(request):
-    return culd.bluewall(True)
+    #return culd.bluewall(True)
+    return "culd not available"
 
 @jsonrpc_method('darkwall()')#, authenticated=True, validate=True)
 def darkwall(request):
-    return culd.darkwall(False)
+    #return culd.darkwall(False)
+    return "culd not available"
 
 #@jsonrpc_method('hwstorage(Boolean)', authenticated=True, validate=True)
 @jsonrpc_method('hwstorage')
@@ -1344,12 +1347,13 @@ def hwstorage(request):
     #if hwstorage_state == "open":
         #return
     #hwstorage_state = "open"
-    culd.hwstorage(True)
-    culd.hwstorage(True)
+    #culd.hwstorage(True)
+    #culd.hwstorage(True)
     def close():
-        culd.hwstorage(False)
-        culd.hwstorage(False)
+        #culd.hwstorage(False)
+        #culd.hwstorage(False)
         #hwstorage_state = "closed"
+        pass
     timer = Timer(30.0, close)
     timer.start()
     return "aye"
