@@ -20,7 +20,6 @@
     <!-- <script src="/static/c-base-bootstrap/js/bootstrap-dropdown.js"></script> -->
     <link href="/static/c-base-bootstrap/css/cyborg.css" rel="stylesheet" type="text/css" />
     <script src="/static/c-base-bootstrap/js/bootstrap.js"></script>
-    <link href="/static/c-base-bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
     <link href="/static/c-base-bootstrap/css/bootstrap.custom.css" rel="stylesheet">
     <!-- link rel="shortcut icon" href="ico/favicon.ico" -->
     <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/static/c-beam-touch-icon-144-precomposed.png">
@@ -38,7 +37,6 @@
     <p><hr></p>
     <footer class="row">
     </footer>
-
 </div> <!-- container -->
 
 <script src="/static/c-base-bootstrap/js/html5slider.js"></script>

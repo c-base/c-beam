@@ -20,7 +20,6 @@
     <!--<script src="/static/c-base-bootstrap/js/bootstrap-dropdown.js"></script>-->
     <link href="/static/c-base-bootstrap/css/cyborg.css" rel="stylesheet" type="text/css" />
     <script src="/static/c-base-bootstrap/js/bootstrap.js"></script>
-    <link href="/static/c-base-bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
     <link href="/static/c-base-bootstrap/css/bootstrap.custom.css" rel="stylesheet">
     <!-- link rel="shortcut icon" href="ico/favicon.ico" -->
     <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/static/c-beam-touch-icon-144-precomposed.png">
@@ -53,6 +52,8 @@
               <li><a href="/events">events</a></li>
               <li><a href="/artefacts">artefacts</a></li>
               <li><a href="http://c-portal.c-base.org">c-portal</a></li>
+              <li><a href="/weather">weather</a></li>
+              <li><a href="/bvg">bvg</a></li>
             </ul>
           </li>
           <li class="dropdown">
@@ -76,6 +77,12 @@
           <!--<li><a href="/c_out">C_OUT</a></li>-->
           <!--<li><a href="/stats">STATS</a></li>-->
           <!--<li><a href="/activitylog">ACTIVITA:T</a></li>-->
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">c-ocial<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="/reddit">reddit</a></li>
+            </ul>
+          </li>
           <li><a href="/profile">c-profile</a></li>
           <li><a href="/logout">c-logout</a></li>
           {% else %}
