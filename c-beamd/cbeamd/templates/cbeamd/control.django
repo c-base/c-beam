@@ -5,11 +5,8 @@
      <div class="row">
         <div class="col-md-12">
            <h1 align="center">C-ONTROL</h1>
-           <a class="btn btn-block btn-large btn-info" href="/control/softwareendlager"><b>Software-Endlager</b></a>
            <a class="btn btn-block btn-large btn-info" href="/control/"><b>Erde absprengen</b></a>
            <a class="btn btn-block btn-large btn-info" href="/control/"><b>Erde abstossen</b></a>
-           <a class="btn btn-block btn-large btn-info" href="/control/"><b>Bluewall</b></a>
-           <a class="btn btn-block btn-large btn-info" href="/control/"><b>Darkwall</b></a>
            <h1 align="center">C_LEUSEN-LED PATTERN</h1>
            <a class="btn btn-block btn-large btn-info" href="/control/set_stripe_pattern/0/"><b>Off</b></a>
            <a class="btn btn-block btn-large btn-info" href="/control/set_stripe_pattern/1/"><b>Rainbow</b></a>

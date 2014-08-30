@@ -18,13 +18,13 @@
            <a class="btn btn-block btn-lg btn-default btn-block" href="/c_leuse/set_stripe_pattern/9/"><b>Roter Punkt</b></a>
            <br>
            <div align="center">
-               <a class="btn btn-lg btn-default btn-block" href="/c_leuse/set_stripe_speed/-9"><b>-9</b></a>
-               <a class="btn btn-lg btn-default btn-block" href="/c_leuse/set_stripe_speed/-6"><b>-6</b></a>
-               <a class="btn btn-lg btn-default btn-block" href="/c_leuse/set_stripe_speed/-3"><b>-3</b></a>
-               <a class="btn btn-lg btn-default btn-block" href="/c_leuse/set_stripe_speed/0"><b>0</b></a>
-               <a class="btn btn-lg btn-default btn-block" href="/c_leuse/set_stripe_speed/3"><b>+3</b></a>
-               <a class="btn btn-lg btn-default btn-block" href="/c_leuse/set_stripe_speed/6"><b>+6</b></a>
-               <a class="btn btn-lg btn-default btn-block" href="/c_leuse/set_stripe_speed/9"><b>+9</b></a>
+               <a class="btn btn-lg btn-default" href="/c_leuse/set_stripe_speed/-9"><b>-9</b></a>
+               <a class="btn btn-lg btn-default" href="/c_leuse/set_stripe_speed/-6"><b>-6</b></a>
+               <a class="btn btn-lg btn-default" href="/c_leuse/set_stripe_speed/-3"><b>-3</b></a>
+               <a class="btn btn-lg btn-default" href="/c_leuse/set_stripe_speed/0"><b>0</b></a>
+               <a class="btn btn-lg btn-default" href="/c_leuse/set_stripe_speed/3"><b>+3</b></a>
+               <a class="btn btn-lg btn-default" href="/c_leuse/set_stripe_speed/6"><b>+6</b></a>
+               <a class="btn btn-lg btn-default" href="/c_leuse/set_stripe_speed/9"><b>+9</b></a>
            </div>
         </div>
     </div>
