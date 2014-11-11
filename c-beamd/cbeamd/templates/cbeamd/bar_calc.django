@@ -1,0 +1,142 @@
+{% extends "cbeamd/bar.django" %}
+{% block content %}
+
+<style>
+    table.center {
+        margin-left:auto;
+        margin-right:auto;
+    }
+    .btn-fixed {
+        width: 134px;
+        height: 90px;
+    }
+    #display {
+        text-align: right;
+        vertical-align: text-center;
+        font-size: 120px;
+        padding-top: 90px;
+        padding-right: 20px;
+        color: #00AA00;
+        background-color: #000000;
+        height: 100px;
+        box-sizing: content-box !important;
+        border-radius: 5px;
+    }
+    .counter {
+        text-align: center;
+        font-size: 3em;
+        padding-top: 10px;
+    }
+    .btn-block {
+        height: 60px;
+        font-size: 2em;
+    }
+    .btn-high {
+    }
+    td.counter {
+        vertical-align: text-top;
+        text-align: center;
+    }
+table {
+    border-collapse: collapse;
+}
+td {
+   height: 4px;
+   vertical-align: text-top;
+}
+</style>
+
+<script>
+    var sum = 0.0;
+    var value_count = {
+      70: 0,
+      130: 0,
+      150: 0,
+      170: 0,
+      200: 0,
+      250: 0,
+    };
+
+    function add(value) {
+        sum += value;
+        value_count[value]++;
+        set_display();
+    }
+    function subtract(value) {
+        if (value_count[value] > 0) {
+            sum -= value;
+            value_count[value]--;
+        }
+        set_display();
+    }
+    function set_display() {
+        document.getElementById('display').innerHTML = (sum / 100).toFixed(2);
+        for (var key in value_count) {
+            console.debug(''+key);
+            document.getElementById(''+key).innerHTML = value_count[key];
+        }
+
+    }
+
+    function reset() {
+        sum = 0.0;
+        value_count = {
+          70: 0,
+          130: 0,
+          150: 0,
+          170: 0,
+          200: 0,
+          250: 0,
+        };
+        set_display();
+    }
+
+</script>
+
+
+<table class="center">
+<tr>
+    <td>Member Wasser</td>
+    <td>Member Bier<br>Member antialk.</td>
+    <td>Alien Wasser</td>
+    <td>Member Coca Cola</td>
+    <td>Alien antialk.<br>Alien 0,33</td>
+    <td>Alien Bier</td>
+</tr>
+<tr>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="add(70)">+0,70</button></td>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="add(130)">+1,30</button></td>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="add(150)">+1,50</button></td>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="add(170)">+1,70</button></td>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="add(200)">+2,00</button></td>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="add(250)">+2,50</button></td>
+</tr>
+<tr>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="subtract(70)">-0,70</button></td>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="subtract(130)">-1,30</button></td>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="subtract(150)">-1,50</button></td>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="subtract(170)">-1,70</button></td>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="subtract(200)">-2,00</button></td>
+    <td><button type="submit" class="btn btn-default btn-lg btn-fixed" onclick="subtract(250)">-2,50</button></td>
+</tr>
+<tr>
+    <td><div class="counter" id="70">0</div></td>
+    <td><div class="counter" id="130">0</div></td>
+    <td><div class="counter" id="150">0</div></td>
+    <td><div class="counter" id="170">0</div></td>
+    <td><div class="counter" id="200">0</div></td>
+    <td><div class="counter" id="250">0</div></td>
+</tr>
+</table>
+<br>
+<div id="display">0.00</div>
+<button type="submit" class="btn btn-danger btn-block" onclick="reset()">CLEAR</button>
+<br>
+<table class="center" width="100%">
+    <tr>
+        <td><a href="https://c-beam.cbrp3.c-base.org/bar/preise" class="btn btn-default btn-lg btn-block btn-high">GETRA:NKELISTE</a></td>
+        <td><a href="https://c-beam.cbrp3.c-base.org/bar/abrechnung" class="btn btn-default btn-lg btn-block">ABRECHNUNG</a></td>
+    </tr>
+</table>
+
+{% endblock content%}

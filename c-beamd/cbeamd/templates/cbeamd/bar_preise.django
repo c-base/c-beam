@@ -1,0 +1,64 @@
+{% extends "cbeamd/bar.django" %}
+{% block content %}
+
+<style>
+    table.center {
+        margin-left:auto;
+        margin-right:auto;
+    }
+    .btn-fixed {
+        width: 134px;
+        height: 90px;
+    }
+    #display {
+        text-align: right;
+        vertical-align: text-center;
+        font-size: 120px;
+        padding-top: 90px;
+        padding-right: 20px;
+        color: #00AA00;
+        background-color: #000000;
+        height: 100px;
+        box-sizing: content-box !important;
+        border-radius: 5px;
+    }
+    .counter {
+        text-align: center;
+        font-size: 3em;
+        padding-top: 10px;
+    }
+    .btn-block {
+        height: 60px;
+        font-size: 2em;
+    }
+    td.counter {
+        vertical-align: text-top;
+        text-align: center;
+    }
+table {
+    border-collapse: collapse;
+}
+td {
+   height: 4px;
+   vertical-align: text-top;
+}
+</style>
+
+<table class='.table table table-striped table-condensed table-hover' style="font-size: 1.1em;">
+    <thead>
+        <tr><th>Getränk</th><th>ltr.</th><th>%Vol</th><th>crew</th><th>alien</th></tr>
+    </thead>
+    {% for price in prices %}
+        <tr><td>{{ price.0 }}</td><td>{{ price.1 }}</td><td>{{ price.2 }}</td><td>{{ price.3 }}</td><td>{{ price.4 }}</td></tr>
+    {% empty %}
+    {% endfor %}
+</table>
+
+<table class="center" width="100%">
+    <tr>
+        <td><a href="" class="btn btn-default btn-lg btn-block">GETRA:NKELISTE</a></td>
+        <td><a href="" class="btn btn-default btn-lg btn-block">ABRECHNUNG</a></td>
+    </tr>
+</table>
+
+{% endblock content%}
