@@ -11,6 +11,7 @@ from jsonrpc.proxy import ServiceProxy
 import cbeamdcfg as cfg
 from ddate import DDate
 from urllib import urlopen
+import csv
 
 from django.template import Context, loader
 from django.http import HttpResponse,HttpResponseRedirect
@@ -25,6 +26,8 @@ from django.core.context_processors import csrf
 from django.views.decorators.csrf import csrf_exempt
 from gcm import GCM
 from LEDStripe import *
+import json
+import logging
 
 from random import choice
 
@@ -44,6 +47,7 @@ from email.mime.text import MIMEText
 from ldapNrf24 import LdapNrf24Check
 import urllib2
 
+logger = logging.getLogger('cbeam')
 hysterese = 15
 eta_timeout=120
 
@@ -121,6 +125,9 @@ def login(request, user):
     """
     login in to c-beam
     """
+    if user == 'nerdbeere':
+        return
+
     u = getuser(user)
     if u.logouttime + timedelta(seconds=hysterese) > timezone.now():
         return reply(request, "hysterese")
@@ -140,7 +147,9 @@ def force_login(request, user):
     if not u.no_google:
         try: gcm_send(request, 'now boarding', u.username)
         except: pass
-    publish("user/boarding", str(u.username))
+    payload = {'user': str(u.username), 'timestamp': timezone.localtime(timezone.now()).strftime("%H:%M")}
+    publish("user/boarding", json.dumps(payload))
+
     #publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/welcome/%s" % str(u.username))
     if u.status == "eta":
         u.eta = ""
@@ -211,7 +220,8 @@ def force_logout(request, user):
         monitord.logout(u.username)
     except:
         pass
-    publish("user/leaving", u.username)
+    payload = {'user': str(u.username), 'timestamp': timezone.localtime(timezone.now()).strftime("%H:%M")}
+    publish("user/leaving", json.dumps(payload))
     oldstatus = u.status
     u.status = "offline"
     u.logouttime = timezone.now()
@@ -236,9 +246,11 @@ def login_wlan(request, user):
     u = getuser(user)
     if u.stealthmode > timezone.now():
         return "user in stealth mode"
-    if is_logged_in(user):
+    if is_logged_in(u.username):
+        logger.debug('extend user: %s' % user)
         extend(user)
     else:
+        logger.debug('login user: %s' % user)
         if u.logouttime + timedelta(minutes=30) < timezone.now():
             login(request, user)
         else:
@@ -273,9 +285,9 @@ def welcometts(request, user):
     #else:
     if getnickspell(request, user) != "NONE":
         if user == "kristall":
-            tts(request, "julia", "a loa crew")
+            tts(request, "Julia", "a loa crew")
         else:
-            tts(request, "julia", cfg.ttsgreeting % getnickspell(request, user))
+            tts(request, "Julia", cfg.ttsgreeting % getnickspell(request, user))
 
 #################################################################
 # User Handling
@@ -436,7 +448,7 @@ def eta(request, user, text):
     hour = int(etatime[0:2])
     minute = int(etatime[2:4])
 
-    tts(request, "julia", "E.T.A. %s: %d Uhr %d ." % (getnickspell(request, user), hour, minute))
+    tts(request, "Julia", "E.T.A. %s: %d Uhr %d ." % (getnickspell(request, user), hour, minute))
     return seteta(request, user, eta)
 
 @jsonrpc_method('seteta')
@@ -476,7 +488,9 @@ def seteta(request, user, eta):
         if not u.no_google:
             try: gcm_send(request, 'ETA', '%s (%s)' % (user, eta))
             except: pass
-        publish("user/eta", '%s (%s)' % (user, eta))
+        payload = {'user': str(u.username), 'timestamp': timezone.localtime(timezone.now()).strftime("%H:%M"), 'eta': eta}
+        publish("user/eta", json.dumps(payload))
+        #publish("user/eta", '%s (%s)' % (user, eta))
         log_stats()
         return 'eta_set'
 
@@ -1805,9 +1819,18 @@ def c_out_volume_set(request, volume):
     return HttpResponse(json.dumps({'result': "OK"}), mimetype="application/json")
 
 @jsonrpc_method('barschnur')
-def barschnur(request, position, state):
-    print position
-    print state
+def barschnur(request, pizza, sushi, inder):
+    publish("bar/schnur", "%d, %d, %d" % (pizza, sushi, inder))
+
+    if pizza == 0 and sushi == 1 and inder == 1:
+        #publish("c_out/play", "pizza")
+        publish("c_out/announce", "eine pizza-bestellung wartet an der bar")
+    if pizza == 1 and sushi == 0 and inder == 1:
+        #publish("c_out/play", "sushi")
+        publish("c_out/announce", "eine sushi-bestellung wartet an der bar")
+    if pizza == 1 and sushi == 1 and inder == 0:
+        #publish("c_out/play", "inder")
+        publish("c_out/announce", "eine inder-bestellung wartet an der bar")
 
 @jsonrpc_method('c_portal.notify')
 def c_portal_notify(request, notification):
@@ -1884,11 +1907,11 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
             publish("nerdctrl/open", "http://vimeo.com/cbase/videos")
 
     if event_source_path == '/schaltergang/13':
-        print nerdctrl_cout.tts('julia', 'huch!') 
+        print nerdctrl_cout.tts('Julia', 'huch!') 
     if event_source_path == '/schaltergang/14':
-        print nerdctrl_cout.tts('julia', 'ACHTUNG! ALLES TURISTEN UND NONTEKNISCHEN LOOKENPEEPERS! DAS KOMPUTERMASCHINE IST NICHT FUER DER GEFINGERPOKEN UND MITTENGRABEN!') 
+        print nerdctrl_cout.tts('Julia', 'ACHTUNG! ALLES TURISTEN UND NONTEKNISCHEN LOOKENPEEPERS! DAS KOMPUTERMASCHINE IST NICHT FUER DER GEFINGERPOKEN UND MITTENGRABEN!') 
     if event_source_path == '/schaltergang/15':
-        print nerdctrl_cout.tts('julia', 'finger weg!') 
+        print nerdctrl_cout.tts('Julia', 'finger weg!') 
     if event_source_path == '/schaltergang/18':
         print nerdctrl_cout.play('Spock_hat_keinen_Bock.mp3') 
     if event_source_path == '/schaltergang/19':
@@ -1900,9 +1923,11 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
     if event_source_path == '/schaltergang/22':
         print nerdctrl_cout.play('zugangzummastercontrollprogramm.mp3') 
     if event_source_path == '/schaltergang/23':
-        print nerdctrl_cout.tts('julia', 'alles zweifelhafte muss angezweifelt werden') 
+        print nerdctrl_cout.tts('Julia', 'alles zweifelhafte muss angezweifelt werden') 
+    if event_source_path == '/schaltergang/30':
+        print nerdctrl_cout.tts('Julia', 'alle mann sofort in die zeitmaschine!') 
     if event_source_path == '/schaltergang/17':
-        print nerdctrl_cout.tts('julia', 'achtung, achtung, hier spricht der bordcomputer. huhu!')
+        print nerdctrl_cout.tts('Julia', 'achtung, achtung, hier spricht der bordcomputer. huhu!')
     if event_source_path == '/schaltergang/26':
         if new_state == 0:
             if cerebrum_state[device_name]['/schaltergang/24'] == 0:
@@ -1933,10 +1958,10 @@ def get_barstatus(request):
     return Status.objects.get().bar_open
 
 def notify_bar_opening():
-    publish("bar/status", "opening")
+    publish("bar/status", timezone.localtime(timezone.now()).strftime("%H:%M") + " bar opening")
 
 def notify_bar_closing():
-    publish("bar/status", "closing")
+    publish("bar/status", timezone.localtime(timezone.now()).strftime("%H:%M") + " bar closing")
 
 def publish(topic, payload):
     try:
@@ -2052,6 +2077,7 @@ def reddit(request):
 
 @jsonrpc_method('barbutton')
 def barbutton(request, pressed):
+    publish("c-beam-pager/barbot", timezone.localtime(timezone.now()).strftime("%H:%M"))
     return "aye"
 
 @jsonrpc_method('ampel')
@@ -2086,3 +2112,22 @@ def hand_commands(request):
 def hand_translate(request, command):
     return hand.translate(command)
 
+def bar_preise(request):
+    return render_to_response('cbeamd/bar_preise.django', {'prices': get_prices()})
+
+def bar_leergut(request):
+    return render_to_response('cbeamd/bar_leergut.django', {})
+
+def bar_calc(request):
+    return render_to_response('cbeamd/bar_calc.django', {'prices': get_prices()})
+
+def bar_abrechnung(request):
+    return render_to_response('cbeamd/bar_abrechnung.django', {})
+
+def get_prices():
+    prices = []
+    with open('preise.csv', 'rb') as csvfile:
+        pricereader = csv.reader(csvfile, delimiter=';', quotechar='"')
+        for row in pricereader:
+            prices.append(row)
+    return prices
