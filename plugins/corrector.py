@@ -43,7 +43,7 @@ def precorrector(bot, event):
     if event.userhost in bot.ignore: return False
     if len(event.txt) > 0 and event.txt[0] == '!': return False
 
-    m = re.findall('(^|\W)(c-?base)(\W|$)', event.txt, re.IGNORECASE)
+    m = re.findall('(^|[^\w@])(c-?base)(\W|$)', event.txt, re.IGNORECASE)
     for match in m:
 	if match[1] != 'c-base':
             if event.channel == '#c-base':
