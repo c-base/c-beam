@@ -22,7 +22,7 @@ from django.contrib.auth import authenticate
 from forms import LoginForm, MissionForm, StripeForm, UserForm, LogActivityForm, ActivityLogCommentForm
 from django.template.context import RequestContext
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.core.context_processors import csrf
+from django.template.context_processors import csrf
 from django.views.decorators.csrf import csrf_exempt
 from gcm import GCM
 from LEDStripe import *
@@ -1040,7 +1040,7 @@ def profile_edit(request):
 #################################################################
 
 def auth_login( request ):
-    redirect_to = request.REQUEST.get( 'next', '' ) or '/'
+    redirect_to = request.GET.get( 'next', '' ) or '/'
     if request.method == 'POST':
         form = LoginForm( request.POST )
         if form.is_valid():
@@ -1698,7 +1698,7 @@ def activitylog_json(request):
     al = ActivityLog.objects.order_by('-timestamp')[:40]
     rev = list(al)
     rev.reverse()
-    return HttpResponse(json.dumps([ale.dic() for ale in rev]), mimetype="application/json")
+    return HttpResponse(json.dumps([ale.dic() for ale in rev]), content_type="application/json")
 
 def not_implemented(request):
     return render_to_response('cbeamd/not_implemented.django', {})
@@ -1818,12 +1818,12 @@ def c_out_volume_web(request):
 
 @login_required
 def c_out_volume_json(request):
-    return HttpResponse(json.dumps({'volume': c_out_volume}), mimetype="application/json")
+    return HttpResponse(json.dumps({'volume': c_out_volume}), content_type="application/json")
 
 def c_out_volume_set(request, volume):
     global c_out_volume
     c_out_volume = volume
-    return HttpResponse(json.dumps({'result': "OK"}), mimetype="application/json")
+    return HttpResponse(json.dumps({'result': "OK"}), content_type="application/json")
 
 @jsonrpc_method('barschnur')
 def barschnur(request, pizza, sushi, inder):

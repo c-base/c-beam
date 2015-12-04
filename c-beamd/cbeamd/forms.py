@@ -33,10 +33,10 @@ class UserForm( forms.ModelForm ):
         model = User
         fields = ['nickspell', 'stats_enabled', 'autologout', 'no_google']
         labels = {
-            'nickspell': 'foo',
-            'stats_enabled': 'foo',
-            'autologout': 'foo',
-            'no_google': 'foo',
+            'nickspell': '',
+            'stats_enabled': '',
+            'autologout': '',
+            'no_google': '',
         }
         widgets = {
         }
@@ -44,6 +44,7 @@ class UserForm( forms.ModelForm ):
 class MissionForm( forms.ModelForm ):
     class Meta:
         model = Mission
+        fields = '__all__'
         widgets = {
                 'description': forms.Textarea(attrs={'cols': 80, 'rows': 10})
         }

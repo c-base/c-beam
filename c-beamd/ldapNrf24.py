@@ -3,7 +3,7 @@ import sys
 import logging
 
 logger = logging.getLogger('nrf24Ldap.py')
-filelogging = logging.FileHandler('/tmp/nrf24LdapScript.log')
+filelogging = logging.FileHandler('/home/smile/nrf24LdapScript.log')
 filelogging.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
 logger.addHandler(filelogging)
 logger.setLevel(logging.DEBUG)

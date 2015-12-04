@@ -122,7 +122,7 @@ class Mission(models.Model):
     short_description = models.CharField(max_length=200)
     description = models.CharField(max_length=2000)
     status = models.CharField(max_length=200)
-    assigned_to = models.ManyToManyField(User, null=True, blank=True)
+    assigned_to = models.ManyToManyField(User, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(blank=True)
     priority = models.IntegerField(default=3, blank=True)
@@ -152,7 +152,7 @@ class MissionLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
 class Subscription(models.Model):
-    regid = models.CharField(max_length="2000")
+    regid = models.CharField(max_length=2000)
     user = models.OneToOneField(User, primary_key=True)
 
     def __str__(self):
@@ -174,8 +174,8 @@ class UserStatsEntry(models.Model):
         return "%s: %d" % (str(self.timestamp), self.usercount)
 
 class Activity(models.Model):
-    activity_type = models.CharField(max_length="200")
-    activity_text = models.CharField(max_length="200")
+    activity_type = models.CharField(max_length=200)
+    activity_text = models.CharField(max_length=200)
 
     def __str__(self):
         return self.activity_text
@@ -198,7 +198,7 @@ class ActivityLog(models.Model):
     ap = models.IntegerField(default=0)
     protests = models.IntegerField(default=0)
     thanks = models.IntegerField(default=0)
-    comments = models.ManyToManyField(ActivityLogComment, null=True, blank=True)
+    comments = models.ManyToManyField(ActivityLogComment, blank=True)
 
     def short_str(self):
         if self.activity.activity_type == "mission completed" and self.mission != None:
