@@ -15,3 +15,7 @@ sampledir = "/home/c-beam"
 mqtt_client_name = "c-beam"
 mqtt_client_password = "weiugfhoaeg8z3hO87GVH3O4VH34OVhRELBVHUAEFUVDSLIUVHhwfoiuhgwg78h43gflrewiuhaeohg2"
 # CONFIG END ########################################################################
+
+mqtt_server = "c-beam.cbrp3.c-base.org"
+mqtt_server_tls = False
+mqtt_server_cert = "/etc/ssl/certs/c-beam-mqtt.crt"

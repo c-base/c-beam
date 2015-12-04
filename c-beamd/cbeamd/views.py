@@ -125,8 +125,6 @@ def login(request, user):
     """
     login in to c-beam
     """
-    if user == 'nerdbeere':
-        return
 
     u = getuser(user)
     if u.logouttime + timedelta(seconds=hysterese) > timezone.now():
@@ -640,6 +638,7 @@ def event_detail(request, id):
     get details for event with id id
     """
     d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
+    #d = feedparser.parse('https://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=month')
     for entry in d['entries']:
         title = re.search(r'.*: (.*)', entry['title']).group(1)
         end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
@@ -657,7 +656,8 @@ def update_event_cache():
     events = []
     event_details = []
     try:
-        d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
+        d = feedparser.parse('https://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=month')
+        #d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
     except:
         pass
 
@@ -665,16 +665,20 @@ def update_event_cache():
         for entry in d['entries']:
             entryid = 42
             try:
-                entryid = re.search(r'.*&uid=(.*)@google.com', entry['id']).group(1)
+                #entryid = re.search(r'.*&uid=(.*)@google.com', entry['id']).group(1)
+                entryid = re.search(r'.*&uid=(.*)', entry['id']).group(1)
             except: pass
+
+
             title = re.search(r'.*: (.*)', entry['title']).group(1)
             end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
             start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
             title = title.replace("c   user", "c++ user")
 
-            description = entry['summary_detail']['value']
-            events.append('%s (%s-%s)' % (title, start, end))
-            event_details.append({'id': entryid, 'title':title, 'start': start, 'end': end, 'description': description})
+            if entry['ev_startdate'].startswith(date.today().strftime("%Y-%m-%d")):
+                description = entry['summary_detail']['value']
+                events.append('%s (%s-%s)' % (title, start, end))
+                event_details.append({'id': entryid, 'title':title, 'start': start, 'end': end, 'description': description})
         eventcache = events
         eventdetailcache = event_details
         eventcache_time = timezone.now()
@@ -708,10 +712,10 @@ def tts(request, voice, text):
     """
     result = "aye"
     print publish("c_out/%s" % voice, str(text))
-    try:
-        result = cout.tts(voice, text)
-    except:
-        pass
+    #try:
+        #result = cout.tts(voice, text)
+    #except:
+        #pass
     return result
 
 @jsonrpc_method('r2d2')
@@ -727,11 +731,14 @@ def play(request, file):
     play sound file via c_out
     """
     result = "aye"
-    publish("c_out/play", str(file))
-    try:
-        result = cout.play(file)
-    except:
-        pass
+    if file == '':
+        publish("c_out/loop", "")
+    else:
+        publish("c_out/play", str(file))
+    #try:
+        #result = cout.play(file)
+    #except:
+        #pass
     return result
 
 @jsonrpc_method('setvolume')
@@ -762,7 +769,7 @@ def sounds(request):
     returns a list of sounds available to play via c_out
     """
     result = []
-    try: result = cout.sounds()['result']
+    try: result = sorted(cout.sounds()['result'])
     except: pass
     return result
 
@@ -1912,6 +1919,8 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
         print nerdctrl_cout.tts('Julia', 'ACHTUNG! ALLES TURISTEN UND NONTEKNISCHEN LOOKENPEEPERS! DAS KOMPUTERMASCHINE IST NICHT FUER DER GEFINGERPOKEN UND MITTENGRABEN!') 
     if event_source_path == '/schaltergang/15':
         print nerdctrl_cout.tts('Julia', 'finger weg!') 
+    if event_source_path == '/schaltergang/16':
+        print nerdctrl_cout.play('cantdo.mp3') 
     if event_source_path == '/schaltergang/18':
         print nerdctrl_cout.play('Spock_hat_keinen_Bock.mp3') 
     if event_source_path == '/schaltergang/19':
@@ -2131,3 +2140,13 @@ def get_prices():
         for row in pricereader:
             prices.append(row)
     return prices
+
+@login_required
+def ampel(request, location, color, state):
+    payload = '{"%s": %d}' % (color, int(state))
+    #payload = '{"red": 1, "yellow": 1, "green": 1}'
+    #payload = '{"red": 1}'
+    print payload
+    publish("ampel/%s" % location, str(payload))
+    
+

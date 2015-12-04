@@ -91,5 +91,6 @@ urlpatterns = patterns('',
     url(r'^bar/leergut$', 'cbeamd.views.bar_leergut', name='bar_leergut'),
     url(r'^bar/calc$', 'cbeamd.views.bar_calc', name='bar_Calc'),
     url(r'^bar/abrechnung$', 'cbeamd.views.bar_abrechnung', name='bar_abrechnung'),
+    url(r'^control/ampel/(?P<location>.+)/(?P<color>.+)/(?P<state>\d)/$', 'cbeamd.views.ampel', name='ampel'),
 )
 

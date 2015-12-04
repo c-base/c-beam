@@ -123,6 +123,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'cbeamd',
     'south',
+    'jsonrpc',
     #'bootstrap_toolkit',
     'bootstrap3',
     # Uncomment the next line to enable the admin:
@@ -167,25 +168,47 @@ LOGOUT_URL = "/logout"
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse'
-        }
-    },
     'handlers': {
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': ['require_debug_false'],
-            'class': 'django.utils.log.AdminEmailHandler'
-        }
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/home/c-beam/c-beam-debug.log',
+        },
     },
     'loggers': {
         'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
+            'handlers': ['file'],
+            'level': 'INFO',
             'propagate': True,
         },
-    }
+    },
 }
 
+#LOGGING = {
+    #'version': 1,
+    #'disable_existing_loggers': False,
+    #'filters': {
+        #'require_debug_false': {
+            #'()': 'django.utils.log.RequireDebugFalse'
+        #}
+    #},
+    #'handlers': {
+        #'mail_admins': {
+            #'level': 'ERROR',
+            #'filters': ['require_debug_false'],
+            #'class': 'django.utils.log.AdminEmailHandler'
+        #}
+    #},
+    #'loggers': {
+        #'django.request': {
+            #'handlers': ['mail_admins'],
+            #'level': 'ERROR',
+            #'propagate': True,
+        #},
+    #}
+#}
+
 TTSGREETING = "Hallo %s, willkommen an bord"
+
+CRISPY_TEMPLATE_PACK = 'bootstrap3'
+
