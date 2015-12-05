@@ -67,7 +67,7 @@ STATIC_URL = '/static/'
 
 # Additional locations of static files
 STATICFILES_DIRS = [
-    '/home/smile/c-beam/c-beamd/cbeamd/static'
+    '/home/c-beam/c-beam/c-beamd/cbeamd/static'
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
@@ -154,7 +154,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/home/smile/c-beam-debug.log',
+            'filename': '/home/c-beam/c-beam-debug.log',
         },
     },
     'loggers': {
