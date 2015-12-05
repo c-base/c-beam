@@ -24,7 +24,6 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.context_processors import csrf
 from django.views.decorators.csrf import csrf_exempt
 from gcm import GCM
-from LEDStripe import *
 import json
 import logging
 
@@ -34,6 +33,7 @@ from tools.ddate import DDate
 from tools.handTranslate import HandTranslate
 from tools import crypto
 from tools.MyHTMLParser import MyHTMLParser
+from tools.LEDStripe import *
 
 import paho.mqtt.client as paho
 import string
