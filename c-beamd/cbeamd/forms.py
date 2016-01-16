@@ -17,12 +17,20 @@ class LoginForm( forms.Form ):
 #self.cleaned_data['username'] ).username
         #except:
             #raise forms.ValidationError( 'No such user exists.' )
-        self.user_cache = authenticate( username=self.cleaned_data['username'],
-password=self.cleaned_data['password'] )
-        if self.user_cache is None:
-            raise forms.ValidationError( 'No such username/password exists.' )
-        elif not self.user_cache.is_active:
-            raise forms.ValidationError( 'This account has been blocked.' )
+        #print self.cleaned_data['username']
+        #self.user_cache = authenticate( username=self.cleaned_data['username'],
+#password=self.cleaned_data['password'] )
+        #if self.user_cache is None:
+            #raise forms.ValidationError( 'No such username/password exists.' )
+        #elif not self.user_cache.is_active:
+            #raise forms.ValidationError( 'This account has been blocked.' )
+        #return self.cleaned_data
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+        user = authenticate(username=username, password=password)
+        if not user or not user.is_active:
+            raise forms.ValidationError(_('Sorry, that login was invalid. '
+                                          'Please try again.'), code='invalid_login')
         return self.cleaned_data
 
     def get_user( self ):
