@@ -1057,7 +1057,7 @@ def auth_login( request ):
         locals() ) )
 
 def auth_logout( request ):
-    redirect_to = request.REQUEST.get( 'next', '' ) or '/'
+    redirect_to = request.GET.get( 'next', '' ) or '/'
     logout_auth( request )
     return HttpResponseRedirect( redirect_to )
 
