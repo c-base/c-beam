@@ -8,7 +8,7 @@
       <div class="panel-group" id="mission_accordion">
         {% for mission in missions_available %}
           <div class="panel">
-              <a class="panel-heading btn btn-lg btn-default btn-block" 
+              <a class="btn btn-block btn-default panel-heading"
                   data-toggle="collapse" data-parent="#mission_accordion" 
                   href="#CollapseMission{{ mission.id }}" >
                 {{ mission.short_description }} ({{ mission.ap }} AP)
@@ -39,7 +39,7 @@
       <div class="panel-group" id="mission_accordion">
         {% for mission in missions_in_progress %}
           <div class="panel">
-              <a class="panel-heading btn btn-lg btn-default btn-block" 
+              <a class="btn btn-block btn-default panel-heading"
                   data-toggle="collapse" data-parent="#mission_accordion" 
                   href="#CollapseMission{{ mission.id }}" >
                 {{ mission.short_description }} ({{ mission.ap }} AP)

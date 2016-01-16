@@ -7,8 +7,8 @@
       <h1 align="center">AN BORD</h1>
       <div class="panel-group" id="user_accordion">
         {% for user in user_list_online %}
-          <div class="panel panel-default">
-              <a class="btn btn-lg btn-default btn-block" 
+          <div class="panel">
+              <a class="btn btn-block btn-default panel-heading"
                   data-toggle="collapse" data-parent="#user_accordion" 
                   href="#CollapseUser{{ user.id }}" >
                 {{ user.username }} ({{user.online_percentage}}&#37;)
@@ -38,8 +38,8 @@
       <h1 align="center">ETA</h1>
       <div class="panel-group" id="user_accordion">
         {% for user in user_list_eta %}
-          <div class="panelgroup">
-              <a class="panel-heading btn btn-lg btn-default btn-block" 
+          <div class="panel">
+              <a class="btn btn-block btn-default panel-heading"
                   data-toggle="collapse" data-parent="#user_accordion" 
                   href="#CollapseUser{{ user.id }}" >
                 {{ user.username }} ({{user.eta}})

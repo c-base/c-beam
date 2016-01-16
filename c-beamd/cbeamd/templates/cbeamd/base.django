@@ -16,10 +16,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <script src="/static/jquery/jquery.min.js"></script>
-    <!--<script src="/static/c-base-bootstrap/js/bootstrap-dropdown.js"></script>-->
-    <link href="/static/c-base-bootstrap/css/cyborg.css" rel="stylesheet" type="text/css" />
-    <script src="/static/c-base-bootstrap/js/bootstrap.js"></script>
+    <link href="/static/c-base-bootstrap/css/cyborg.min.css" rel="stylesheet" type="text/css" />
     <link href="/static/c-base-bootstrap/css/bootstrap.custom.css" rel="stylesheet">
     <!-- link rel="shortcut icon" href="ico/favicon.ico" -->
     <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/static/c-beam-touch-icon-144-precomposed.png">
@@ -31,7 +28,7 @@
 </head>
 
 <body>
-  <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+  <div class="navbar navbar-default navbar-fixed-top" role="navigation">
     <div class="container">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -42,7 +39,7 @@
         </button>
         <a class="navbar-brand" href="/">c-beam</a>
       </div>
-      <div class="navbar-collapse collapse">
+      <div id="navbar-main" class="navbar-collapse collapse">
         <ul class="nav navbar-nav">
           {% if not user.is_anonymous %}
           <li class="dropdown">
@@ -110,6 +107,8 @@
 
     </div> <!-- container -->
 
+    <script src="/static/jquery/jquery.min.js"></script>
+    <script src="/static/c-base-bootstrap/js/bootstrap.js"></script>
     <script src="/static/c-base-bootstrap/js/html5slider.js"></script>
 
   </body>

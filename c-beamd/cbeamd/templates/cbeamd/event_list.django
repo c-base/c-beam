@@ -8,7 +8,7 @@
       <div class="panel-group" id="event_accordion">
         {% for event in event_list %}
           <div class="panel">
-            <a class="panel-heading btn btn-lg btn-default btn-block" 
+            <a class="btn btn-block btn-default panel-heading" 
                 data-toggle="collapse" data-parent="#event_accordion" 
                 href="#CollapseEvent{{ event.id }}" >
               {{ event.title }} ({{ event.start }}-{{ event.end }})
