@@ -108,7 +108,7 @@
     </div> <!-- container -->
 
     <script src="/static/jquery/jquery.min.js"></script>
-    <script src="/static/c-base-bootstrap/js/bootstrap.js"></script>
+    <script src="/static/c-base-bootstrap/js/bootstrap.min.js"></script>
     <script src="/static/c-base-bootstrap/js/html5slider.js"></script>
 
   </body>
