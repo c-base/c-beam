@@ -1,40 +1,18 @@
-<!DOCTYPE html>
+{% extends "cbeamd/base.django" %}
+
 {% load bootstrap3 %} 
-<html lang="en">
-<head>
+
+{% block body %}
     <style type="text/css">
       body {
-        padding-top: 20px;
-        background: url("/static/c-base-bootstrap/img/bg.jpg") fixed;
+        padding-top: 0px;
       }
     </style>
-    <title>{% block title %}c-beam{% endblock %}</title>
-
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="">
-
-
-    <script src="/static/jquery/jquery.min.js"></script>
-    <!-- <script src="/static/c-base-bootstrap/js/bootstrap-dropdown.js"></script> -->
-    <link href="/static/c-base-bootstrap/css/cyborg.css" rel="stylesheet" type="text/css" />
-    <script src="/static/c-base-bootstrap/js/bootstrap.js"></script>
-    <link href="/static/c-base-bootstrap/css/bootstrap.custom.css" rel="stylesheet">
-    <!-- link rel="shortcut icon" href="ico/favicon.ico" -->
-    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/static/c-beam-touch-icon-144-precomposed.png">
-    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/static/c-beam-touch-icon-114-precomposed.png">
-    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/static/c-beam-touch-icon-72-precomposed.png">
-    <link rel="apple-touch-icon-precomposed" href="/static/c-beam-touch-icon-57-precomposed.png">
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-</head>
-
-<body>
   <div class="container">
-    {% block content %}<h1>nerdctrl status monitor</h1><br>please send content to smile@c-base.org{% endblock %}
+      {% block content %}<h1>nerdctrl status monitor</h1><br>please send content to smile@c-base.org{% endblock %}
+      <p><hr></p>
+      <footer class="row">
+      </footer>
   </div> <!-- container -->
 
-{% block extra_js %}{% endblock %}
-</body>
-</html>
+{% endblock body %}

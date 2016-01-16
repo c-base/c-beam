@@ -1,7 +1,7 @@
 {% extends 'cbeamd/nerdctrl.django' %}
 
 {% block content %}
-
-<h1>hallo {{user}}, willkommen an bord!</h1>
+<br />
+<h1 align="center">hallo {{user}}, willkommen an bord!</h1>
 
 {% endblock content %}

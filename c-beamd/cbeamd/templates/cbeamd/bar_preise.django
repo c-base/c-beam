@@ -43,7 +43,7 @@ td {
    vertical-align: text-top;
 }
 </style>
-
+<br />
 <table class='.table table table-striped table-condensed table-hover' style="font-size: 1.1em;">
     <thead>
         <tr><th>Getränk</th><th>ltr.</th><th>%Vol</th><th>crew</th><th>alien</th></tr>

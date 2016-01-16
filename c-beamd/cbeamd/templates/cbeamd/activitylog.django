@@ -45,8 +45,8 @@
   <script>
     last_timestamp = "1970-01-01 00:00";
     update = function() {
-      $.get("/activitylog_json", function(data, textstatus, jqxhr) {
-        $.each(data, function(key, value){
+      jQuery.get("/activitylog_json", function(data, textstatus, jqxhr) {
+        jQuery.each(data, function(key, value){
           cls = null;
           if(value.thanks > value.protests) {
             cls = "thanks";
@@ -54,14 +54,14 @@
             cls = "protest";
           }
           if(value.timestamp > last_timestamp) {
-            $("#terminal .cursor").before("<div" + (cls ? " class='" + cls + "'" : "") + "><a href='/activitylog/" + value.id + "'>" + value.str + "</a></div>")
+            jQuery("#terminal .cursor").before("<div" + (cls ? " class='" + cls + "'" : "") + "><a href='/activitylog/" + value.id + "'>" + value.str + "</a></div>")
           }
         });
         last_timestamp = data.pop().timestamp
         setTimeout("update()", 5000);
       });
     }
-    $(function(){
+    jQuery(function(){
       update();
     });
   </script>

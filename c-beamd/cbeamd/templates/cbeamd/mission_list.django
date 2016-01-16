@@ -36,11 +36,11 @@
   <div class="row">
     <div class="col-md-12">
       <h1 align="center">LAUFENDE MISSIONEN</h1>
-      <div class="panel-group" id="mission_accordion">
+      <div class="panel-group" id="active_mission_accordion">
         {% for mission in missions_in_progress %}
           <div class="panel">
               <a class="btn btn-block btn-default panel-heading"
-                  data-toggle="collapse" data-parent="#mission_accordion" 
+                  data-toggle="collapse" data-parent="#active_mission_accordion" 
                   href="#CollapseMission{{ mission.id }}" >
                 {{ mission.short_description }} ({{ mission.ap }} AP)
               </a>

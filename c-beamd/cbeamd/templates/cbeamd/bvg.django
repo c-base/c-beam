@@ -2,11 +2,13 @@
 
 {% block content %}
 
-<h1>public transport conditions</h1>
+<h1 align="center">public transport conditions</h1>
 
 {% include "cbeamd/departures.html" %}
 
-<img src="/static/BVGMap.png" alt="BVG map">
-<img src="/static/BVGPlan.png" alt="BVG plan">
+<div class="center">
+    <img src="/static/BVGMap.png" alt="BVG map">
+    <img src="/static/BVGPlan.png" alt="BVG plan">
+</div>
 
 {% endblock content%}

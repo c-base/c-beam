@@ -25,7 +25,7 @@ text {
 
 </style>
 
-<h1>ceitlochstatusanzeigelement</h1>
+<h1 align="center">ceitlochstatusanzeigelement</h1>
 
 {% endblock content%}
 
@@ -34,8 +34,8 @@ text {
 <script src="/static/d3/d3.min.js"></script>
 <script>
 
-var width = 1200,
-    height = 1000,
+var width = window.innerWidth,
+    height = window.innerHeight,
     radius = Math.min(width, height) / 1.9,
     spacing = .09;
 
