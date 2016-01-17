@@ -21,7 +21,7 @@ from django.contrib.auth import authenticate
 from forms import LoginForm, MissionForm, StripeForm, UserForm, LogActivityForm, ActivityLogCommentForm
 from django.template.context import RequestContext
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.template.context_processors import csrf
+from django.core.context_processors import csrf
 from django.views.decorators.csrf import csrf_exempt
 from gcm import GCM
 import json

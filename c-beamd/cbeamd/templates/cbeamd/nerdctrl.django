@@ -9,7 +9,10 @@
       }
     </style>
   <div class="container">
-      {% block content %}<h1>nerdctrl status monitor</h1><br>please send content to smile@c-base.org{% endblock %}
+      {% block content %}
+          <p><hr></p>
+          <h1>nerdctrl status monitor</h1><br>please send content to smile@c-base.org
+      {% endblock %}
       <p><hr></p>
       <footer class="row">
       </footer>

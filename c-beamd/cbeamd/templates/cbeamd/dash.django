@@ -1,7 +1,6 @@
 {% extends "cbeamd/dash_base.django" %}
 
 {% block content %}
-    <br>
     <div class="row">
       <div class="col-md-6 terminal transparent" id="terminal" style="height:913px;">
           <div>user@c-beam&gt; who</div>

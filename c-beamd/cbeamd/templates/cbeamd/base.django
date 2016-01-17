@@ -40,7 +40,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="/">c-beam</a>
+          <a class="navbar-brand center" href="/"><nowrap><img style="margin-top: -8px;" src="/static/ic_launcher.png"> c-beam</nowrap></a>
         </div>
         <div id="navbar-main" class="navbar-collapse collapse">
           <ul class="nav navbar-nav">

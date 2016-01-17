@@ -4,6 +4,11 @@
 
 {% block body %}
   <div class="container">
+    <style type="text/css">
+      body {
+        padding-top: 20px;
+      }
+    </style>
     {% block content %}<h1>nerdctrl status monitor</h1><br>please send content to smile@c-base.org{% endblock %}
     <p><hr></p>
     <footer class="row">
