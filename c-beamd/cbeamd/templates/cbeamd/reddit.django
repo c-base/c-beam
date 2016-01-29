@@ -16,7 +16,7 @@
             <div class="panel-body">
                 <div align="left">
                   {% autoescape off %}
-                    {{ entry.summary_detail.value }}
+                    {{ entry.summary }}
                   {% endautoescape %}
                 </div>
             </div>
