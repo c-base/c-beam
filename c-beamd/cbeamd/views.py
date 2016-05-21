@@ -1981,7 +1981,8 @@ def publish(topic, payload):
         else:
             mqtt.connect(cfg.mqtt_server, port=1883)
 
-        mqtt.publish(topic, payload)
+        #print("published: " + str(mqtt.publish(topic, payload)))
+        print("published: " + str(mqtt.publish(topic, payload, qos=1)))
     except Exception as e: 
         print e
         pass
@@ -2073,6 +2074,9 @@ def dash(request):
     rev.reverse()
     return render_to_response('cbeamd/dash.django', {'activitylog': rev, 'users': userlist_with_online_percentage(), 'barstatus': get_barstatus(request), 'levels': fakelevels()})
 
+def mechdisplay(request):
+    return render_to_response('cbeamd/mechdisplay.django', {})
+
 def ceitlochclocc(request):
     return render_to_response('cbeamd/ceitloch.django', {})
 
@@ -2150,3 +2154,5 @@ def ampel(request, location, color, state):
     publish("ampel/%s" % location, str(payload))
     
 
+def mechblast_json(request):
+    return HttpResponse(json.dumps({'userlist': userlist(), 'barstatus': get_barstatus(request)}), content_type="application/json")

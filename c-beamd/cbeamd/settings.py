@@ -1,8 +1,10 @@
 from django_auth_ldap.config import LDAPSearch,GroupOfNamesType
-import ldap
-
+import ldap, os
 
 # Django settings for cbeamd project.
+
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DEBUG = True
 
@@ -14,12 +16,12 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'cbeam.sl3',                      # Or path to database file if using sqlite3.
-        'USER': '',                      # Not used with sqlite3.
-        'PASSWORD': '',                  # Not used with sqlite3.
-        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': 'cbeam',                      # Or path to database file if using sqlite3.
+        'USER': 'cbeam',                      # Not used with sqlite3.
+        'PASSWORD': 'uhgiaoguhlvnwoiu2h38gg93rhfqkjn',                  # Not used with sqlite3.
+        'HOST': '127.0.0.1',                      # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '5433',                      # Set to empty string for default. Not used with sqlite3.
     }
 }
 
@@ -59,7 +61,7 @@ MEDIA_URL = ''
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
-STATIC_ROOT = '/home/c-beam/c-beam/c-beamd/cbeamd/static'
+#STATIC_ROOT = '/home/c-beam/c-beam/c-beamd/cbeamd/static'
 
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
@@ -67,10 +69,8 @@ STATIC_URL = '/static/'
 
 # Additional locations of static files
 STATICFILES_DIRS = [
-    '/home/c-beam/c-beam/c-beamd/cbeamd/static'
-    # Put strings here, like "/home/html/static" or "C:/www/django/static".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
+    os.path.join(BASE_DIR, "static"),
+    os.path.join(BASE_DIR, "assets"),
 ]
 
 # List of finder classes that know how to find static files in
@@ -112,6 +112,7 @@ INSTALLED_APPS = (
     'jsonrpc',
     'bootstrap3',
     'django.contrib.admin',
+    'webpack_loader',
 )
 
 
@@ -193,6 +194,15 @@ LOGGING = {
 TTSGREETING = "Hallo %s, willkommen an bord"
 
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
+
+# webpack Configuration #######################################################
+
+WEBPACK_LOADER = {
+    'DEFAULT': {
+        'BUNDLE_DIR_NAME': 'bundles/',
+        'STATS_FILE': os.path.join(BASE_DIR, 'cbeamd/webpack-stats.json')
+    },
+}
 
 TEMPLATES = [
     {

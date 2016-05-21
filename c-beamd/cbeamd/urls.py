@@ -27,6 +27,7 @@ urlpatterns = [
     #url(r'^activitylog/(?P<activitylog_id>\d+)/thanks$, views.not_implemented'),
     #url(r'^activitylog/(?P<activitylog_id>\d+)/protest$, views.not_implemented'),
     url(r'^activitylog_json$', views.activitylog_json, name='activitylog_json'),
+    url(r'^mechblast_json$', views.mechblast_json, name='mechblast_json'),
     #url(r'^', include('foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
@@ -81,6 +82,7 @@ urlpatterns = [
     url(r'^weather$', views.weather, name='weather'),
     url(r'^bvg$', views.bvg, name='bvg'),
     url(r'^sensors$', views.dash, name='sensors'),
+    url(r'^mechdisplay$', views.mechdisplay, name='mechdisplay'),
     url(r'^dash$', views.dash, name='dash'),
     url(r'^ceitloch$', views.ceitlochclocc, name='ceitlochclocc'),
     url(r'^donut$', views.donut, name='donut'),

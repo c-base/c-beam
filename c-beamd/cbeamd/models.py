@@ -96,7 +96,7 @@ class User(models.Model):
 
         if self.status == "online" and autologout_in.total_seconds() > 0:
             return (autologout_in.total_seconds()/60)
-        return 0
+        return 0.0
 
     def online_percentage(self):
         return "%.2f" % (self.autologout_in()/self.autologout * 100)

@@ -2,6 +2,7 @@
 {% load bootstrap3 %} 
 <html lang="en">
 <head>
+    
     <style type="text/css">
       body {
         padding-top: 60px;
@@ -27,6 +28,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
     <script src="/static/jquery/jquery.min.js"></script>
+    {% block head %}
+    {% endblock head %}
 </head>
 
 <body>
