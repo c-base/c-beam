@@ -93,5 +93,9 @@ urlpatterns = [
     url(r'^bar/calc$', views.bar_calc, name='bar_Calc'),
     url(r'^bar/abrechnung$', views.bar_abrechnung, name='bar_abrechnung'),
     url(r'^control/ampel/(?P<location>.+)/(?P<color>.+)/(?P<state>\d)/$', views.ampel, name='ampel'),
+    url(r'^mpd/(?P<host>.+)/volume/$', views.mpd_volume, name='mpd_volume'),
+    url(r'^mpd/(?P<host>.+)/mpd_listplaylists/$', views.mpd_listplaylists, name='mpd_listplaylists'),
+    url(r'^mpd/(?P<host>.+)/status/$', views.mpd_status, name='mpd_status'),
+    url(r'^mpd/(?P<host>.+)/command/(?P<command>\w+)/$', views.mpd_command, name='mpd_command'),
 ]
 

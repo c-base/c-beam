@@ -9,6 +9,6 @@ var BarStatus = require('./barstatus');
 var ClockWidget = require('./clock');
 var MpdWidget = require('./mpdwidget');
 
-ReactDOM.render(<BarStatus />, document.getElementById('mpd'));
-ReactDOM.render(<ClockWidget />, document.getElementById('clock'));
-//ReactDOM.render(<MpdWidget />, document.getElementById('mpd'));
+//ReactDOM.render(<BarStatus />, document.getElementById('mpd'));
+ReactDOM.render(<ClockWidget updateInterval={1000} />, document.getElementById('clock'));
+ReactDOM.render(<MpdWidget pollInterval={1000} host="mechblast" />, document.getElementById('mpd'));

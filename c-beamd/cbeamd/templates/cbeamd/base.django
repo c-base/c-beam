@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 {% load bootstrap3 %} 
+{% load static from staticfiles %}
 <html lang="en">
 <head>
     
@@ -28,6 +29,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
     <script src="/static/jquery/jquery.min.js"></script>
+    <link href="{% static "font-awesome/css/font-awesome.min.css" %}" rel="stylesheet">
     {% block head %}
     {% endblock head %}
 </head>

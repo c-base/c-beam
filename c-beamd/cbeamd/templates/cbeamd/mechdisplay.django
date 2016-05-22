@@ -22,7 +22,7 @@
   </div>
   <br />
   <div class="row">
-      <div class="col-md-12 terminal transparent mechterminal">
+      <div class="col-md-12 terminal transparent mpd">
           <div id="mpd">here be moar content soon</div>
       </div>
   </div>
