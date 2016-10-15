@@ -55,7 +55,7 @@ eta_timeout=120
 
 mqtt = paho.Client("c-beam")
 mqttserver = "127.0.0.1"
-cout = ServiceProxy('http://10.0.1.13:1775/')
+cout = ServiceProxy('http://shout.cbrp3.c-base.org:1775/')
 ampelrpc = ServiceProxy('http://10.0.1.24:1337/')
 nerdctrl_cout = ServiceProxy('http://nerdctrl.cbrp3.c-base.org:1775/')
 cerebrum = ServiceProxy('http://10.0.1.27:7777/')
@@ -1917,6 +1917,7 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
 
     if event_source_path == '/schaltergang/13':
         print nerdctrl_cout.tts('Julia', 'huch!') 
+        publish("nerdctrl/open", "http://map.norsecorp.com/")
     if event_source_path == '/schaltergang/14':
         print nerdctrl_cout.tts('Julia', 'ACHTUNG! ALLES TURISTEN UND NONTEKNISCHEN LOOKENPEEPERS! DAS KOMPUTERMASCHINE IST NICHT FUER DER GEFINGERPOKEN UND MITTENGRABEN!') 
     if event_source_path == '/schaltergang/15':
@@ -1960,6 +1961,7 @@ def barstatus(request, status):
         status_object.save()
         notify_bar_closing()
     print "barstatus: %s" % status
+    publish("bar/state", str(status), retain=True)
 
 @jsonrpc_method("get_barstatus")
 def get_barstatus(request):
@@ -1974,7 +1976,7 @@ def notify_bar_opening():
 def notify_bar_closing():
     publish("bar/status", timezone.localtime(timezone.now()).strftime("%H:%M") + " bar closing")
 
-def publish(topic, payload):
+def publish(topic, payload, retain=False):
     try:
         mqtt.username_pw_set(cfg.mqtt_client_name, password=cfg.mqtt_client_password)
         if cfg.mqtt_server_tls:
@@ -1984,7 +1986,7 @@ def publish(topic, payload):
             mqtt.connect(cfg.mqtt_server, port=1883)
 
         #print("published: " + str(mqtt.publish(topic, payload)))
-        print("published: " + str(mqtt.publish(topic, payload, qos=1)))
+        print("published: " + str(mqtt.publish(topic, payload, qos=1, retain=retain)))
     except Exception as e: 
         print e
         pass
@@ -2219,11 +2221,9 @@ def mpd_command(request, host, command):
         elif command == 'forward':
             result = client.seekcur("+10")
         elif command == 'random':
-            print(mpd_get_random())
             result = client.random(abs(mpd_get_random(host)-1))
-            print(mpd_get_random())
         elif command == 'repeat':
-            result = client.repeat(abs(mpd_get_repeathost()-1))
+            result = client.repeat(abs(mpd_get_repeat(host)-1))
         elif command == 'vol_up':
             result = client.setvol(mpd_get_volume(host)+5)
         elif command == 'vol_down':

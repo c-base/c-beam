@@ -26,10 +26,14 @@ var MpdStatus = React.createClass({
     var title = "";
     var artist = "";
     var album = "";
+    var elapsed = "--:--:--";
+    var total = "--:--:--";
     if (this.props.data.current_song != null) {
         title = this.props.data.current_song.title;
         artist = this.props.data.current_song.artist;
         album = this.props.data.current_song.album;
+        elapsed = String(this.props.data.elapsed).toHHMMSS();
+        total = String(this.props.data.total).toHHMMSS();
     }
     var random = "fa fa-random";
     if (this.props.data.random == 0) {
@@ -60,10 +64,12 @@ var MpdStatus = React.createClass({
           <div><i className={random}></i></div>
           <div><i className={repeat}></i></div>
         </div>
+        <div className="column col-md-12">
+          <div>Position: {elapsed}&#47;{total}</div>
+        </div>
       </div>
     )
   }
-
 });
 
 var MpdVolButton = React.createClass({
@@ -240,14 +246,14 @@ var MpdWidget = React.createClass({
     setInterval(this.getStatus, this.props.pollInterval);
   },
   render: function() {
+        //<MpdControls />
+        //<div className="row mpdcontrol">
+          //<MpdPlaybackPosition data={this.state.data.content} />
+          //<MpdVolumeControl data={this.state.data.content} />
+        //</div>
     return  (
       <div className="mpd-widget">
         <MpdStatus data={this.state.data.content} />
-        <MpdControls />
-        <div className="row mpdcontrol">
-          <MpdPlaybackPosition data={this.state.data.content} />
-          <MpdVolumeControl data={this.state.data.content} />
-        </div>
       </div>
     )
   }

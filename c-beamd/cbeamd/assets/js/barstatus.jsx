@@ -31,7 +31,7 @@ var BarStatus = React.createClass({
 
   render: function() {
     return  (
-      <div>
+      <div id="barstatus">
         <div className={this.state.data.barstatus_class}>{this.state.data.barstatus}</div>
       </div>
     )
