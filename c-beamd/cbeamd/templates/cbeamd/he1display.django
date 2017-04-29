@@ -1,0 +1,49 @@
+{% extends "cbeamd/dash_base.django" %}
+{% load render_bundle from webpack_loader %}
+
+{% block head %}
+{% endblock head %}
+
+{% block content %}
+  <div class="row">
+      <div class="col-md-6 terminal transparent mechterminal" id="barstatus"></div>
+      <div class="col-md-6 terminal transparent mechterminal">
+          <div id="clock">time is being created...</div>
+      </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 terminal transparent mechterminal" id="terminal">
+        <div>user@c-beam&gt; #who</div>
+        <div id="userlist"></div>
+        <div id="userlist-total">total: 0</div>
+        <div>user@c-beam&gt;&nbsp;<blink>_</blink></div>
+    </div>
+  </div>
+  <div class="row">
+      <div class="col-md-12 terminal transparent mpd">
+          <div id="mpd">here be moar content soon</div>
+      </div>
+  </div>
+{% endblock content%}
+
+{% block extra_js %}
+  <script>
+    var mpdHostname = "megablast";
+    update = function() {
+      jQuery.get("/mechblast_json", function(data, textstatus, jqxhr) {
+        jQuery("#userlist").html(data.userlist.join(", "));
+        jQuery("#userlist-total").html("total: " + data.userlist.length);
+        if (data.barstatus) {
+          jQuery("#barstatus").html('<div class="btn btn-success btn-block">bar open</div>');
+        } else {
+          jQuery("#barstatus").html('<div class="btn btn-danger btn-block">bar closed</div>');
+        }
+        setTimeout("update()", 5000);
+      });
+    }
+    jQuery(function(){
+      update();
+    });
+  </script>
+  {% render_bundle 'index' %}
+{% endblock extra_js %}
