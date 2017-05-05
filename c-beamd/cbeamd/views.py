@@ -2080,6 +2080,9 @@ def dash(request):
 
 def mechdisplay(request):
     return render_to_response('cbeamd/mechdisplay.django', {})
+            
+def he1display(request):
+    return render_to_response('cbeamd/he1display.django', {})
 
 def ceitlochclocc(request):
     return render_to_response('cbeamd/ceitloch.django', {})

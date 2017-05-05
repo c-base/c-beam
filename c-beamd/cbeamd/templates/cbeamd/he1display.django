@@ -24,17 +24,11 @@
           <div id="mpd">here be moar content soon</div>
       </div>
   </div>
-  <div class="row">
-      <div class="col-md-12 terminal transparent mpd">
-          <img src="https://vorstand.c-base.org/restricted/powermon-60minutes.png" width="100%" />
-          <img src="https://vorstand.c-base.org/restricted/powermon-24hours.png" width="100%" />
-      </div>
-  </div>
 {% endblock content%}
 
 {% block extra_js %}
   <script>
-    var mpdHostname = "mechblast";
+    var mpdHostname = "megablast";
     update = function() {
       jQuery.get("/mechblast_json", function(data, textstatus, jqxhr) {
         jQuery("#userlist").html(data.userlist.join(", "));
