@@ -4,6 +4,9 @@ from models import User
 from models import Mission
 from jsonrpc import jsonrpc_site
 from . import views # you must import the views that need connected
+from django.conf import settings
+from django.conf.urls.static import static
+
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -83,6 +86,7 @@ urlpatterns = [
     url(r'^bvg$', views.bvg, name='bvg'),
     url(r'^sensors$', views.dash, name='sensors'),
     url(r'^mechdisplay$', views.mechdisplay, name='mechdisplay'),
+    url(r'^he1display$', views.he1display, name='he1display'),
     url(r'^dash$', views.dash, name='dash'),
     url(r'^ceitloch$', views.ceitlochclocc, name='ceitlochclocc'),
     url(r'^donut$', views.donut, name='donut'),
@@ -97,5 +101,4 @@ urlpatterns = [
     url(r'^mpd/(?P<host>.+)/mpd_listplaylists/$', views.mpd_listplaylists, name='mpd_listplaylists'),
     url(r'^mpd/(?P<host>.+)/status/$', views.mpd_status, name='mpd_status'),
     url(r'^mpd/(?P<host>.+)/command/(?P<command>\w+)/$', views.mpd_command, name='mpd_command'),
-]
-
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

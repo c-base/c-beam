@@ -24,17 +24,11 @@
           <div id="mpd">here be moar content soon</div>
       </div>
   </div>
-  <div class="row">
-      <div class="col-md-12 terminal transparent mpd">
-          <img id="powermon60m" src="https://vorstand.c-base.org/restricted/powermon-60minutes.png" width="100%" />
-          <img id="powermon24h" src="https://vorstand.c-base.org/restricted/powermon-24hours.png" width="100%" />
-      </div>
-  </div>
 {% endblock content%}
 
 {% block extra_js %}
   <script>
-    var mpdHostname = "mechblast";
+    var mpdHostname = "megablast";
     update = function() {
       jQuery.get("/mechblast_json", function(data, textstatus, jqxhr) {
         jQuery("#userlist").html(data.userlist.join(", "));
@@ -44,9 +38,6 @@
         } else {
           jQuery("#barstatus").html('<div class="btn btn-danger btn-block">bar closed</div>');
         }
-        d = new Date();
-        $('#powermon60m').attr('src', 'https://vorstand.c-base.org/restricted/powermon-60minutes.png?' + d.getTime());
-        $('#powermon24h').attr('src', 'https://vorstand.c-base.org/restricted/powermon-24hours.png?' + d.getTime());
         setTimeout("update()", 5000);
       });
     }
