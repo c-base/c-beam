@@ -28,12 +28,12 @@ module.exports = {
   module: {
     loaders: [
       // we pass the output from babel loader to react-hot loader
-      { test: /\.jsx?$/, exclude: /node_modules/, loaders: ['babel'], },
+      { test: /\.(es6|jsx?)$/, exclude: /node_modules/, loaders: ['babel'], },
     ],
   },
 
   resolve: {
     modulesDirectories: ['node_modules', 'bower_components'],
-    extensions: ['', '.js', '.jsx']
+    extensions: ['', '.js', '.jsx', '.es6', '.styl']
   },
 }
