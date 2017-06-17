@@ -11,6 +11,7 @@ from jsonrpc.proxy import ServiceProxy
 import cbeamdcfg as cfg
 from urllib import urlopen
 import csv
+from ics import Calendar
 
 from django.template import Context, loader
 from django.http import HttpResponse,HttpResponseRedirect
@@ -657,28 +658,33 @@ def update_event_cache():
         return
     events = []
     event_details = []
-    try:
-        d = feedparser.parse('https://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=month')
+    #try:
+        #d = feedparser.parse('https://www.c-base.org/calendar/exported/c-base-events.ics')
+        #d = feedparser.parse('https://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=month')
         #d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
-    except:
-        pass
+    #except:
+        #pass
 
-    if d is not None:
-        for entry in d['entries']:
+    url = 'https://www.c-base.org/calendar/exported/c-base-events.ics'
+    c = Calendar(urlopen(url).read().decode('utf-8'))
+
+    if c is not None:
+        for entry in c.events: # d['entries']:
             entryid = 42
             try:
                 #entryid = re.search(r'.*&uid=(.*)@google.com', entry['id']).group(1)
-                entryid = re.search(r'.*&uid=(.*)', entry['id']).group(1)
+                entryid = entry.uid # re.search(r'.*&uid=(.*)', entry['id']).group(1)
             except: pass
 
 
-            title = re.search(r'.*: (.*)', entry['title']).group(1)
-            end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
-            start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
+            title = entry.name # re.search(r'.*: (.*)', entry['title']).group(1)
+            end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', str(entry.end)).group(2).replace(':', '')
+            #end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
+            start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', str(entry.begin)).group(2).replace(':', '')
+            #start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
             title = title.replace("c   user", "c++ user")
-
-            if entry['ev_startdate'].startswith(date.today().strftime("%Y-%m-%d")):
-                description = entry['summary_detail']['value']
+            if str(entry.begin).startswith(date.today().strftime("%Y-%m-%d")):
+                description = entry.description # ['summary_detail']['value']
                 events.append('%s (%s-%s)' % (title, start, end))
                 event_details.append({'id': entryid, 'title':title, 'start': start, 'end': end, 'description': description})
         eventcache = events
