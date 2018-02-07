@@ -1890,9 +1890,10 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
         elif new_state == 1:
             publish("nerdctrl/open", "http://logbuch.c-base.org/")
         elif new_state == 2:
-            publish("nerdctrl/open", "http://c-portal.c-base.org")
+            # publish("nerdctrl/open", "http://c-portal.c-base.org")
+            publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/mainhall/")
         elif new_state == 3:
-            publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/events")
+            publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/events/")
     if event_source_path == '/schaltergang/10':
         if new_state == 0:
             publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/c-base-map")
@@ -1908,14 +1909,17 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
         elif new_state == 1:
             publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/sensors")
         elif new_state == 2:
-            publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/rickshaw/examples/fixed.html")
+            #publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/rickshaw/examples/fixed.html")
+            publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/bar-status/")
         else:
-            publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/nerdctrl")
+            # publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/nerdctrl")
+            publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/internet/")
     if event_source_path == '/schaltergang/12':
         if new_state == 0:
             publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/ceitloch")
         elif new_state == 1:
-            publish("nerdctrl/open", "http://visibletweets.com/#query=@cbase&animation=2")
+            # publish("nerdctrl/open", "http://visibletweets.com/#query=@cbase&animation=2")
+            publish("nerdctrl/open", "http://c-base.org/")
         elif new_state == 2:
             publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/reddit")
         else:
@@ -1925,7 +1929,7 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
         print nerdctrl_cout.tts('Julia', 'huch!') 
         publish("nerdctrl/open", "http://map.norsecorp.com/")
     if event_source_path == '/schaltergang/14':
-        print nerdctrl_cout.tts('Julia', 'ACHTUNG! ALLES TURISTEN UND NONTEKNISCHEN LOOKENPEEPERS! DAS KOMPUTERMASCHINE IST NICHT FUER DER GEFINGERPOKEN UND MITTENGRABEN!') 
+        print nerdctrl_cout.tts('Julia', 'achtung! alles turisten und nonteknischen lookenpeepers! das komputermaschine ist nicht fuer der gefingerpoken und mittengraben!') 
     if event_source_path == '/schaltergang/15':
         print nerdctrl_cout.tts('Julia', 'finger weg!') 
     if event_source_path == '/schaltergang/16':
