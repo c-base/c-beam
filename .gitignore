@@ -10,3 +10,10 @@ c-beamd/cbeamd/doc/_build/
 c-beamd/cbeamd/static/5minute-table.txt
 c-beamd/cbeam.sl3
 c-beamd/c-beamd.log
+c-beamd/venv
+c-beamd/cbeamd/assets/bundles/
+c-beamd/cbeamd/node_modules/
+c-beamd/cbeamd/templates/cbeamd/departures.html
+c-beamd/cbeamd/webpack-stats.json
+c-beamd/database.json
+
