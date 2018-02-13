@@ -1,0 +1,18 @@
+{% extends "cbeamd/nerdctrl.django" %}
+{% block content %}
+
+<h1 align="center">weather conditions</h1><br>
+<table class='.table table table-striped table-condensed table-bordered table-hover'>
+    <tr><td>captured at:</td><td>2014-12-9 19:45 h 3sec</td></tr>
+    <tr><td>captured location:</td><td>base of main-antenna</td></tr>
+    <tr><td>Bedingungen:</td><td><b>  </b></td></tr>
+    <tr><td>Temperatur:</td><td><b>  </b></td></tr>
+    <tr><td>Wind von:</td><td><b>  </b></td></tr>
+    <tr><td>Wind mit:</td><td><b>  </b></td></tr>
+    <tr><td>Druck:</td><td><b></b></td></tr>
+</table>
+<table align="center">
+	<tr><td><img src="http://www.wetteronline.de/?pid=p_radar_map&ireq=true&src=radar/vermarktung/p_radar_map_forecast/forecastLoop/BRA/latestForecastLoop.gif" alt="Regenradar"></td>
+			<td><img src="/static/solar_img.jpg" alt="Sonne, live" width="576px"></td></tr>
+</table>
+{% endblock content%}
