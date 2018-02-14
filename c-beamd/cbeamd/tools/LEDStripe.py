@@ -1,5 +1,8 @@
-import config
+#import config
 import time
+
+LEDS_PER_STRIPE = 128
+LEDSTRIPES = 4
 
 class LED:
     red = 0x00
@@ -35,8 +38,8 @@ class LED:
         return '%02x%02x%02x' % (red, green, blue)
 
 class LEDStripe:
-    leds = [LED() for e in range(0,config.LEDS_PER_STRIPE)]
-    #leds = [LED()] * config.LEDS_PER_STRIPE
+    leds = [LED() for e in range(0, LEDS_PER_STRIPE)]
+    #leds = [LED()] * LEDS_PER_STRIPE
     is_reversed = False
 
     def __init__(self, is_reversed=False):
@@ -65,7 +68,7 @@ class LEDStripe:
 
 
 class LEDFrame:
-    ledstripes = [LEDStripe() for e in range(0,config.LEDSTRIPES)]
+    ledstripes = [LEDStripe() for e in range(0, LEDSTRIPES)]
 
     def __init__(self):
         self.ledstripes[1].is_reversed = True
@@ -79,7 +82,6 @@ class LEDFrame:
         for x in range(0,128):
             for stripe in self.ledstripes:
                 stripe.rotate_right()
-            print self.current_buffer()
             time.sleep(0.1)
 
     def red_dot(self):
@@ -95,7 +97,6 @@ class LEDFrame:
             for led in stripe.leds:
                 led.set_black()
             for (x, led) in enumerate(stripe.leds):
-                print x
                 if x % 16 < 8:
                     led.set_red()
 

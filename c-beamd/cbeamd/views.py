@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import sys, traceback
 from threading import Timer
 from jsonrpc import jsonrpc_method
-from models import User
-from models import LTE
-from models import Mission, Subscription, UserStatsEntry, MissionLog, Activity, ActivityLog, ActivityLogComment, Status
+from .models import User
+from .models import LTE
+from .models import Mission, Subscription, UserStatsEntry, MissionLog, Activity, ActivityLog, ActivityLogComment, Status
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 from jsonrpc.proxy import ServiceProxy
 import cbeamdcfg as cfg
-from urllib import urlopen
+from urllib.request import urlopen
+#from urllib import urlopen
 import csv
 from ics import Calendar
 
@@ -19,10 +21,12 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.contrib.auth import login as login_auth
 from django.contrib.auth import logout as logout_auth
 from django.contrib.auth import authenticate
-from forms import LoginForm, MissionForm, StripeForm, UserForm, LogActivityForm, ActivityLogCommentForm
+from .forms import LoginForm, MissionForm, StripeForm, UserForm, LogActivityForm, ActivityLogCommentForm
 from django.template.context import RequestContext
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.core.context_processors import csrf
+#from django.core.context_processors import csrf
+from django.template.context_processors import csrf
+
 from django.views.decorators.csrf import csrf_exempt
 from gcm import GCM
 import json
@@ -30,11 +34,11 @@ import logging
 
 from random import choice
 
-from tools.ddate import DDate
-from tools.handTranslate import HandTranslate
-from tools import crypto
-from tools.MyHTMLParser import MyHTMLParser
-from tools.LEDStripe import *
+from .tools.ddate import DDate
+from .tools.handTranslate import HandTranslate
+#from .tools import crypto
+from .tools.MyHTMLParser import MyHTMLParser
+from .tools.LEDStripe import *
 
 import paho.mqtt.client as paho
 import string
@@ -45,8 +49,8 @@ import os, re, feedparser, json, random, ssl
 import smtplib
 from email.mime.text import MIMEText
 
-from tools.ldapNrf24 import LdapNrf24Check
-import urllib2
+### from tools.ldapNrf24 import LdapNrf24Check
+#import urllib2
 from mpd import MPDClient
 from django_ajax.decorators import ajax
 
@@ -719,7 +723,7 @@ def tts(request, voice, text):
     perform text-to-speech over c_out with voice saying text
     """
     result = "aye"
-    print publish("c_out/%s" % voice, str(text))
+    print(publish("c_out/%s" % voice, str(text)))
     #try:
         #result = cout.tts(voice, text)
     #except:
@@ -754,7 +758,6 @@ def setvolume(request, volume):
     """
     set c_out volume to volume
     """
-    print volume
     return cout.setvolume(volume)
 
 @jsonrpc_method('getvolume')
@@ -830,12 +833,10 @@ def c_out_play_web(request, sound):
 #################################################################
 
 #def dhcphook(action, mac, ip, name):
-    #print "%s (%s) got %s" % (name, mac, ip)
     #if data['macmap'].has_key(mac):
         #user = data['macmap'][mac]
         #save()
         #if user in userlist():
-            #print "%s already logged in" % user
         #else:            login(user)
     #return
 #def addmac(user, mac):
@@ -854,37 +855,36 @@ def c_out_play_web(request, sound):
 # r0ket methods
 #################################################################
 
-# cbeam.r0ketSeen(result.group(1), sensor, result.group(2), result.group(3))
-@jsonrpc_method('r0ketseen')
-def r0ketseen(request, r0ketid, sensor, payload, signal):
-    timestamp = 42
-    user = getr0ketuser(request, r0ketid)
-    if user:
-#    if r0ketid in data['r0ketids'].keys():
-#        #data['r0ketmap'][r0ketid] = [sensor, payload, signal, timestamp]
-#        print 'r0ket %s detected, logging in %s (%s)' % (r0ketid, data['r0ketids'][r0ketid], sensor)
-#        data['lastlocation'][user] = sensor
-        result = login_wlan(request, user)
-    else:
-        print 'saw unknown r0ket: %s (%s)' % (r0ketid, sensor)
-#    save()
-    return "aye"
-#
-#def getr0ketmap():
-#    return data['r0ketmap']
-#
-#def registerr0ket(r0ketid, user):
-#    data['r0ketids'][r0ketid] = user
-#    save()
-#    return "aye"
-#
-@jsonrpc_method('getr0ketuser')
-def getr0ketuser(request, r0ketid):
-    f = LdapNrf24Check("ldap://10.0.1.7:389/", 'ou=crew,dc=c-base,dc=org', '', '', 'nrf24', '(memberOf=cn=crew,ou=groups,dc=c-base,dc=org)')
-    m = re.search("uid=(.*?),ou.*", f.getUserForNrf24(r0ketid))
-    return m.group(1)
-    #return "ID: "+f.getUserForNrf24(r0ketid)
-    #return data['r0ketids'][r0ketid]
+### # cbeam.r0ketSeen(result.group(1), sensor, result.group(2), result.group(3))
+### @jsonrpc_method('r0ketseen')
+### def r0ketseen(request, r0ketid, sensor, payload, signal):
+###     timestamp = 42
+###     user = getr0ketuser(request, r0ketid)
+###     if user:
+### #    if r0ketid in data['r0ketids'].keys():
+### #        #data['r0ketmap'][r0ketid] = [sensor, payload, signal, timestamp]
+### #        data['lastlocation'][user] = sensor
+###         result = login_wlan(request, user)
+###     else:
+###         print('saw unknown r0ket: %s (%s)' % (r0ketid, sensor))
+### #    save()
+###     return "aye"
+### #
+### #def getr0ketmap():
+### #    return data['r0ketmap']
+### #
+### #def registerr0ket(r0ketid, user):
+### #    data['r0ketids'][r0ketid] = user
+### #    save()
+### #    return "aye"
+### #
+### @jsonrpc_method('getr0ketuser')
+### def getr0ketuser(request, r0ketid):
+###     f = LdapNrf24Check("ldap://10.0.1.7:389/", 'ou=crew,dc=c-base,dc=org', '', '', 'nrf24', '(memberOf=cn=crew,ou=groups,dc=c-base,dc=org)')
+###     m = re.search("uid=(.*?),ou.*", f.getUserForNrf24(r0ketid))
+###     return m.group(1)
+###     #return "ID: "+f.getUserForNrf24(r0ketid)
+###     #return data['r0ketids'][r0ketid]
 
 #################################################################
 # reminder methods
@@ -1040,34 +1040,34 @@ def profile_edit(request):
     else:
         u = getuser(request.user.username)
         form = UserForm(instance=u)
-    return render_to_response('cbeamd/user_form.django', locals(), context_instance = RequestContext(request))
+    #return render_to_response('cbeamd/user_form.django', locals(), context_instance = RequestContext(request))
+    return render_to_response('cbeamd/user_form.django', locals(), RequestContext(request))
 
 
 #################################################################
 # Web Login / Logout
 #################################################################
 
-def auth_login( request ):
-    redirect_to = request.GET.get( 'next', '' ) or '/'
-    if request.method == 'POST':
-        form = LoginForm( request.POST )
-        if form.is_valid():
-            username = form.cleaned_data['username']
-            password = form.cleaned_data['password']
-            user = authenticate( username=username, password=password )
-            if user is not None:
-                if user.is_active:
-                    login_auth( request, user )
-                    return HttpResponseRedirect( redirect_to )
-    else:
-        form = LoginForm()
-    return render_to_response( 'cbeamd/login.django', RequestContext( request,
-        locals() ) )
-
-def auth_logout( request ):
-    redirect_to = request.GET.get( 'next', '' ) or '/'
-    logout_auth( request )
-    return HttpResponseRedirect( redirect_to )
+#def auth_login( request ):
+#    redirect_to = request.GET.get( 'next', '' ) or '/'
+#    if request.method == 'POST':
+#        form = LoginForm( request.POST )
+#        if form.is_valid():
+#            username = form.cleaned_data['username']
+#            password = form.cleaned_data['password']
+#            user = authenticate( username=username, password=password )
+#            if user is not None:
+#                if user.is_active:
+#                    login_auth( request, user )
+#                    return HttpResponseRedirect( redirect_to )
+#    else:
+#        form = LoginForm()
+#    return render_to_response( 'cbeamd/login.django', locals()) #, context_instance = RequestContext(request))
+#
+#def auth_logout( request ):
+#    redirect_to = request.GET.get( 'next', '' ) or '/'
+#    logout_auth( request )
+#    return HttpResponseRedirect( redirect_to )
 
 #################################################################
 # mission handling
@@ -1165,59 +1165,38 @@ def mission_complete(request, user, mission_id):
 def mission_assign_web(request, mission_id):
     missions_available = Mission.objects.filter(status="open").order_by('short_description')
     missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
+    cuser = getuser(request.user.username),
     result = mission_assign(request, request.user.username, mission_id)
     if result == "success":
         result = "Mission erfolgreich gestartet"
     else:
         result = "Mission konnte nicht gestartet werden"
-    #return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
-    c = RequestContext(request, {
-            'missions_available': missions_available,
-            'missions_in_progress': missions_in_progress,
-            'cuser': getuser(request.user.username),
-            'result': result,
-    })
-    c.update(csrf(request))
-    return render_to_response('cbeamd/mission_list.django', c)
+    return render_to_response('cbeamd/mission_list.django', locals(), RequestContext(request))
 
 @login_required
 def mission_complete_web(request, mission_id):
     missions_available = Mission.objects.filter(status="open").order_by('short_description')
     missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
+    cuser = getuser(request.user.username),
     result = mission_complete(request, request.user.username, mission_id)
     if result == "success":
         result = "Mission erfolgreich abgeschlossen"
     else:
         result = "Mission konnte nicht abgeschlossen werden"
-    #return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
-    c = RequestContext(request, {
-            'missions_available': missions_available,
-            'missions_in_progress': missions_in_progress,
-            'cuser': getuser(request.user.username),
-            'result': result,
-    })
-    c.update(csrf(request))
-    return render_to_response('cbeamd/mission_list.django', c)
+    return render_to_response('cbeamd/mission_list.django', locals(), RequestContext(request))
 
 @login_required
 def mission_cancel_web(request, mission_id):
     missions_available = Mission.objects.filter(status="open").order_by('short_description')
     missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
+    cuser = getuser(request.user.username),
     result = mission_cancel(request, request.user.username, mission_id)
     if result == "success":
         result = "Mission erfolgreich abgebrochen"
     else:
         result = "Mission konnte nicht abgebrochen"
 
-    #return render_to_response('cbeamd/mission_list.django', {'missions_available': missions_available, 'missions_in_progress': missions_in_progress, 'result': result})
-    c = RequestContext(request, {
-            'missions_available': missions_available,
-            'missions_in_progress': missions_in_progress,
-            'cuser': getuser(request.user.username),
-            'result': result,
-    })
-    c.update(csrf(request))
-    return render_to_response('cbeamd/mission_list.django', c)
+    return render_to_response('cbeamd/mission_list.django', locals(), RequestContext(request))
 
 
 #@login_required
@@ -1232,14 +1211,8 @@ def mission_list(request):
     else:
         missions_available = Mission.objects.filter(status="open").order_by('short_description')
         missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
-        c = RequestContext(request, {
-                'missions_available': missions_available,
-                'missions_in_progress': missions_in_progress,
-                'cuser': request.user.username,
-                #'cuser': getuser(request.META['USER']),
-                })
-        c.update(csrf(request))
-        return render_to_response('cbeamd/mission_list.django', c)
+        cuser = request.user.username
+        return render_to_response('cbeamd/mission_list.django', locals(), RequestContext(request))
 
 def is_mission_editor(user):
     return True
@@ -1253,19 +1226,12 @@ def edit_mission(request, mission_id):
         if form.is_valid():
             form.save()
             result = "Mission gespeichert"
-            c = RequestContext(request, {
-                    'missions_available': missions_available,
-                    'missions_in_progress': missions_in_progress,
-                    'cuser': getuser(request.META['USER']),
-                    'result': result,
-            })
-            c.update(csrf(request))
-            return render_to_response('cbeamd/mission_list.django', c)
+            return render_to_response('cbeamd/mission_list.django', locals(), RequestContext(request))
             #return HttpResponseRedirect('/missions/%s' % mission_id)
     else:
         m = Mission.objects.get(id=mission_id)
         form = MissionForm(instance=m)
-    return render_to_response('cbeamd/mission_form.django', locals(), context_instance = RequestContext(request))
+    return render_to_response('cbeamd/mission_form.django', locals(), RequestContext(request))
 
 #################################################################
 # Google Cloud Messaging
@@ -1338,16 +1304,16 @@ def gcm_send_test(request, title, text, username):
     response = gcm.json_request(registration_ids=regids, data=data)
     return response
 
-@jsonrpc_method('test_enc')
-def test_enc(request):
-    gcm = GCM(apikey)
-    encrypted_data = crypto.EncryptWithAES("fooderbar")
-    u = getuser("smile")
-    s = Subscription.objects.get(user=u)
-    regids = [s.regid]
-    data = {'title': "AES", 'text': encrypted_data}
-    response = gcm.json_request(registration_ids=regids, data=data)
-    return encrypted_data
+#@jsonrpc_method('test_enc')
+#def test_enc(request):
+#    gcm = GCM(apikey)
+#    encrypted_data = crypto.EncryptWithAES("fooderbar")
+#    u = getuser("smile")
+#    s = Subscription.objects.get(user=u)
+#    regids = [s.regid]
+#    data = {'title': "AES", 'text': encrypted_data}
+#    response = gcm.json_request(registration_ids=regids, data=data)
+#    return encrypted_data
 
 
 @jsonrpc_method('smile', authenticated=True)
@@ -1404,19 +1370,22 @@ def artefact_list(request):
     global artefactcache_time
     global artefact_base_url
     artefactlist = {}
-    if artefactcache_time + timedelta(hours=1) < timezone.now():
+    if True: # artefactcache_time + timedelta(hours=1) < timezone.now():
         parser = MyHTMLParser()
         try:
-            #parser.feed(urlopen("http://[2a02:f28:4::6b39:2d00]/artefact/").read())
-            parser.feed(urlopen("http://10.0.1.44/artefact/").read())
+            response = urlopen("http://10.0.1.44/artefact/").read().decode('utf-8')
+            parser.feed(response)
             artefacts = parser.get_artefacts()
             artefactlist = [{'name': key, 'slug': artefacts[key]} for key in artefacts.keys()]
             artefactcache = artefactlist
             artefactcache_time = timezone.now()
-        except: pass
+        except Exception as e:
+            print(e)
+            traceback.print_exc(file=sys.stdout)
     else:
         artefactlist = artefactcache
-    return sorted(artefactlist)
+    # return sorted(artefactlist)
+    return artefactlist
 
 @jsonrpc_method('artefact_base_url')
 def artefact_base_url(request):
@@ -1634,12 +1603,8 @@ def activitylog_web(request):
 
 @login_required
 def activitylog_details_web(request, activitylog_id):
-    al = ActivityLog.objects.get(id=activitylog_id)
-    c = RequestContext(request, {
-            'activitylog': al, 
-            })
-    c.update(csrf(request))
-    return render_to_response('cbeamd/activitylog_details.django', c)
+    activitylog = ActivityLog.objects.get(id=activitylog_id)
+    return render_to_response('cbeamd/activitylog_details.django', locals(), RequestContext(request))
 
 @csrf_exempt
 @login_required
@@ -1716,9 +1681,9 @@ def activitylog_post_comment(request, activitylog_id):
     result = "WTF"
     if request.method == 'POST':
         form = ActivityLogCommentForm(request.POST)
-        ale = ActivityLog.objects.get(id=activitylog_id)
+        activitylog = ActivityLog.objects.get(id=activitylog_id)
         u = getuser(request.user.username)
-        users = [comment.user.username for comment in ale.comments.all()]
+        users = [comment.user.username for comment in activitylog.comments.all()]
         if u.username in users:
             result = "commentar connte nicht gespeichert werden, du hast diese aktivita:t bereits commentiert"
         else:
@@ -1728,21 +1693,16 @@ def activitylog_post_comment(request, activitylog_id):
                 alc.comment = form.cleaned_data["comment"]
                 alc.user = u
                 if form.cleaned_data["protest"] == "protest":
-                    ale.protests += 1
+                    activitylog.protests += 1
                     alc.comment_type = "protest"
                 elif form.cleaned_data["thanks"] == "thanks":
-                    ale.thanks += 1
+                    activitylog.thanks += 1
                     alc.comment_type = "thanks"
                 alc.save()
-                ale.comments.add(alc)
-                ale.save()
+                activitylog.comments.add(alc)
+                activitylog.save()
                 result = "dance fu:r deinen commentar"
-    c = RequestContext(request, {
-            'activitylog': ale, 
-            'result': result,
-            })
-    #c.update(csrf(request))
-    return render_to_response('cbeamd/activitylog_details.django', c)
+    return render_to_response('cbeamd/activitylog_details.django', locals(), RequestContext(request))
 
 @login_required
 def activitylog_delete_comment(request, comment_id):
@@ -1817,11 +1777,8 @@ def set_push_eta(request, user, is_enabled):
 
 @login_required
 def c_out_volume_web(request):
-    c = RequestContext(request, {
-            'volume': c_out_volume, 
-            })
-    c.update(csrf(request))
-    return render_to_response('cbeamd/c_out_volume.django', c)
+    volume = c_out_volume
+    return render_to_response('cbeamd/c_out_volume.django', locals(), RequestContext(request))
 
 
 @login_required
@@ -1849,41 +1806,38 @@ def barschnur(request, pizza, sushi, inder):
 
 @jsonrpc_method('c_portal.notify')
 def c_portal_notify(request, notification):
-    print notification
+    print(notification)
 
 @jsonrpc_method("trafotron")
 def trafotron(request, value):
-    print "trafotron: %d" % value
     newval = (value * 100) / 170
     #os.system("amixer -c 0 set Master %d%%" % newval)
     try:
-        print c_leuse_c_out.setvolume(newval)
+        print(c_leuse_c_out.setvolume(newval))
     except Exception as e:
-        print e
+        print(e)
 
 @jsonrpc_method("cerebrumNotify")
 def cerebrumNotify(request, device_name, event_source_path, new_state):
-    print "%s %s %s" % (device_name, event_source_path, new_state)
     cerebrum_state[device_name][event_source_path] = new_state
-    #print "%S %s %s" % (device_name, event_source_path, new_state)
 
-    print "'%s: %s'" % (event_source_path, new_state)
+    print("'%s: %s'" % (event_source_path, new_state))
     if event_source_path == '/schaltergang/1':
-        print nerdctrl_cout.play('clamp.mp3') 
+        nerdctrl_cout.play('clamp.mp3') 
     if event_source_path == '/schaltergang/2':
-        print nerdctrl_cout.play('carbon.mp3') 
+        nerdctrl_cout.play('carbon.mp3') 
     if event_source_path == '/schaltergang/3':
-        print nerdctrl_cout.play('cience.mp3') 
+        nerdctrl_cout.play('cience.mp3') 
     if event_source_path == '/schaltergang/4':
-        print nerdctrl_cout.play('creatv.mp3') 
+        nerdctrl_cout.play('creatv.mp3') 
     if event_source_path == '/schaltergang/5':
-        print nerdctrl_cout.play('cultur.mp3') 
+        nerdctrl_cout.play('cultur.mp3') 
     if event_source_path == '/schaltergang/6':
-        print nerdctrl_cout.play('com.mp3') 
+        nerdctrl_cout.play('com.mp3') 
     if event_source_path == '/schaltergang/7':
-        print nerdctrl_cout.play('core.mp3') 
+        nerdctrl_cout.play('core.mp3') 
     if event_source_path == '/schaltergang/8':
-        print nerdctrl_cout.announce('die schalter sind kein spielzeug!') 
+        nerdctrl_cout.announce('die schalter sind kein spielzeug!') 
     if event_source_path == '/schaltergang/9':
         if new_state == 0:
             publish("nerdctrl/open", "http://www.c-base.org")
@@ -1926,34 +1880,34 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
             publish("nerdctrl/open", "http://vimeo.com/cbase/videos")
 
     if event_source_path == '/schaltergang/13':
-        print nerdctrl_cout.tts('Julia', 'huch!') 
+        nerdctrl_cout.tts('Julia', 'huch!') 
         publish("nerdctrl/open", "http://map.norsecorp.com/")
     if event_source_path == '/schaltergang/14':
-        print nerdctrl_cout.tts('Julia', 'achtung! alles turisten und nonteknischen lookenpeepers! das komputermaschine ist nicht fuer der gefingerpoken und mittengraben!') 
+        nerdctrl_cout.tts('Julia', 'achtung! alles turisten und nonteknischen lookenpeepers! das komputermaschine ist nicht fuer der gefingerpoken und mittengraben!') 
     if event_source_path == '/schaltergang/15':
-        print nerdctrl_cout.tts('Julia', 'finger weg!') 
+        nerdctrl_cout.tts('Julia', 'finger weg!') 
     if event_source_path == '/schaltergang/16':
-        print nerdctrl_cout.play('cantdo.mp3') 
+        nerdctrl_cout.play('cantdo.mp3') 
     if event_source_path == '/schaltergang/18':
-        print nerdctrl_cout.play('Spock_hat_keinen_Bock.mp3') 
+        nerdctrl_cout.play('Spock_hat_keinen_Bock.mp3') 
     if event_source_path == '/schaltergang/19':
-        print nerdctrl_cout.play('kommtihrelendendaten.mp3') 
+        nerdctrl_cout.play('kommtihrelendendaten.mp3') 
     if event_source_path == '/schaltergang/20':
-        print nerdctrl_cout.play('darth.mp3') 
+        nerdctrl_cout.play('darth.mp3') 
     if event_source_path == '/schaltergang/21':
-        print nerdctrl_cout.play('faszinierend.mp3') 
+        nerdctrl_cout.play('faszinierend.mp3') 
     if event_source_path == '/schaltergang/22':
-        print nerdctrl_cout.play('zugangzummastercontrollprogramm.mp3') 
+        nerdctrl_cout.play('zugangzummastercontrollprogramm.mp3') 
     if event_source_path == '/schaltergang/23':
-        print nerdctrl_cout.tts('Julia', 'alles zweifelhafte muss angezweifelt werden') 
+        nerdctrl_cout.tts('Julia', 'alles zweifelhafte muss angezweifelt werden') 
     if event_source_path == '/schaltergang/30':
-        print nerdctrl_cout.tts('Julia', 'alle mann sofort in die zeitmaschine!') 
+        nerdctrl_cout.tts('Julia', 'alle mann sofort in die zeitmaschine!') 
     if event_source_path == '/schaltergang/17':
-        print nerdctrl_cout.tts('Julia', 'achtung, achtung, hier spricht der bordcomputer. huhu!')
+        nerdctrl_cout.tts('Julia', 'achtung, achtung, hier spricht der bordcomputer. huhu!')
     if event_source_path == '/schaltergang/26':
         if new_state == 0:
             if cerebrum_state[device_name]['/schaltergang/24'] == 0:
-                print nerdctrl_cout.play('rocket_countdown_short') 
+                nerdctrl_cout.play('rocket_countdown_short') 
 
 @jsonrpc_method("barstatus")
 def barstatus(request, status):
@@ -1970,7 +1924,6 @@ def barstatus(request, status):
         status_object.bar_open = False
         status_object.save()
         notify_bar_closing()
-    print "barstatus: %s" % status
     publish("bar/state", str(status), retain=True)
 
 @jsonrpc_method("get_barstatus")
@@ -1995,10 +1948,8 @@ def publish(topic, payload, retain=False):
         else:
             mqtt.connect(cfg.mqtt_server, port=1883)
 
-        #print("published: " + str(mqtt.publish(topic, payload)))
-        print("published: " + str(mqtt.publish(topic, payload, qos=1, retain=retain)))
     except Exception as e: 
-        print e
+        print(e)
         pass
 
 def create_random_password(length):
@@ -2113,14 +2064,14 @@ def barbutton(request, pressed):
 @jsonrpc_method('ampel')
 def ampel(request, red, yellow, green):
     try:
-        print ampelrpc.ampel(red, yellow, green)
+        print(ampelrpc.ampel(red, yellow, green))
     except: pass
     return "aye"
 
 @jsonrpc_method('ampelblink')
 def ampelblink(request, program):
     try:
-        print ampelrpc.ampel(program)
+        print(ampelrpc.ampel(program))
     except: pass
     return "aye"
 
@@ -2167,7 +2118,6 @@ def ampel(request, location, color, state):
     payload = '{"%s": %d}' % (color, int(state))
     #payload = '{"red": 1, "yellow": 1, "green": 1}'
     #payload = '{"red": 1}'
-    print payload
     publish("ampel/%s" % location, str(payload))
     
 

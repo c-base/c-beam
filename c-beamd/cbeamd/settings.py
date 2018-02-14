@@ -1,5 +1,6 @@
-from django_auth_ldap.config import LDAPSearch,GroupOfNamesType
-import ldap, os
+import os
+
+from django.core.urlresolvers import reverse_lazy
 
 # Django settings for cbeamd project.
 
@@ -16,13 +17,9 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'cbeam',                      # Or path to database file if using sqlite3.
-        'USER': 'cbeam',                      # Not used with sqlite3.
-        'PASSWORD': 'uhgiaoguhlvnwoiu2h38gg93rhfqkjn',                  # Not used with sqlite3.
-        'HOST': '127.0.0.1',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '5432',                      # Set to empty string for default. Not used with sqlite3.
-    }
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'c-beam.sqlite',
+    },
 }
 
 # Local time zone for this installation. Choices can be found here:
@@ -116,32 +113,13 @@ INSTALLED_APPS = (
 )
 
 
-AUTH_LDAP_SERVER_URI = "ldap://lea.cbrp3.c-base.org"
-AUTH_LDAP_USER_DN_TEMPLATE = "uid=%(user)s,ou=crew,dc=c-base,dc=org"
-AUTH_LDAP_START_TLS = False
-AUTH_LDAP_BIND_AS_AUTHENTICATING_USER = False
-
-AUTH_LDAP_CACHE_GROUPS = True
-AUTH_LDAP_GROUP_CACHE_TIMEOUT = 300
-AUTH_LDAP_MIRROR_GROUPS = True
-AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
-        "dc=c-base,dc=org",
-        ldap.SCOPE_SUBTREE,
-        "(objectClass=groupOfNames)",
-)
-AUTH_LDAP_REQUIRE_GROUP = "cn=crew,ou=groups,dc=c-base,dc=org"
-AUTH_LDAP_GROUP_TYPE = GroupOfNamesType(name_attr="cn")
-AUTH_LDAP_USER_FLAGS_BY_GROUP = {
-        "is_member": "cn=crew,ou=groups,dc=c-base,dc=org",
-        "is_circle_member": "cn=circle,ou=groups,dc=c-base,dc=org",
-}
-
 AUTHENTICATION_BACKENDS = (
-                'django_auth_ldap.backend.LDAPBackend',
                 'django.contrib.auth.backends.ModelBackend',
                 )
-LOGIN_URL = "/login"
-LOGOUT_URL = "/logout"
+
+LOGIN_URL=reverse_lazy('login')
+LOGOUT_URL=reverse_lazy('logout')
+LOGIN_REDIRECT_URL=reverse_lazy('index')
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -166,30 +144,6 @@ LOGGING = {
         },
     },
 }
-
-#LOGGING = {
-    #'version': 1,
-    #'disable_existing_loggers': False,
-    #'filters': {
-        #'require_debug_false': {
-            #'()': 'django.utils.log.RequireDebugFalse'
-        #}
-    #},
-    #'handlers': {
-        #'mail_admins': {
-            #'level': 'ERROR',
-            #'filters': ['require_debug_false'],
-            #'class': 'django.utils.log.AdminEmailHandler'
-        #}
-    #},
-    #'loggers': {
-        #'django.request': {
-            #'handlers': ['mail_admins'],
-            #'level': 'ERROR',
-            #'propagate': True,
-        #},
-    #}
-#}
 
 TTSGREETING = "Hallo %s, willkommen an bord"
 
@@ -224,3 +178,9 @@ TEMPLATES = [
     },
 
 ]
+
+try:
+    from cbeamd.local_settings import *
+except ImportError as e:
+    print('Unable to load local_settings.py:', e)
+

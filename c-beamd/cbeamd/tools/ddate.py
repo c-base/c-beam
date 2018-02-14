@@ -3,13 +3,13 @@ import datetime, random
 
 def showDayNum(num):
     if((num!=11) and ((num % 10)==1)):
-        return(`num` + "st")
+        return(repr(num) + "st")
     elif((num!=12) and ((num % 10)==2)):
-        return(`num` + "nd")
+        return(repr(num) + "nd")
     elif((num!=13) and ((num % 10)==3)):
-        return(`num` + "rd")
+        return(repr(num) + "rd")
     else:
-        return(`num` + "th")
+        return(repr(num) + "th")
 
 def isLeapYear(year):
     if (year % 100 != 0) and (year % 4 == 0):
@@ -50,7 +50,7 @@ class DDate(object):
                 msg = self.dWeekdays[self.dDayOfWeek] +  \
                         u', the ' + showDayNum(self.dDayOfSeason) + \
                         u' day of ' + self.dSeasons[self.dSeasonNum] + \
-                        u' in the YOLD ' + `self.dYOLD` + '.'
+                        u' in the YOLD ' + repr(self.dYOLD) + '.'
                 if(self.dSeasonHoliday):
                         msg = msg + u' Celebrate ' + self.dSeasonHolidays[self.dSeasonNum] + '!'
                 if(self.dApostleHoliday):
