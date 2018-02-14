@@ -1,0 +1,9 @@
+{% extends 'cbeamd/base.django' %}
+
+{% load bootstrap3 %}
+
+{% block content %}
+
+You have been logged out.
+
+{% endblock content %}
