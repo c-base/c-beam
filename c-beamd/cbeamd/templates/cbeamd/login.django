@@ -4,7 +4,7 @@
 
 {% block content %}
 
-<form action="/login?next={{redirect_to}}" method="post" class="formi col-md-3">
+<form action="/login/?next={{redirect_to}}" method="post" class="formi col-md-3">
     {% csrf_token %}
     {% bootstrap_form form %}
     {% buttons %}

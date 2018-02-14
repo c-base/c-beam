@@ -1,11 +1,12 @@
 #from django.conf.urls import patterns, include, url
 from django.conf.urls import url, include
-from models import User
-from models import Mission
+from .models import User
+from .models import Mission
 from jsonrpc import jsonrpc_site
 from . import views # you must import the views that need connected
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
 
 
 # Uncomment the next two lines to enable the admin:
@@ -43,15 +44,17 @@ urlpatterns = [
     url(r'^rpc/', jsonrpc_site.dispatch, name="jsonrpc_mountpoint"),
     #url(r'^user/(?P<user_id>\d+)/$', views.user),
     #url(r'^user/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail', dict(user_dict, template_name='user_detail.django'), user_dict),
-    url(r'^user/(?P<user>\d+)/login$', views.login_with_id, name='login_with_id'),
     url(r'^user/online$', views.user_list_web, name='user_list_web'),
     url(r'^user/offline$', views.user_offline, name='user_offline'),
     url(r'^user/eta$', views.user_eta, name='user_eta'),
     url(r'^user/all$', views.user_all, name='user_all'),
-    url(r'^user/login/(?P<user>.+)$', views.login, name='login'),
-    url(r'^user/logout/(?P<user>.+)$', views.logout, name='logout'),
-    url(r'^login$', views.auth_login, name='auth_login'),
-    url(r'^logout$', views.auth_logout, name='auth_logout'),
+    #url(r'^user/login/(?P<user>.+)$', views.login, name='login'),
+    #url(r'^user/logout/(?P<user>.+)$', views.logout, name='logout'),
+    #url(r'^user/(?P<user>\d+)/login$', views.login_with_id, name='login_with_id'),
+    #url(r'^login$', views.auth_login, name='auth_login'),
+    #url(r'^logout$', views.auth_logout, name='auth_logout'),
+    url(r'^login/$', auth_views.login, { 'template_name': "cbeamd/login.django" }, name='login'),
+    url(r'^logout/$', auth_views.logout, {'template_name': 'cbeamd/logout.django'}, name='logout'),
     url(r'^logactivity$', views.logactivity_web, name='logactivity_web'),
     #url(r'^missions/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail, dict(mission_dict, template_name='mission_detail.django'), mission_dict),
     url(r'^missions$', views.mission_list, name='mission_list'),
