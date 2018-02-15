@@ -1,0 +1,3 @@
+django-auth-ldap
+gunicorn
+psycopg2
