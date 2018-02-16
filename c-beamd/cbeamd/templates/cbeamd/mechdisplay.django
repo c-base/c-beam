@@ -35,6 +35,8 @@
 {% block extra_js %}
   <script>
     var mpdUrl = "ws://mechblast:6601";
+    var mpdHostname = "10.0.1.20"
+
     update = function() {
       jQuery.get("/mechblast_json", function(data, textstatus, jqxhr) {
         jQuery("#userlist").html(data.userlist.join(", "));

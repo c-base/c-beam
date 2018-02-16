@@ -4,6 +4,7 @@ const ReactDOM = require('react-dom');
 //const FancyTree = require('jquery.fancytree');
 const createFragment = require('react-addons-create-fragment');
 const BootstrapPanel = require('./bootstrap').panel;
+const PropTypes = require('prop-types')
 
 String.prototype.toHHMMSS = function () {
     var sec_num = parseInt(this, 10); // don't forget the second param
@@ -18,11 +19,8 @@ String.prototype.toHHMMSS = function () {
     return time;
 }
 
-var MpdStatus = React.createClass({
-  //update: function(event) {
-    //this.setState({status: jQuery.get("/mpd/status/")});
-  //},
-  render: function() {
+class MpdStatus extends React.Component {
+  render() {
     var title = "";
     var artist = "";
     var album = "";
@@ -70,17 +68,17 @@ var MpdStatus = React.createClass({
       </div>
     )
   }
-});
+}
 
-var MpdVolButton = React.createClass({
+class MpdVolButton extends React.Component {
   propTypes: {
     command: React.PropTypes.string.isRequired,
     host: React.PropTypes.string.isRequired,
-  },
-  handleClick: function(event) {
+  }
+  handleClick(event) {
     jQuery.get('/mpd/'+this.props.host+'/command/' + this.props.command + '/')
-  },
-  render: function() {
+  }
+  render() {
     var label = "fa fa-question";
     if (this.props.command == 'vol_up') {
       label = "fa fa-plus";
@@ -91,17 +89,17 @@ var MpdVolButton = React.createClass({
       <a onClick={this.handleClick} className="btn btn-default btn-vol"><i className={label}></i></a>
     )
   }
-});
+}
 
-var MpdControlButton = React.createClass({
-  propTypes: {
-    command: React.PropTypes.string.isRequired,
-    host: React.PropTypes.string.isRequired,
-  },
-  handleClick: function(event) {
+class MpdControlButton extends React.Component {
+  constructor(props) {
+    super(props)
+    this.handleClick = this.handleClick.bind(this)
+  }
+  handleClick(event) {
     jQuery.get('/mpd/'+this.props.host+'/command/' + this.props.command + '/')
-  },
-  render: function() {
+  }
+  render() {
     var label = "fa fa-question";
     if (this.props.command == 'play') {
       label = "fa fa-play";
@@ -128,26 +126,26 @@ var MpdControlButton = React.createClass({
       <a onClick={this.handleClick} className="btn btn-default"><i className={label}></i></a>
     )
   }
-});
+}
+MpdControlButton.propTypes = {
+  command: PropTypes.string.isRequired,
+  host: PropTypes.string.isRequired,
+}
 
 
-var MpdVolumeControl = React.createClass({
-  propTypes: {
-  },
-  contextTypes: {
-    volume: React.PropTypes.number
-  },
-  handleChange: function(event) {
-    //var volume = this.refs.mpd_volume;
-    //console.log('set volume to' + volume.value)
-    //jQuery.get('/mpd/command/' + this.props.command + '/')
+class MpdVolumeControl extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {volume: 0}
+    this.handleChange = this.handleChange.bind(this)
+  }
+  handleChange(event) {
     this.setState({data: {volume: event.target.value}});
-  },
-  getInitialState: function() {
+  }
+  getInitialState() {
     return {data: {volume: 0}};
-  },
-  render: function() {
-          //<input id="mpd_volume" className="slider" type="range" min="0" max="100" step="5" onChange={this.handleChange} ref="mpd_volume" value={this.props.data.volume} />
+  }
+  render() {
     return  (
       <div className="col-md-4 column btn-group btn-group-lg volumecontrol">
           <MpdVolButton command="vol_down" host="mechblast" />
@@ -156,12 +154,16 @@ var MpdVolumeControl = React.createClass({
       </div>
     )
   }
-});
+}
+MpdVolumeControl.propTypes =  {
+  volume: PropTypes.number.isRequired
+}
 
-var MpdControls = React.createClass({
-  propTypes: {
-  },
-  render: function() {
+class MpdControls extends React.Component {
+  constructor(props) {
+    super(props)
+  }
+  render() {
     return  (
       <div className="row">
         <div className="btn-group btn-group-justified btn-group-lg">
@@ -179,23 +181,22 @@ var MpdControls = React.createClass({
       </div>
     )
   }
-});
+}
 
-var MpdPlaybackPosition = React.createClass({
-  propTypes: {
-  },
-  contextTypes: {
-    position: React.PropTypes.number,
-    elapsed: React.PropTypes.number,
-    total: React.PropTypes.number
-  },
-  handleChange: function(event) {
+class MpdPlaybackPosition extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {'data': {elapsed: ''}}
+
+    this.handleChange = this.handleChange.bind(this)
+  }
+  handleChange(event) {
     this.setState({data: {position: event.target.value}});
-  },
-  getInitialState: function() {
+  }
+  getInitialState() {
     return {data: {position: 0, elapsed: 0, total: 0}};
-  },
-  render: function() {
+  }
+  render() {
     // 'time': '364:4535'
     return  (
       <div className="column col-md-8">
@@ -212,40 +213,40 @@ var MpdPlaybackPosition = React.createClass({
       </div>
     )
   }
-});
+}
+MpdPlaybackPosition.propTypes = {
+  elapsed: PropTypes.number.isRequired,
+  total: PropTypes.number.isRequired,
+  position: PropTypes.object,
+}
 
-var MpdWidget = React.createClass({
-  childContextTypes: {
-    volume: React.PropTypes.number
-  },
-  getStatus: function() {
+class MpdWidget extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {data: {content: {state: "unknown", volume: 0, elapsed: 0, total: 0}, host: 'mechblast' }};
+    this.getStatus = this.getStatus.bind(this)
+  }
+  getStatus() {
+    var self = this
+    console.log(this.props.host)
     jQuery.ajax({
       url: "/mpd/"+this.props.host+"/status/",
       dataType: 'json',
       cache: false,
-      success: function(data) {
-        this.setState({data: data});
-      }.bind(this),
-      error: function(xhr, status, err) {
-        console.error(this.props.url, status, err.toString());
-      }.bind(this)
+      success(data) {
+        self.setState({data: data});
+      },
+      error(xhr, status, err) {
+        console.error(self.props.host, status, err.toString());
+      }
     });
-  },
-  //getChildContext: function() {
-    //return {volume: this.state.data.content.state.volume};
-  //},
-  propTypes: {
-    //url: React.PropTypes.string.isRequired,
-  },
-  getInitialState: function() {
-    return {data: {content: {state: "unknown", volume: 0, elapsed: 0, total: 0}}};
-  },
-  componentDidMount: function() {
+  }
+  componentDidMount() {
     var self = this;
     this.getStatus();
     setInterval(this.getStatus, this.props.pollInterval);
-  },
-  render: function() {
+  }
+  render() {
         //<MpdControls />
         //<div className="row mpdcontrol">
           //<MpdPlaybackPosition data={this.state.data.content} />
@@ -257,8 +258,12 @@ var MpdWidget = React.createClass({
       </div>
     )
   }
-});
+}
 
+MpdWidget.propTypes = {
+  url: PropTypes.string,
+  host: PropTypes.string,
+}
 
 
 //
