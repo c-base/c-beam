@@ -228,7 +228,6 @@ class MpdWidget extends React.Component {
   }
   getStatus() {
     var self = this
-    console.log(this.props.host)
     jQuery.ajax({
       url: "/mpd/"+this.props.host+"/status/",
       dataType: 'json',
