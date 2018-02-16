@@ -36,6 +36,14 @@ class MpdStatus extends React.Component {
     }
     currentSong.elapsed = String(this.props.mpdstatus.elapsed).toHHMMSS();
     currentSong.total = String(this.props.currentSong.duration).toHHMMSS();
+    if (!currentSong.title) {
+      var elements = currentSong.path.split("/")
+      var newTitle = elements[elements.length-1]
+      if (newTitle.length > 45) {
+        newTitle = newTitle.substring(0, 42) + "..."
+      }
+      currentSong.title = newTitle
+    }
     let random = "fa fa-random"
     if (this.props.mpdstatus.random == 0) {
       random += " disabled"
@@ -504,7 +512,6 @@ class MpdWidget extends React.Component {
 /*
 */
   render() {
-    console.log(this.state)
     /*
         <MpdControls switchTab={this.switchTab} execCommand={this.execCommand} />
         <div className="row mpdcontrol">
@@ -523,6 +530,7 @@ class MpdWidget extends React.Component {
 
 MpdWidget.propTypes = {
   url: PropTypes.string,
+  host: PropTypes.string,
 }
 
 module.exports = MpdWidget
