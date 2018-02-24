@@ -17,7 +17,7 @@ from ics import Calendar
 
 from django.template import Context, loader
 from django.http import HttpResponse,HttpResponseRedirect
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render_to_response, get_object_or_404, render
 from django.contrib.auth import login as login_auth
 from django.contrib.auth import logout as logout_auth
 from django.contrib.auth import authenticate
@@ -189,7 +189,7 @@ def stealth_login(request, user):
 @login_required
 def login_web(request):
     result = force_login(request, request.user.username)
-    return render_to_response('cbeamd/c_buttons.django', {'result': 'du wurdest angemeldet'})
+    return render(request, 'cbeamd/c_buttons.django', {'result': 'du wurdest angemeldet'})
 
 @jsonrpc_method('logout')
 def logout(request, user):
@@ -239,7 +239,7 @@ def force_logout(request, user):
 @login_required
 def logout_web(request):
     result = force_logout(request, request.user.username)
-    return render_to_response('cbeamd/c_buttons.django', {'result': 'du wurdest abgemeldet'})
+    return render(request, 'cbeamd/c_buttons.django', {'result': 'du wurdest abgemeldet'})
 
 
 #jsonrpc_method('login_wlan')
@@ -696,7 +696,7 @@ def update_event_cache():
         eventcache_time = timezone.now()
 
 def event_list_web(request):
-    return render_to_response('cbeamd/event_list.django', {'event_list': event_list(request)})
+    return render(request, 'cbeamd/event_list.django', {'event_list': event_list(request)})
 
 #################################################################
 # scanner methods
@@ -723,7 +723,6 @@ def tts(request, voice, text):
     perform text-to-speech over c_out with voice saying text
     """
     result = "aye"
-    print(publish("c_out/%s" % voice, str(text)))
     #try:
         #result = cout.tts(voice, text)
     #except:
@@ -806,12 +805,12 @@ def announce(request, text):
 
 @login_required
 def c_out_web(request):
-    return render_to_response('cbeamd/c_out.django', {'sound_list': sounds(request)})
+    return render(request, 'cbeamd/c_out.django', {'sound_list': sounds(request)})
 
 @login_required
 def c_out_play_web(request, sound):
     result = play(request, sound)
-    return render_to_response('cbeamd/c_out.django', {'sound_list': sounds(request), 'result': "sound wurde abgespielt"})
+    return render(request, 'cbeamd/c_out.django', {'sound_list': sounds(request), 'result': "sound wurde abgespielt"})
 
 
 
@@ -962,39 +961,39 @@ def index(request):
     al = ActivityLog.objects.order_by('-timestamp')[:20]
     rev = list(al)
     rev.reverse()
-    return render_to_response('cbeamd/index.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all', 'activitylog': rev})
+    return render(request, 'cbeamd/index.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all', 'activitylog': rev})
 
 @login_required
 def user(request, user_id):
     u = get_object_or_404(User, pk=user_id)
-    return render_to_response('cbeamd/user_detail.django', {'user': u})
+    return render(request, 'cbeamd/user_detail.django', {'user': u})
 
 @login_required
 def user_online(request):
     user_list = User.objects.filter(status="online").order_by('username')
-    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'online'})
+    return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'online'})
 
 @login_required
 def user_offline(request):
     user_list = User.objects.filter(status="offline").order_by('username')
-    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'offline'})
+    return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'offline'})
 
 @login_required
 def user_eta(request):
     user_list = User.objects.filter(status="eta").order_by('username')
-    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'eta'})
+    return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'eta'})
 
 @login_required
 def user_all(request):
     user_list_online = User.objects.all().order_by('username')
-    return render_to_response('cbeamd/user_list.django', {'user_list': user_list, 'status': 'all'})
+    return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'all'})
 
 @login_required
 def user_list_web(request):
     user_list_online = User.objects.filter(status="online").order_by('username')
     user_list_eta = User.objects.filter(status="eta").order_by('username')
     user_list_offline = User.objects.filter(status="offline").order_by('username')
-    return render_to_response('cbeamd/user_list.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all'})
+    return render(request, 'cbeamd/user_list.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all'})
 
 @jsonrpc_method('user_list')
 def user_list(request):
@@ -1011,21 +1010,20 @@ def stats_list(request):
 def stats(request):
     #user_list = User.objects.filter(stats_enabled=True).exclude(ap=0).order_by('-ap', 'username')
     user_list = sorted(list(User.objects.filter(stats_enabled=True).exclude(ap=0)), key=lambda x: x.calc_ap(), reverse=True)
-    return render_to_response('cbeamd/stats.django', {'user_list': [user.dic() for user in user_list]})
-    #return render_to_response('cbeamd/stats.django', {'user_list': user_list})
+    return render(request, 'cbeamd/stats.django', {'user_list': [user.dic() for user in user_list]})
 
 
 @login_required
 def control(request):
-    return render_to_response('cbeamd/control.django', {})
+    return render(request, 'cbeamd/control.django', {})
 
 @login_required
 def c_leuse(request):
-    return render_to_response('cbeamd/c_leuse.django', {})
+    return render(request, 'cbeamd/c_leuse.django', {})
 
 @login_required
 def c_buttons(request):
-    return render_to_response('cbeamd/c_buttons.django', {})
+    return render(request, 'cbeamd/c_buttons.django', {})
 
 @login_required
 def profile_edit(request):
@@ -1040,8 +1038,7 @@ def profile_edit(request):
     else:
         u = getuser(request.user.username)
         form = UserForm(instance=u)
-    #return render_to_response('cbeamd/user_form.django', locals(), context_instance = RequestContext(request))
-    return render_to_response('cbeamd/user_form.django', locals(), RequestContext(request))
+    return render(request, 'cbeamd/user_form.django', locals())
 
 
 #################################################################
@@ -1062,7 +1059,7 @@ def profile_edit(request):
 #                    return HttpResponseRedirect( redirect_to )
 #    else:
 #        form = LoginForm()
-#    return render_to_response( 'cbeamd/login.django', locals()) #, context_instance = RequestContext(request))
+#    return render(request,  'cbeamd/login.django', locals()) #, context_instance = RequestContext(request))
 #
 #def auth_logout( request ):
 #    redirect_to = request.GET.get( 'next', '' ) or '/'
@@ -1096,7 +1093,7 @@ def mission_detail(request, mission_id):
     """
     mission = get_object_or_404(Mission, pk=mission_id)
     return mission.dic()
-    #return render_to_response('cbeamd/mission_detail.django', {'mission': mission})
+    #return render(request, 'cbeamd/mission_detail.django', {'mission': mission})
 
 @jsonrpc_method('mission_assign')
 def mission_assign(request, user, mission_id):
@@ -1171,7 +1168,7 @@ def mission_assign_web(request, mission_id):
         result = "Mission erfolgreich gestartet"
     else:
         result = "Mission konnte nicht gestartet werden"
-    return render_to_response('cbeamd/mission_list.django', locals(), RequestContext(request))
+    return render(request, 'cbeamd/mission_list.django', locals())
 
 @login_required
 def mission_complete_web(request, mission_id):
@@ -1183,7 +1180,7 @@ def mission_complete_web(request, mission_id):
         result = "Mission erfolgreich abgeschlossen"
     else:
         result = "Mission konnte nicht abgeschlossen werden"
-    return render_to_response('cbeamd/mission_list.django', locals(), RequestContext(request))
+    return render(request, 'cbeamd/mission_list.django', locals())
 
 @login_required
 def mission_cancel_web(request, mission_id):
@@ -1196,7 +1193,7 @@ def mission_cancel_web(request, mission_id):
     else:
         result = "Mission konnte nicht abgebrochen"
 
-    return render_to_response('cbeamd/mission_list.django', locals(), RequestContext(request))
+    return render(request, 'cbeamd/mission_list.django', locals())
 
 
 #@login_required
@@ -1212,7 +1209,7 @@ def mission_list(request):
         missions_available = Mission.objects.filter(status="open").order_by('short_description')
         missions_in_progress = Mission.objects.filter(status="assigned").order_by('short_description')
         cuser = request.user.username
-        return render_to_response('cbeamd/mission_list.django', locals(), RequestContext(request))
+        return render(request, 'cbeamd/mission_list.django', locals())
 
 def is_mission_editor(user):
     return True
@@ -1226,12 +1223,12 @@ def edit_mission(request, mission_id):
         if form.is_valid():
             form.save()
             result = "Mission gespeichert"
-            return render_to_response('cbeamd/mission_list.django', locals(), RequestContext(request))
+            return render(request, 'cbeamd/mission_list.django', locals())
             #return HttpResponseRedirect('/missions/%s' % mission_id)
     else:
         m = Mission.objects.get(id=mission_id)
         form = MissionForm(instance=m)
-    return render_to_response('cbeamd/mission_form.django', locals(), RequestContext(request))
+    return render(request, 'cbeamd/mission_form.django', locals())
 
 #################################################################
 # Google Cloud Messaging
@@ -1355,7 +1352,7 @@ def hwstorage(request):
 
 def hwstorage_web(request):
     result = hwstorage(request, True)
-    return render_to_response('cbeamd/c_buttons.django', {'result': 'Software-Endlager wurde geöffnet: %s' % result})
+    return render(request, 'cbeamd/c_buttons.django', {'result': 'Software-Endlager wurde geöffnet: %s' % result})
 
 #################################################################
 # artefact handling
@@ -1380,7 +1377,7 @@ def artefact_list(request):
             artefactcache = artefactlist
             artefactcache_time = timezone.now()
         except Exception as e:
-            print(e)
+            logger.error(e)
             traceback.print_exc(file=sys.stdout)
     else:
         artefactlist = artefactcache
@@ -1397,7 +1394,7 @@ def artefact_base_url(request):
 
 
 def artefact_list_web(request):
-    return render_to_response('cbeamd/artefact_list.django', {'artefact_list': artefact_list(request)})
+    return render(request, 'cbeamd/artefact_list.django', {'artefact_list': artefact_list(request)})
 
 #################################################################
 # article handling
@@ -1463,7 +1460,7 @@ def set_stripe_pattern(request, pattern_id):
     return result
 
 def set_stripe_pattern_web(request, pattern_id):
-    return render_to_response('cbeamd/c_leuse.django', {'result': 'Pattern wurde gesetzt'})
+    return render(request, 'cbeamd/c_leuse.django', {'result': 'Pattern wurde gesetzt'})
 
 @jsonrpc_method('set_stripe_speed')
 def set_stripe_speed(request, speed):
@@ -1475,7 +1472,7 @@ def set_stripe_speed(request, speed):
 
 def set_stripe_speed_web(request, speed):
     cerebrum.set_speed(int(speed))
-    return render_to_response('cbeamd/c_leuse.django', {'result': 'Geschwindigkeit wurde gesetzt'})
+    return render(request, 'cbeamd/c_leuse.django', {'result': 'Geschwindigkeit wurde gesetzt'})
 
 @jsonrpc_method('set_stripe_offset')
 def set_stripe_offset(request, offset):
@@ -1579,10 +1576,10 @@ def stripe_view(request):
             form.cleaned_data["speed"]
             form.cleaned_data["pattern"]
             form.cleaned_data["offset"]
-            return render_to_response('cbeamd/stripe_form.django', {'form': form})
+            return render(request, 'cbeamd/stripe_form.django', {'form': form})
     else:
         form = StripeForm()
-        return render_to_response('cbeamd/stripe_form.django', {'form': form})
+        return render(request, 'cbeamd/stripe_form.django', {'form': form})
 
 @jsonrpc_method('activitylog')
 def activitylog(request):
@@ -1599,12 +1596,12 @@ def activitylog_web(request):
     al = ActivityLog.objects.order_by('-timestamp')[:40]
     rev = list(al)
     rev.reverse()
-    return render_to_response('cbeamd/activitylog.django', {'activitylog': rev})
+    return render(request, 'cbeamd/activitylog.django', {'activitylog': rev})
 
 @login_required
 def activitylog_details_web(request, activitylog_id):
     activitylog = ActivityLog.objects.get(id=activitylog_id)
-    return render_to_response('cbeamd/activitylog_details.django', locals(), RequestContext(request))
+    return render(request, 'cbeamd/activitylog_details.django', locals())
 
 @csrf_exempt
 @login_required
@@ -1616,12 +1613,12 @@ def logactivity_web(request):
             act = form.cleaned_data["activity"]
             ap = form.cleaned_data["ap"]
             logactivity(request, request.user.username, act, ap)
-            return render_to_response('cbeamd/activitylog.django', {'form': form, 'result': 'SUCCESS'})
+            return render(request, 'cbeamd/activitylog.django', {'form': form, 'result': 'SUCCESS'})
     #else:
         #form = StripeForm()
-        #return render_to_response('cbeamd/stripe_form.django', {'form': form})
+        #return render(request, 'cbeamd/stripe_form.django', {'form': form})
 
-    return render_to_response('cbeamd/activitylog.django', {'result': 'FAIL'})
+    return render(request, 'cbeamd/activitylog.django', {'result': 'FAIL'})
 
 @jsonrpc_method('logactivity')
 def logactivity(request, user, activity, ap):
@@ -1674,7 +1671,7 @@ def activitylog_json(request):
     return HttpResponse(json.dumps([ale.dic() for ale in rev]), content_type="application/json")
 
 def not_implemented(request):
-    return render_to_response('cbeamd/not_implemented.django', {})
+    return render(request, 'cbeamd/not_implemented.django', {})
 
 @login_required
 def activitylog_post_comment(request, activitylog_id):
@@ -1702,7 +1699,7 @@ def activitylog_post_comment(request, activitylog_id):
                 activitylog.comments.add(alc)
                 activitylog.save()
                 result = "dance fu:r deinen commentar"
-    return render_to_response('cbeamd/activitylog_details.django', locals(), RequestContext(request))
+    return render(request, 'cbeamd/activitylog_details.django', locals())
 
 @login_required
 def activitylog_delete_comment(request, comment_id):
@@ -1778,7 +1775,7 @@ def set_push_eta(request, user, is_enabled):
 @login_required
 def c_out_volume_web(request):
     volume = c_out_volume
-    return render_to_response('cbeamd/c_out_volume.django', locals(), RequestContext(request))
+    return render(request, 'cbeamd/c_out_volume.django', locals())
 
 
 @login_required
@@ -1811,17 +1808,19 @@ def c_portal_notify(request, notification):
 @jsonrpc_method("trafotron")
 def trafotron(request, value):
     newval = (value * 100) / 170
+    #print("trafotron: " + str(newval))
+    #logger.error("trafotron: " + str(newval))
     #os.system("amixer -c 0 set Master %d%%" % newval)
     try:
-        print(c_leuse_c_out.setvolume(newval))
+        logger.debug(c_leuse_c_out.setvolume(newval))
     except Exception as e:
-        print(e)
+        logger.error(e)
 
 @jsonrpc_method("cerebrumNotify")
 def cerebrumNotify(request, device_name, event_source_path, new_state):
     cerebrum_state[device_name][event_source_path] = new_state
 
-    print("'%s: %s'" % (event_source_path, new_state))
+    logger.debug("'%s: %s'" % (event_source_path, new_state))
     if event_source_path == '/schaltergang/1':
         nerdctrl_cout.play('clamp.mp3') 
     if event_source_path == '/schaltergang/2':
@@ -1948,8 +1947,10 @@ def publish(topic, payload, retain=False):
         else:
             mqtt.connect(cfg.mqtt_server, port=1883)
 
+        mqtt.publish(topic, payload, qos=1, retain=retain)
+
     except Exception as e: 
-        print(e)
+        logger.error(e)
         pass
 
 def create_random_password(length):
@@ -2009,22 +2010,22 @@ def toggle_burningman(request):
     return HttpResponse("OK")
 
 def nerdctrl(request):
-    return render_to_response('cbeamd/nerdctrl.django', {})
+    return render(request, 'cbeamd/nerdctrl.django', {})
 
 def cbeamviewer(request):
-    return render_to_response('cbeamd/cbeamviewer.django', {})
+    return render(request, 'cbeamd/cbeamviewer.django', {})
 
 def weather(request):
-    return render_to_response('cbeamd/weather.django', {})
+    return render(request, 'cbeamd/weather.django', {})
 
 def bvg(request):
-    return render_to_response('cbeamd/bvg.django', {})
+    return render(request, 'cbeamd/bvg.django', {})
 
 def welcome(request, user):
-    return render_to_response('cbeamd/welcome.django', {'user': user})
+    return render(request, 'cbeamd/welcome.django', {'user': user})
 
 def sensors(request):
-    return render_to_response('cbeamd/sensors.django', {})
+    return render(request, 'cbeamd/sensors.django', {})
 
 def fakelevels():
     levels = {}
@@ -2037,24 +2038,24 @@ def dash(request):
     al = ActivityLog.objects.order_by('-timestamp')[:20]
     rev = list(al)
     rev.reverse()
-    return render_to_response('cbeamd/dash.django', {'activitylog': rev, 'users': userlist_with_online_percentage(), 'barstatus': get_barstatus(request), 'levels': fakelevels()})
+    return render(request, 'cbeamd/dash.django', {'activitylog': rev, 'users': userlist_with_online_percentage(), 'barstatus': get_barstatus(request), 'levels': fakelevels()})
 
 def mechdisplay(request):
-    return render_to_response('cbeamd/mechdisplay.django', {})
+    return render(request, 'cbeamd/mechdisplay.django', {})
             
 def he1display(request):
-    return render_to_response('cbeamd/he1display.django', {})
+    return render(request, 'cbeamd/he1display.django', {})
 
 def ceitlochclocc(request):
-    return render_to_response('cbeamd/ceitloch.django', {})
+    return render(request, 'cbeamd/ceitloch.django', {})
 
 def donut(request):
-    return render_to_response('cbeamd/donut.django', {})
+    return render(request, 'cbeamd/donut.django', {})
 
 @jsonrpc_method('reddit')
 def reddit(request):
     d = feedparser.parse('http://www.reddit.com/r/cbase/.rss')
-    return render_to_response('cbeamd/reddit.django', {'entries': d['entries']})
+    return render(request, 'cbeamd/reddit.django', {'entries': d['entries']})
 
 @jsonrpc_method('barbutton')
 def barbutton(request, pressed):
@@ -2064,14 +2065,14 @@ def barbutton(request, pressed):
 @jsonrpc_method('ampel')
 def ampel(request, red, yellow, green):
     try:
-        print(ampelrpc.ampel(red, yellow, green))
+        logger.debug(ampelrpc.ampel(red, yellow, green))
     except: pass
     return "aye"
 
 @jsonrpc_method('ampelblink')
 def ampelblink(request, program):
     try:
-        print(ampelrpc.ampel(program))
+        logger.debug(ampelrpc.ampel(program))
     except: pass
     return "aye"
 
@@ -2094,16 +2095,16 @@ def hand_translate(request, command):
     return hand.translate(command)
 
 def bar_preise(request):
-    return render_to_response('cbeamd/bar_preise.django', {'prices': get_prices()})
+    return render(request, 'cbeamd/bar_preise.django', {'prices': get_prices()})
 
 def bar_leergut(request):
-    return render_to_response('cbeamd/bar_leergut.django', {})
+    return render(request, 'cbeamd/bar_leergut.django', {})
 
 def bar_calc(request):
-    return render_to_response('cbeamd/bar_calc.django', {'prices': get_prices()})
+    return render(request, 'cbeamd/bar_calc.django', {'prices': get_prices()})
 
 def bar_abrechnung(request):
-    return render_to_response('cbeamd/bar_abrechnung.django', {})
+    return render(request, 'cbeamd/bar_abrechnung.django', {})
 
 def get_prices():
     prices = []
@@ -2197,7 +2198,6 @@ def mpd_get_random(host):
     result = 0
     with mpd_client(host) as client:
         result = int(client.status()['random'])
-        print('current value: ' + str(result))
     return result
 
 def mpd_get_repeat(host):
