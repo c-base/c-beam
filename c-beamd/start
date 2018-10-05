@@ -6,6 +6,7 @@ python /opt/c-beamd/manage.py makemigrations
 python /opt/c-beamd/manage.py migrate
 
 echo "from django.contrib.auth.models import User; User.objects.filter(email='admin@example.com').delete(); User.objects.create_superuser('admin', 'admin@example.com', 'fooderbar23')" | python /opt/c-beamd/manage.py shell
+echo "from django.contrib.auth.models import User; user = User.objects.get(username='admin'); user.set_password('foobar23'); user.save()" | python /opt/c-beamd/manage.py shell
 echo "from cbeamd.models import Status; s = Status(); s.save()" | python /opt/c-beamd/manage.py shell
 echo "from cbeamd.models import Mission; m = Mission(); m.short_description = 'foo'; m.save()" | python /opt/c-beamd/manage.py shell
 

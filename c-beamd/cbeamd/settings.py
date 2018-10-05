@@ -1,11 +1,12 @@
 import os
 
-from django.core.urlresolvers import reverse_lazy
+from django.urls import reverse_lazy
 
 # Django settings for cbeamd project.
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print(BASE_DIR)
 
 DEBUG = True
 
@@ -66,9 +67,11 @@ STATIC_URL = '/static/'
 
 # Additional locations of static files
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-    os.path.join(BASE_DIR, "assets"),
+    os.path.join(BASE_DIR, "cbeamd/static"),
+    os.path.join(BASE_DIR, "cbeamd/assets"),
 ]
+
+print(STATICFILES_DIRS)
 
 # List of finder classes that know how to find static files in
 # various locations.
@@ -83,15 +86,14 @@ SECRET_KEY = 'vua+c7%ipz5yua!v9t_)i^plx9e^523e%9l-g6v&amp;bqaxx2d-4!'
 
 # List of callables that know how to import templates from various sources.
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    # Uncomment the next line for simple clickjacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
-)
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
 
 ROOT_URLCONF = 'cbeamd.urls'
 

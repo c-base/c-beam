@@ -2,6 +2,7 @@ from django.db import models
 from datetime import timedelta
 from django.utils import timezone
 
+
 class User(models.Model):
     username = models.CharField(max_length=200)
     status = models.CharField(max_length=20)
@@ -103,12 +104,14 @@ class User(models.Model):
 
     def calc_ap(self):
         sum = 0
-        for activity in ActivityLog.objects.filter(user=self).filter(timestamp__gt=timezone.now()-timedelta(days=90)): sum += activity.ap
+        for activity in ActivityLog.objects.filter(user=self).filter(timestamp__gt=timezone.now()-timedelta(days=90)):
+            sum += activity.ap
         # TODO fixme
-        #if self.ap != sum:
-            #self.ap = sum
-            #self.save()
+        # if self.ap != sum:
+           #self.ap = sum
+           # self.save()
         return sum
+
 
 class LTE(models.Model):
     day = models.CharField(max_length=2)
@@ -117,6 +120,7 @@ class LTE(models.Model):
 
     def __str__(self):
         return '%s %s %s' % (self.username, self.day, self.eta)
+
 
 class Mission(models.Model):
     short_description = models.CharField(max_length=200)
@@ -131,7 +135,7 @@ class Mission(models.Model):
     completed_on = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-         return self.short_description
+        return self.short_description
 
     def dic(self):
         dic = {}
@@ -146,17 +150,20 @@ class Mission(models.Model):
         dic['assigned_to'] = [user.username for user in self.assigned_to.all()]
         return dic
 
+
 class MissionLog(models.Model):
-    mission = models.OneToOneField(Mission)
-    user = models.OneToOneField(User)
+    mission = models.OneToOneField(Mission, on_delete=models.DO_NOTHING)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
+
 
 class Subscription(models.Model):
     regid = models.CharField(max_length=2000)
-    user = models.OneToOneField(User, primary_key=True)
+    user = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE)
 
     def __str__(self):
         return "%s: %s" % (self.user.username, self.regid)
+
 
 class Event(models.Model):
     uid = models.CharField(max_length=200)
@@ -173,6 +180,7 @@ class UserStatsEntry(models.Model):
     def __str__(self):
         return "%s: %d" % (str(self.timestamp), self.usercount)
 
+
 class Activity(models.Model):
     activity_type = models.CharField(max_length=200)
     activity_text = models.CharField(max_length=200)
@@ -180,21 +188,22 @@ class Activity(models.Model):
     def __str__(self):
         return self.activity_text
 
+
 class ActivityLogComment(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     comment = models.CharField(max_length=4000)
     comment_type = models.CharField(max_length=20)
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def dic(self):
         return {'timestamp': str(self.timestamp), 'comment': self.comment, 'comment_type': self.comment_type}
-    
+
 
 class ActivityLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
-    activity = models.ForeignKey(Activity)
-    user = models.ForeignKey(User)
-    mission = models.ForeignKey(Mission,blank=True,null=True)
+    activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    mission = models.ForeignKey(Mission, blank=True, null=True, on_delete=models.CASCADE)
     ap = models.IntegerField(default=0)
     protests = models.IntegerField(default=0)
     thanks = models.IntegerField(default=0)
@@ -202,19 +211,19 @@ class ActivityLog(models.Model):
 
     def short_str(self):
         if self.activity.activity_type == "mission completed" and self.mission != None:
-            return "%s %s: %d AP: mission %d: %s" % (str(self.timestamp)[11:19], self.user.username, self.ap, self.mission.id, self.mission.short_description) 
+            return "%s %s: %d AP: mission %d: %s" % (str(self.timestamp)[11:19], self.user.username, self.ap, self.mission.id, self.mission.short_description)
         else:
             return "%s %s: %d AP: %s" % (str(self.timestamp)[11:19], self.user.username, self.ap, self.activity.activity_text)
 
     def notification_str(self):
         if self.activity.activity_type == "mission completed" and self.mission != None:
-            return "%s: %d AP: mission %d: %s" % (self.user.username, self.ap, self.mission.id, self.mission.short_description) 
+            return "%s: %d AP: mission %d: %s" % (self.user.username, self.ap, self.mission.id, self.mission.short_description)
         else:
             return "%s: %d AP: %s" % (self.user.username, self.ap, self.activity.activity_text)
 
     def __str__(self):
         if self.activity.activity_type == "mission completed" and self.mission != None:
-            return "%s %s erha:lt %d AP fu:r mission %d: %s" % (str(self.timestamp)[:19], self.user.username, self.ap, self.mission.id, self.mission.short_description) 
+            return "%s %s erha:lt %d AP fu:r mission %d: %s" % (str(self.timestamp)[:19], self.user.username, self.ap, self.mission.id, self.mission.short_description)
         else:
             return "%s %s erha:lt %d AP fu:r %s" % (str(self.timestamp)[:19], self.user.username, self.ap, self.activity.activity_text)
 
@@ -227,10 +236,12 @@ class ActivityLog(models.Model):
         dic['user'] = self.user.dic2()
         dic['str'] = self.short_str()
         dic['id'] = self.id
-        dic['protests'] =  self.protests
+        dic['protests'] = self.protests
         dic['thanks'] = self.thanks
-        dic['comments'] = [comment.dic() for comment in self.comments.order_by('-timestamp')]
+        dic['comments'] = [comment.dic()
+                           for comment in self.comments.order_by('-timestamp')]
         return dic
+
 
 class Status(models.Model):
     bar_open = models.BooleanField(default=False)

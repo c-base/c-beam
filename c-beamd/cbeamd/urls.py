@@ -8,8 +8,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 
-
-# Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
 
@@ -32,14 +30,8 @@ urlpatterns = [
     #url(r'^activitylog/(?P<activitylog_id>\d+)/protest$, views.not_implemented'),
     url(r'^activitylog_json$', views.activitylog_json, name='activitylog_json'),
     url(r'^mechblast_json$', views.mechblast_json, name='mechblast_json'),
-    #url(r'^', include('foo.urls')),
 
-    # Uncomment the admin/doc line below to enable admin documentation:
-    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-
-    # Uncomment the next line to enable the admin:
-
-    url(r'^admin/', include(admin.site.urls), name='admin'),
+     url(r'^admin/', admin.site.urls),
     #url(r'^rpc/browse/', jsonrpc.views.browse, name='jsonrpc_browser'),
     url(r'^rpc/', jsonrpc_site.dispatch, name="jsonrpc_mountpoint"),
     #url(r'^user/(?P<user_id>\d+)/$', views.user),
@@ -53,8 +45,8 @@ urlpatterns = [
     #url(r'^user/(?P<user>\d+)/login$', views.login_with_id, name='login_with_id'),
     #url(r'^login$', views.auth_login, name='auth_login'),
     #url(r'^logout$', views.auth_logout, name='auth_logout'),
-    url(r'^login/$', auth_views.login, { 'template_name': "cbeamd/login.django" }, name='login'),
-    url(r'^logout/$', auth_views.logout, {'template_name': 'cbeamd/logout.django'}, name='logout'),
+    url(r'^login/$', auth_views.LoginView.as_view(template_name="cbeamd/login.django"), name='login'),
+    url(r'^logout/$', auth_views.LogoutView.as_view(template_name="cbeamd/logout.django"), name='logout'),
     url(r'^logactivity$', views.logactivity_web, name='logactivity_web'),
     #url(r'^missions/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail, dict(mission_dict, template_name='mission_detail.django'), mission_dict),
     url(r'^missions$', views.mission_list, name='mission_list'),
