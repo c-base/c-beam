@@ -16,4 +16,6 @@ c-beamd/cbeamd/templates/cbeamd/departures.html
 c-beamd/cbeamd/webpack-stats.json
 c-beamd/database.json
 c-beamd/c-beam-debug.log
-
+c-beamd/cbeamd/local_settings.py.prod
+c-beamd/cbeamd/local_settings.py.old
+c-beamd/cbeamd/yarn-error.log
