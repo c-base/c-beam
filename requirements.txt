@@ -1,6 +1,6 @@
 Django==1.11.16
 bvg-grabber
-djangoajax
+djangoajax==2.4.6
 django-appconf
 django-bootstrap3
 django-json-rpc
