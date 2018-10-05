@@ -1,4 +1,4 @@
-Django==1.11.10
+Django==1.11.16
 bvg-grabber
 djangoajax
 django-appconf
@@ -9,6 +9,7 @@ django-webpack
 django-webpack-loader
 ics
 gcm
+gunicorn
 paho-mqtt
 HTMLParser
 feedparser
