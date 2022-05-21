@@ -7,6 +7,11 @@ from . import views  # you must import the views that need connected
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
+from django.urls import include, path
+from rest_framework import routers
+
+router = routers.DefaultRouter()
+router.register(r'users', views.UserViewSet)
 
 from django.contrib import admin
 admin.autodiscover()
@@ -96,4 +101,6 @@ urlpatterns = [
     re_path(r'^mpd/(?P<host>.+)/mpd_listplaylists/$', views.mpd_listplaylists, name='mpd_listplaylists'),
     re_path(r'^mpd/(?P<host>.+)/status/$', views.mpd_status, name='mpd_status'),
     re_path(r'^mpd/(?P<host>.+)/command/(?P<command>\w+)/$', views.mpd_command, name='mpd_command'),
+    path('api/', include(router.urls)),
+    path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

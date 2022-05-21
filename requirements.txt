@@ -8,6 +8,8 @@ arrow==0.14.7
     # via ics
 asgiref==3.5.2
     # via django
+autopep8==1.6.0
+    # via -r requirements.in
 beautifulsoup4==4.11.1
     # via bvg-grabber
 bvg-grabber==0.2.1
@@ -25,6 +27,7 @@ django==4.0.4
     #   django-node
     #   django-webpack
     #   djangoajax
+    #   djangorestframework
 django-appconf==1.0.5
     # via -r requirements.in
 django-bootstrap3==21.2
@@ -33,6 +36,8 @@ django-json-rpc==0.7.2
     # via -r requirements.in
 django-node==4.0.0
     # via django-webpack
+django-rest-framework==0.1.0
+    # via -r requirements.in
 django-tagging==0.5.0
     # via -r requirements.in
 django-webpack==3.1.1
@@ -41,6 +46,8 @@ django-webpack-loader==1.5.0
     # via -r requirements.in
 djangoajax==3.3
     # via -r requirements.in
+djangorestframework==3.13.1
+    # via django-rest-framework
 feedparser==6.0.10
     # via -r requirements.in
 gcm==0.3
@@ -61,6 +68,8 @@ pyasn1==0.4.8
     #   python-ldap
 pyasn1-modules==0.2.8
     # via python-ldap
+pycodestyle==2.8.0
+    # via autopep8
 python-dateutil==2.8.2
     # via
     #   arrow
@@ -70,6 +79,8 @@ python-ldap==3.4.0
     # via -r requirements.in
 python-mpd2==3.0.5
     # via -r requirements.in
+pytz==2022.1
+    # via djangorestframework
 requests==2.27.1
     # via
     #   bvg-grabber
@@ -88,5 +99,7 @@ sqlparse==0.4.2
     # via django
 tatsu==5.6.1
     # via ics
+toml==0.10.2
+    # via autopep8
 urllib3==1.26.9
     # via requests

@@ -109,6 +109,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'cbeamd',
     'jsonrpc',
+    'rest_framework',
     'bootstrap3',
     'django.contrib.admin',
     'webpack_loader',

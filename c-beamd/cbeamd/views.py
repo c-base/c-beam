@@ -38,10 +38,14 @@ from .forms import (ActivityLogCommentForm, LogActivityForm, MissionForm,
                     StripeForm, UserForm)
 from .models import (LTE, Activity, ActivityLog, ActivityLogComment, Mission,
                      Status, Subscription, User, UserStatsEntry)
+from .serializers import UserSerializer
 from .tools.ddate import DDate
 from .tools.handTranslate import HandTranslate
 from .tools.LEDStripe import *
 from .tools.MyHTMLParser import MyHTMLParser
+
+from rest_framework import viewsets
+from rest_framework import permissions
 
 logger = logging.getLogger('cbeam')
 hysterese = 15
@@ -2319,3 +2323,12 @@ class mpd_client():
     def __exit__(self, type, value, traceback):
         self.client.close()
         self.client.disconnect()
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows users to be viewed or edited.
+    """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]

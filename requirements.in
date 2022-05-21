@@ -1,9 +1,11 @@
 Django
+autopep8
 bvg-grabber
 djangoajax
 django-appconf
 django-bootstrap3
 django-json-rpc
+django-rest-framework
 django-tagging
 django-webpack
 django-webpack-loader
