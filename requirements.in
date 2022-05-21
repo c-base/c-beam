@@ -9,6 +9,7 @@ django-webpack
 django-webpack-loader
 ics
 gcm
+python-ldap
 paho-mqtt
 HTMLParser
 feedparser

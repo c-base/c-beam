@@ -14,15 +14,17 @@ logger.setLevel(logging.DEBUG)
 def getAttrForLdapDn(dn, attr, result):
     for entry, attrs in result:
         if entry == dn:
-            if attrs.has_key(attr):
+            if attr in attrs.keys():
                 return attrs[attr]
     return None
 
 # search in a ldapResult for specified attr == key  and return the dn. if not found None returned
 # todo return exception...
+
+
 def getDnForLdapAttr(attr, key, result):
     for dn, attrs in result:
-        if attrs.has_key(attr):
+        if attr in attrs.keys():
             # a ldapentry can have multiple attribute with the same key
             for nrf24s in attrs[attr]:
                 for k in nrf24s.split(','):
@@ -51,7 +53,7 @@ class LdapNrf24Check:
         if len(attr[self.__nrf24Attr]) != 1:
             return None
 
-        if not attr.has_key(self.__nrf24Attr):
+        if self.__nrf24Attr not in attr.keys():
             return None
 
         return attr[self.__nrf24Attr][0]

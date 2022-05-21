@@ -55,11 +55,19 @@ optional-django==0.1.0
     # via django-webpack
 paho-mqtt==1.6.1
     # via -r requirements.in
+pyasn1==0.4.8
+    # via
+    #   pyasn1-modules
+    #   python-ldap
+pyasn1-modules==0.2.8
+    # via python-ldap
 python-dateutil==2.8.2
     # via
     #   arrow
     #   bvg-grabber
     #   ics
+python-ldap==3.4.0
+    # via -r requirements.in
 python-mpd2==3.0.5
     # via -r requirements.in
 requests==2.27.1

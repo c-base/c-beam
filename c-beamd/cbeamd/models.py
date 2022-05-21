@@ -96,20 +96,20 @@ class User(models.Model):
         autologout_in = autologout_at - timezone.now()
 
         if self.status == "online" and autologout_in.total_seconds() > 0:
-            return (autologout_in.total_seconds()/60)
+            return (autologout_in.total_seconds() / 60)
         return 0.0
 
     def online_percentage(self):
-        return "%.2f" % (self.autologout_in()/self.autologout * 100)
+        return "%.2f" % (self.autologout_in() / self.autologout * 100)
 
     def calc_ap(self):
         sum = 0
-        for activity in ActivityLog.objects.filter(user=self).filter(timestamp__gt=timezone.now()-timedelta(days=90)):
+        for activity in ActivityLog.objects.filter(user=self).filter(timestamp__gt=timezone.now() - timedelta(days=90)):
             sum += activity.ap
         # TODO fixme
         # if self.ap != sum:
-           #self.ap = sum
-           # self.save()
+        #    self.ap = sum
+        #    self.save()
         return sum
 
 
@@ -210,19 +210,19 @@ class ActivityLog(models.Model):
     comments = models.ManyToManyField(ActivityLogComment, blank=True)
 
     def short_str(self):
-        if self.activity.activity_type == "mission completed" and self.mission != None:
+        if self.activity.activity_type == "mission completed" and self.mission is not None:
             return "%s %s: %d AP: mission %d: %s" % (str(self.timestamp)[11:19], self.user.username, self.ap, self.mission.id, self.mission.short_description)
         else:
             return "%s %s: %d AP: %s" % (str(self.timestamp)[11:19], self.user.username, self.ap, self.activity.activity_text)
 
     def notification_str(self):
-        if self.activity.activity_type == "mission completed" and self.mission != None:
+        if self.activity.activity_type == "mission completed" and self.mission is not None:
             return "%s: %d AP: mission %d: %s" % (self.user.username, self.ap, self.mission.id, self.mission.short_description)
         else:
             return "%s: %d AP: %s" % (self.user.username, self.ap, self.activity.activity_text)
 
     def __str__(self):
-        if self.activity.activity_type == "mission completed" and self.mission != None:
+        if self.activity.activity_type == "mission completed" and self.mission is not None:
             return "%s %s erha:lt %d AP fu:r mission %d: %s" % (str(self.timestamp)[:19], self.user.username, self.ap, self.mission.id, self.mission.short_description)
         else:
             return "%s %s erha:lt %d AP fu:r %s" % (str(self.timestamp)[:19], self.user.username, self.ap, self.activity.activity_text)

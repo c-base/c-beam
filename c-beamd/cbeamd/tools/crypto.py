@@ -15,15 +15,17 @@ BLOCK_SIZE = 32
 # Based on advice from Using Padding in Encryption,
 # the idea is to separate the padding into two concerns: interrupt and then pad
 # First you insert an interrupt character and then a padding character
-# On decryption, first you remove the padding character until 
+# On decryption, first you remove the padding character until
 # you reach the interrupt character
 # and then you remove the interrupt character
 INTERRUPT = u'\u0001'
 PAD = u'\u0000'
 
-# Since you need to pad your data before encryption, 
+# Since you need to pad your data before encryption,
 # create a padding function as well
 # Similarly, create a function to strip off the padding after decryption
+
+
 def AddPadding(data, interrupt, pad, block_size):
     new_data = ''.join([data, interrupt])
     new_data_len = len(new_data)
@@ -31,12 +33,15 @@ def AddPadding(data, interrupt, pad, block_size):
     to_pad_len = remaining_len % block_size
     pad_string = pad * to_pad_len
     return ''.join([new_data, pad_string])
+
+
 def StripPadding(data, interrupt, pad):
     return data.rstrip(pad).rstrip(interrupt)
 
+
 # AES requires a shared key, which is used to encrypt and decrypt data
 # It MUST be of length 16, 24, or 32
-# Make sure it is as random as possible 
+# Make sure it is as random as possible
 # (although the example below is certainly not random)
 # Based on comments from lighthill,
 # you should use os.urandom() or Crypto.Random to generate random secret key
@@ -72,28 +77,32 @@ cipher_for_decryption = AES.new(SECRET_KEY, AES.MODE_CBC, IV)
 # So mostly you would want to perform a single operation on it each time
 # For encrypting something, create a cipher object and encrypt the data
 # For decrypting, create another cipher object and pass it the data to be decrypted
-# This is the reason I called the cipher objects 
+# This is the reason I called the cipher objects
 # 'cipher_for_encryption' and 'cipher_for_decryption'
 #
 #
 #
-# You will want to create encryption and decryption functions 
+# You will want to create encryption and decryption functions
 # so that it's easier to encrypt and decrypt data
+
+
 def EncryptWithAES(plaintext_data):
     plaintext_padded = AddPadding(plaintext_data, INTERRUPT, PAD, BLOCK_SIZE)
     encrypted = cipher_for_encryption.encrypt(plaintext_padded)
     return b64encode(encrypted)
+
+
 def DecryptWithAES(encrypted_data):
     decoded_encrypted_data = b64decode(encrypted_data)
     decrypted_data = cipher_for_decryption.decrypt(decoded_encrypted_data)
     return StripPadding(decrypted_data, INTERRUPT, PAD)
 
 # We are now ready to encrypt and decrypt our data
-#our_data_to_encrypt = u'123456789012345678901234567890abc'
-#encrypted_data = EncryptWithAES(cipher_for_encryption, our_data_to_encrypt)
+# our_data_to_encrypt = u'123456789012345678901234567890abc'
+# encrypted_data = EncryptWithAES(cipher_for_encryption, our_data_to_encrypt)
 
-#print ('Encrypted string:', encrypted_data)
+# print ('Encrypted string:', encrypted_data)
 
 # And let's decrypt our data
-#decrypted_data = DecryptWithAES(cipher_for_decryption, encrypted_data)
-#print ('Decrypted string:', decrypted_data)
+# decrypted_data = DecryptWithAES(cipher_for_decryption, encrypted_data)
+# print ('Decrypted string:', decrypted_data)
