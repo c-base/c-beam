@@ -17,7 +17,7 @@ from ics import Calendar
 
 from django.template import Context, loader
 from django.http import HttpResponse,HttpResponseRedirect
-from django.shortcuts import render_to_response, get_object_or_404, render
+from django.shortcuts import get_object_or_404, render
 from django.contrib.auth import login as login_auth
 from django.contrib.auth import logout as logout_auth
 from django.contrib.auth import authenticate
