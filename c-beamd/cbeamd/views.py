@@ -1,63 +1,53 @@
 # -*- coding: utf-8 -*-
 
-import sys, traceback
-from threading import Timer
-from jsonrpc import jsonrpc_method
-from .models import User
-from .models import LTE
-from .models import Mission, Subscription, UserStatsEntry, MissionLog, Activity, ActivityLog, ActivityLogComment, Status
-from datetime import datetime, timedelta, date
-from django.utils import timezone
-from jsonrpc.proxy import ServiceProxy
-import cbeamdcfg as cfg
-from urllib.request import urlopen
-#from urllib import urlopen
 import csv
-from ics import Calendar
-
-from django.template import Context, loader
-from django.http import HttpResponse,HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
-from django.contrib.auth import login as login_auth
-from django.contrib.auth import logout as logout_auth
-from django.contrib.auth import authenticate
-from .forms import LoginForm, MissionForm, StripeForm, UserForm, LogActivityForm, ActivityLogCommentForm
-from django.template.context import RequestContext
-from django.contrib.auth.decorators import login_required, user_passes_test
-#from django.core.context_processors import csrf
-from django.template.context_processors import csrf
-
-from django.views.decorators.csrf import csrf_exempt
-from gcm import GCM
 import json
 import logging
-
+import os
+import random
+import re
+import requests
+import smtplib
+import ssl
+import string
+import sys
+import traceback
+from datetime import date, datetime, timedelta
+from email.mime.text import MIMEText
 from random import choice
+from threading import Timer
+from urllib.request import urlopen
 
+import cbeamdcfg as cfg
+import feedparser
+import paho.mqtt.client as paho
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, render
+from django.template import Context, loader
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django_ajax.decorators import ajax
+from gcm import GCM
+from ics import Calendar
+from jsonrpc import jsonrpc_method
+from jsonrpc.proxy import ServiceProxy
+from mpd import MPDClient
+
+from .forms import (ActivityLogCommentForm, LogActivityForm, MissionForm,
+                    StripeForm, UserForm)
+from .models import (LTE, Activity, ActivityLog, ActivityLogComment, Mission,
+                     Status, Subscription, User, UserStatsEntry)
 from .tools.ddate import DDate
 from .tools.handTranslate import HandTranslate
-#from .tools import crypto
-from .tools.MyHTMLParser import MyHTMLParser
 from .tools.LEDStripe import *
-
-import paho.mqtt.client as paho
-import string
-
-import os, re, feedparser, json, random, ssl
-
-
-import smtplib
-from email.mime.text import MIMEText
-
-### from tools.ldapNrf24 import LdapNrf24Check
-#import urllib2
-from mpd import MPDClient
-from django_ajax.decorators import ajax
+from .tools.MyHTMLParser import MyHTMLParser
 
 logger = logging.getLogger('cbeam')
 hysterese = 15
-eta_timeout=120
+eta_timeout = 120
 
+# TODO: move strings to settings
 mqtt = paho.Client("c-beam")
 mqttserver = "127.0.0.1"
 cout = ServiceProxy('http://shout.cbrp3.c-base.org:1775/')
@@ -102,6 +92,7 @@ c_out_volume = 0
 
 hand = HandTranslate()
 
+
 def AddPadding(data, interrupt, pad, block_size):
     new_data = ''.join([data, interrupt])
     new_data_len = len(new_data)
@@ -110,8 +101,10 @@ def AddPadding(data, interrupt, pad, block_size):
     pad_string = pad * to_pad_len
     return ''.join([new_data, pad_string])
 
+
 def StripPadding(data, interrupt, pad):
     return data.rstrip(pad).rstrip(interrupt)
+
 
 def reply(request, text):
     if request.path.startswith('/rpc'):
@@ -122,6 +115,7 @@ def reply(request, text):
 #################################################################
 # Login / Logout
 #################################################################
+
 
 def login_with_id(request, user):
     return "not implemented yet"
@@ -138,6 +132,7 @@ def login(request, user):
         return reply(request, "hysterese")
     return force_login(request, user)
 
+
 @jsonrpc_method('force_login')
 def force_login(request, user):
     """
@@ -147,27 +142,30 @@ def force_login(request, user):
     welcometts(request, u.username)
     try:
         monitord.login(u.username)
-    except:
+    except Exception:
         pass
     if not u.no_google:
-        try: gcm_send(request, 'now boarding', u.username)
-        except: pass
+        try:
+            gcm_send(request, 'now boarding', u.username)
+        except Exception:
+            pass
     payload = {'user': str(u.username), 'timestamp': timezone.localtime(timezone.now()).strftime("%H:%M")}
     publish("user/boarding", json.dumps(payload))
 
-    #publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/welcome/%s" % str(u.username))
+    # publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/welcome/%s" % str(u.username))
     if u.status == "eta":
         u.eta = ""
     oldstatus = u.status
     u.status = "online"
-    u.logintime=timezone.now()
-    u.extendtime=timezone.now()
+    u.logintime = timezone.now()
+    u.extendtime = timezone.now()
     u.save()
     log_stats()
     if u.logouttime + timedelta(minutes=60) < timezone.now() and oldstatus in ["offline", "eta"]:
-         logactivity(request, user, "login", 1)
+        logactivity(request, user, "login", 1)
     newarrivallist[u.username] = timezone.now()
     return reply(request, "%s logged in" % u.username)
+
 
 @jsonrpc_method('stealth_login')
 def stealth_login(request, user):
@@ -178,18 +176,20 @@ def stealth_login(request, user):
     if u.status == "eta":
         u.eta = ""
     u.status = "online"
-    u.logintime=timezone.now()
-    u.extendtime=timezone.now()
+    u.logintime = timezone.now()
+    u.extendtime = timezone.now()
     u.save()
     log_stats()
-    #logactivity(request, user, "login")
+    # logactivity(request, user, "login")
     newarrivallist[u.username] = timezone.now()
     return reply(request, "%s logged in" % u.username)
+
 
 @login_required
 def login_web(request):
     result = force_login(request, request.user.username)
     return render(request, 'cbeamd/c_buttons.django', {'result': 'du wurdest angemeldet'})
+
 
 @jsonrpc_method('logout')
 def logout(request, user):
@@ -200,6 +200,7 @@ def logout(request, user):
     if u.logintime + timedelta(seconds=hysterese) > timezone.now():
         return reply(request, "hysterese")
     return force_logout(request, user)
+
 
 @jsonrpc_method('stealth_logout')
 def stealth_logout(request, user):
@@ -215,6 +216,7 @@ def stealth_logout(request, user):
         u.save()
     return reply(request, "%s logged out" % u.username)
 
+
 @jsonrpc_method('force_logout')
 def force_logout(request, user):
     """
@@ -223,7 +225,7 @@ def force_logout(request, user):
     u = getuser(user)
     try:
         monitord.logout(u.username)
-    except:
+    except Exception:
         pass
     payload = {'user': str(u.username), 'timestamp': timezone.localtime(timezone.now()).strftime("%H:%M")}
     publish("user/leaving", json.dumps(payload))
@@ -236,13 +238,14 @@ def force_logout(request, user):
         logactivity(request, user, "logout", 2)
     return reply(request, "%s logged out" % u.username)
 
+
 @login_required
 def logout_web(request):
     result = force_logout(request, request.user.username)
     return render(request, 'cbeamd/c_buttons.django', {'result': 'du wurdest abgemeldet'})
 
 
-#jsonrpc_method('login_wlan')
+# jsonrpc_method('login_wlan')
 @jsonrpc_method('wifi_login')
 def login_wlan(request, user):
     """
@@ -261,6 +264,7 @@ def login_wlan(request, user):
         else:
             pass
 
+
 def extend(user):
     u = getuser(user)
     u.status = "online"
@@ -268,12 +272,14 @@ def extend(user):
     u.save()
     return "aye"
 
+
 @jsonrpc_method('tagevent')
 def tagevent(request, user):
-    if is_logged_in(user): # TODO and logintimeout
+    if is_logged_in(user):  # TODO and logintimeout
         return logout(request, user)
     else:
         return login(request, user)
+
 
 @jsonrpc_method('unknown_tag')
 def unknown_tag(request, rfid):
@@ -285,9 +291,9 @@ def unknown_tag(request, rfid):
 
 
 def welcometts(request, user):
-    #if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
+    # if os.path.isfile('%s/%s/hello.mp3' % (cfg.sampledir, user)):
     #    os.system('mpg123 %s/%s/hello.mp3' % (cfg.sampledir, user))
-    #else:
+    # else:
     if getnickspell(request, user) != "NONE":
         if user == "kristall":
             tts(request, "Julia", "a loa crew")
@@ -298,26 +304,34 @@ def welcometts(request, user):
 # User Handling
 #################################################################
 
+
 def getuser(user):
     user = user.lower().rstrip()
-    if user == "nielc": user = "keiner"
-    if user == "azt": user = "pille"
+    if user == "nielc":
+        user = "keiner"
+    if user == "azt":
+        user = "pille"
     try:
         u = User.objects.get(username=user)
-    except:
-        u = User(username=user, logintime=timezone.now()-timedelta(seconds=hysterese), extendtime=timezone.now()-timedelta(seconds=hysterese), logouttime=timezone.now()-timedelta(seconds=hysterese), status="unknown")
+    except Exception:
+        u = User(username=user, logintime=timezone.now() - timedelta(seconds=hysterese), extendtime=timezone.now() - timedelta(
+            seconds=hysterese), logouttime=timezone.now() - timedelta(seconds=hysterese), status="unknown")
         u.save()
     return u
 
+
 def getuser_eta(user):
     user = user.lower().rstrip()
-    if user == "nielc": user = "keiner"
-    if user == "azt": user = "pille"
+    if user == "nielc":
+        user = "keiner"
+    if user == "azt":
+        user = "pille"
     try:
         u = User.objects.get(username=user)
-    except:
+    except Exception:
         return None
     return u
+
 
 @jsonrpc_method('get_user_by_id')
 def get_user_by_id(request, id):
@@ -327,6 +341,7 @@ def get_user_by_id(request, id):
     u = User.objects.get(id=id)
     return u.dic()
 
+
 @jsonrpc_method('get_user_by_name')
 def get_user_by_id(request, username):
     """
@@ -334,6 +349,7 @@ def get_user_by_id(request, username):
     """
     u = User.objects.get(username=username)
     return u.dic()
+
 
 @jsonrpc_method('getnickspell')
 def getnickspell(request, user):
@@ -343,6 +359,7 @@ def getnickspell(request, user):
     else:
         return u.nickspell
 
+
 @jsonrpc_method('setnickspell')
 def setnickspell(request, user, nickspell):
     u = getuser(user)
@@ -350,26 +367,33 @@ def setnickspell(request, user, nickspell):
     u.save()
     return "ok"
 
+
 @jsonrpc_method('setwlanlogin')
 def setwlanlogin(request, user, enabled):
     u = getuser(user)
     u.wlanlogin = enabled
     u.save()
 
+
 @jsonrpc_method('getwlanlogin')
 def getwlanlogin(request, user):
     u = getuser(user)
     return u.wlanlogin
 
+
 def is_logged_in(user):
-    if user == "nielc": user = "keiner"
-    if user == "azt": user = "pille"
+    if user == "nielc":
+        user = "keiner"
+    if user == "azt":
+        user = "pille"
     return len(User.objects.filter(username=user, status="online")) > 0
+
 
 @jsonrpc_method('get_autologout')
 def get_autologout(request, user):
     u = getuser(user)
     return u.autologout
+
 
 @jsonrpc_method('set_autologout')
 def set_autologout(request, user, autologout):
@@ -378,16 +402,20 @@ def set_autologout(request, user, autologout):
     u.save()
     return "aye"
 
+
 def userlist():
     return [str(user) for user in User.objects.filter(status="online").order_by('username')]
 
+
 def userlist_with_online_percentage():
-    return [str(user)+" ("+user.online_percentage()+"%)" for user in User.objects.filter(status="online").order_by('username')]
+    return [str(user) + " (" + user.online_percentage() + "%)" for user in User.objects.filter(status="online").order_by('username')]
+
 
 @jsonrpc_method('available')
 def available(request):
     cleanup(request)
     return userlist()
+
 
 def ceitloch():
     now = int(timezone.now().strftime("%Y%m%d%H%M%S"))
@@ -397,17 +425,19 @@ def ceitloch():
         cl[str(user)] = td.seconds
     return cl
 
+
 def etalist():
     result = {}
     for u in User.objects.filter(status="eta").order_by('username'):
         result[u.username] = u.eta
     return result
 
+
 @jsonrpc_method('who')
 def who(request):
     """list all user that have logged in."""
     cleanup(request)
-    return {'available': userlist(), 'eta': etalist(), 'etd': [], 'lastlocation': {}, 
+    return {'available': userlist(), 'eta': etalist(), 'etd': [], 'lastlocation': {},
             'ceitloch': ceitloch(), 'reminder': reminder()}
 
 
@@ -428,9 +458,9 @@ def eta(request, user, text):
         return "meh"
 
     # if the first argument is a weekday, delegate to LTE
-    #TODO
-    #if text[:2].upper() in weekdays:
-        #return lte(bot, ievent)
+    # TODO
+    # if text[:2].upper() in weekdays:
+        # return lte(bot, ievent)
 
     if text in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
         etaval = datetime.now() + timedelta(minutes=30)
@@ -439,16 +469,16 @@ def eta(request, user, text):
         foo = int(text[1:])
         etaval = datetime.now() + timedelta(minutes=foo)
         eta = etaval.strftime("%H%M")
-    #elif ievent.rest == 'heute nicht mehr':
-     #   eta = "0"
-    else: 
-        eta = text   
+    # elif ievent.rest == 'heute nicht mehr':
+    #    eta = "0"
+    else:
+        eta = text
     # remove superflous colons
-    eta = re.sub(r'(\d\d):(\d\d)',r'\1\2',eta)
-    #eta = re.sub(r'(\d\d).(\d\d)',r'\1\2',eta)
+    eta = re.sub(r'(\d\d):(\d\d)', r'\1\2', eta)
+    # eta = re.sub(r'(\d\d).(\d\d)',r'\1\2',eta)
 
     if eta != "0" and extract_eta(eta) == "9999":
-                return 'err_timeparser'
+        return 'err_timeparser'
     etatime = extract_eta(eta)
     hour = int(etatime[0:2])
     minute = int(etatime[2:4])
@@ -456,12 +486,13 @@ def eta(request, user, text):
     tts(request, "Julia", "E.T.A. %s: %d Uhr %d ." % (getnickspell(request, user), hour, minute))
     return seteta(request, user, eta)
 
+
 @jsonrpc_method('seteta')
 def seteta(request, user, eta):
     """
     set eta for user to the time specified in eta (HHMM)
     """
-    #data['newetas'][user] = eta
+    # data['newetas'][user] = eta
 
     u = getuser_eta(user)
     if u is None:
@@ -470,7 +501,7 @@ def seteta(request, user, eta):
     newetalist[user] = eta
     if eta == '0':
         # delete eta for user
-        u.eta=""
+        u.eta = ""
         u.status = "offline"
         u.save()
         log_stats()
@@ -491,13 +522,16 @@ def seteta(request, user, eta):
         u.status = "eta"
         u.save()
         if not u.no_google:
-            try: gcm_send(request, 'ETA', '%s (%s)' % (user, eta))
-            except: pass
+            try:
+                gcm_send(request, 'ETA', '%s (%s)' % (user, eta))
+            except Exception:
+                pass
         payload = {'user': str(u.username), 'timestamp': timezone.localtime(timezone.now()).strftime("%H:%M"), 'eta': eta}
         publish("user/eta", json.dumps(payload))
-        #publish("user/eta", '%s (%s)' % (user, eta))
+        # publish("user/eta", '%s (%s)' % (user, eta))
         log_stats()
         return 'eta_set'
+
 
 def extract_eta(text):
     m = re.match(r'^.*?(\d\d\d\d).*', text)
@@ -510,6 +544,7 @@ def extract_eta(text):
 # Subscription & achievement handling
 #################################################################
 
+
 @jsonrpc_method('subeta')
 def subeta(request, user):
     """
@@ -518,6 +553,7 @@ def subeta(request, user):
     u = getuser(user)
     u.etasub = True
     u.save()
+
 
 @jsonrpc_method('unsubeta')
 def unsubeta(request, user):
@@ -528,6 +564,7 @@ def unsubeta(request, user):
     u.etasub = False
     u.save()
 
+
 @jsonrpc_method('subarrive')
 def subarrive(request, user):
     """
@@ -536,6 +573,7 @@ def subarrive(request, user):
     u = getuser(user)
     u.arrivesub = True
     u.save()
+
 
 @jsonrpc_method('unsubarrive')
 def unsubarrive(request, user):
@@ -546,12 +584,14 @@ def unsubarrive(request, user):
     u.arrivesub = False
     u.save()
 
+
 @jsonrpc_method('newetas')
 def newetas(request):
     global newetalist
     tmp = newetalist
     newetalist = {}
     return tmp
+
 
 @jsonrpc_method('arrivals')
 def arrivals(request):
@@ -560,12 +600,14 @@ def arrivals(request):
     newarrivallist = {}
     return tmp
 
+
 @jsonrpc_method('achievements')
 def achievements(request):
     global achievements
     tmp = achievements
     achievements = {}
     return tmp
+
 
 @jsonrpc_method('activities')
 def activities(request):
@@ -578,6 +620,7 @@ def activities(request):
 # Cleanup methods
 #################################################################
 
+
 @jsonrpc_method('cleanup')
 def cleanup(request):
     users = userlist()
@@ -588,10 +631,9 @@ def cleanup(request):
 
     # remove expired users
     for u in User.objects.filter(status="online"):
-        #if u.logintime + timedelta(minutes=cfg.timeoutdelta) < timezone.now():
         if u.autologout_in() <= 0:
             autologout = True
-            u.status="offline"
+            u.status = "offline"
             u.logouttime = timezone.now()
             u.save()
             log_stats()
@@ -599,7 +641,7 @@ def cleanup(request):
     # remove expired ETAs
     for u in User.objects.filter(status="eta"):
         if u.etatimestamp < timezone.now():
-            u.eta=""
+            u.eta = ""
             u.status = "offline"
             u.save()
             log_stats()
@@ -630,6 +672,7 @@ def events(request):
     update_event_cache()
     return eventcache
 
+
 @jsonrpc_method('event_list')
 def event_list(request):
     """
@@ -639,20 +682,22 @@ def event_list(request):
     update_event_cache()
     return eventdetailcache
 
+
 @jsonrpc_method('event_detail')
 def event_detail(request, id):
     """
     get details for event with id id
     """
     d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
-    #d = feedparser.parse('https://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=month')
+    # d = feedparser.parse('https://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=month')
     for entry in d['entries']:
         title = re.search(r'.*: (.*)', entry['title']).group(1)
         end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
         start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
         title = title.replace("c   user", "c++ user")
-        #events.append('%s (%s-%s)' % (title, start, end))
+        # events.append('%s (%s-%s)' % (title, start, end))
     return "aye"
+
 
 def update_event_cache():
     global eventcache_time
@@ -662,38 +707,37 @@ def update_event_cache():
         return
     events = []
     event_details = []
-    #try:
-        #d = feedparser.parse('https://www.c-base.org/calendar/exported/c-base-events.ics')
-        #d = feedparser.parse('https://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=month')
-        #d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
-    #except:
-        #pass
+    # try:
+    # d = feedparser.parse('https://www.c-base.org/calendar/exported/c-base-events.ics')
+    # d = feedparser.parse('https://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=month')
+    # d = feedparser.parse('http://www.c-base.org/calender/phpicalendar/rss/rss2.0.php?cal=&cpath=&rssview=today')
+    # except:
+    # pass
 
     url = 'https://www.c-base.org/calendar/exported/c-base-events.ics'
     c = Calendar(urlopen(url).read().decode('utf-8'))
 
     if c is not None:
-        for entry in c.events: # d['entries']:
+        for entry in c.events:  # d['entries']:
             entryid = 42
             try:
-                #entryid = re.search(r'.*&uid=(.*)@google.com', entry['id']).group(1)
-                entryid = entry.uid # re.search(r'.*&uid=(.*)', entry['id']).group(1)
-            except: pass
+                # entryid = re.search(r'.*&uid=(.*)@google.com', entry['id']).group(1)
+                entryid = entry.uid  # re.search(r'.*&uid=(.*)', entry['id']).group(1)
+            except Exception:
+                pass
 
-
-            title = entry.name # re.search(r'.*: (.*)', entry['title']).group(1)
+            title = entry.name  # re.search(r'.*: (.*)', entry['title']).group(1)
             end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', str(entry.end)).group(2).replace(':', '')
-            #end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
             start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', str(entry.begin)).group(2).replace(':', '')
-            #start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
             title = title.replace("c   user", "c++ user")
             if str(entry.begin).startswith(date.today().strftime("%Y-%m-%d")):
-                description = entry.description # ['summary_detail']['value']
+                description = entry.description  # ['summary_detail']['value']
                 events.append('%s (%s-%s)' % (title, start, end))
-                event_details.append({'id': entryid, 'title':title, 'start': start, 'end': end, 'description': description})
+                event_details.append({'id': entryid, 'title': title, 'start': start, 'end': end, 'description': description})
         eventcache = events
         eventdetailcache = event_details
         eventcache_time = timezone.now()
+
 
 def event_list_web(request):
     return render(request, 'cbeamd/event_list.django', {'event_list': event_list(request)})
@@ -702,6 +746,7 @@ def event_list_web(request):
 # scanner methods
 #################################################################
 
+
 @jsonrpc_method('monmessage')
 def monmessage(request, message):
     """
@@ -709,7 +754,7 @@ def monmessage(request, message):
     """
     try:
         monitord.message(message)
-    except:
+    except Exception:
         pass
     return "yo"
 
@@ -717,17 +762,19 @@ def monmessage(request, message):
 # c_out methods
 #################################################################
 
+
 @jsonrpc_method('tts')
 def tts(request, voice, text):
     """
     perform text-to-speech over c_out with voice saying text
     """
     result = "aye"
-    #try:
-        #result = cout.tts(voice, text)
-    #except:
-        #pass
+    # try:
+    #     result = cout.tts(voice, text)
+    # except:
+    #     pass
     return result
+
 
 @jsonrpc_method('r2d2')
 def r2d2(request, text):
@@ -735,6 +782,7 @@ def r2d2(request, text):
     perform text-to-r2d2 over c_out with voice saying text
     """
     return cout.r2d2(text)
+
 
 @jsonrpc_method('play')
 def play(request, file):
@@ -746,11 +794,12 @@ def play(request, file):
         publish("c_out/loop", "")
     else:
         publish("c_out/play", str(file))
-    #try:
-        #result = cout.play(file)
-    #except:
-        #pass
+    # try:
+        # result = cout.play(file)
+    # except:
+        # pass
     return result
+
 
 @jsonrpc_method('setvolume')
 def setvolume(request, volume):
@@ -759,12 +808,14 @@ def setvolume(request, volume):
     """
     return cout.setvolume(volume)
 
+
 @jsonrpc_method('getvolume')
 def getvolume(request, volume):
     """
     get the current c_out volume
     """
     return cout.getvolume(volume)
+
 
 @jsonrpc_method('voices')
 def voices(request):
@@ -773,15 +824,19 @@ def voices(request):
     """
     return cout.voices()
 
+
 @jsonrpc_method('sounds')
 def sounds(request):
     """
     returns a list of sounds available to play via c_out
     """
     result = []
-    try: result = sorted(cout.sounds()['result'])
-    except: pass
+    try:
+        result = sorted(cout.sounds()['result'])
+    except Exception:
+        pass
     return result
+
 
 @jsonrpc_method('c_out')
 def c_out(request):
@@ -789,6 +844,7 @@ def c_out(request):
     plays a random sound via c_out
     """
     return cout.c_out()
+
 
 @jsonrpc_method('announce')
 def announce(request, text):
@@ -799,13 +855,15 @@ def announce(request, text):
     publish("c_out/announce", str(text))
     try:
         result = cout.announce(text)
-    except:
+    except Exception:
         pass
     return result
+
 
 @login_required
 def c_out_web(request):
     return render(request, 'cbeamd/c_out.django', {'sound_list': sounds(request)})
+
 
 @login_required
 def c_out_play_web(request, sound):
@@ -813,12 +871,11 @@ def c_out_play_web(request, sound):
     return render(request, 'cbeamd/c_out.django', {'sound_list': sounds(request), 'result': "sound wurde abgespielt"})
 
 
-
 #################################################################
 # ToDo
 #################################################################
 
-#def todo():
+# def todo():
 #    todoarray = []
 #    try:
 #        todos = eval(open(cfg.todofile).read())
@@ -827,63 +884,6 @@ def c_out_play_web(request, sound):
 #    except: pass
 #
 #    return todoarray
-#################################################################
-# DHCP hook
-#################################################################
-
-#def dhcphook(action, mac, ip, name):
-    #if data['macmap'].has_key(mac):
-        #user = data['macmap'][mac]
-        #save()
-        #if user in userlist():
-        #else:            login(user)
-    #return
-#def addmac(user, mac):
-    #data['macmap'][mac] = user
-    #save()
-    #return "aye"
-#
-#def delmac(user, mac):
-    #if data['macmap'][mac] == user:
-        #del data['macmap'][mac]        save()
-        #return "aye"
-    #else:
-        #return "die mac %s ist %s nicht zugeordnet" % (mac, user)
-
-#################################################################
-# r0ket methods
-#################################################################
-
-### # cbeam.r0ketSeen(result.group(1), sensor, result.group(2), result.group(3))
-### @jsonrpc_method('r0ketseen')
-### def r0ketseen(request, r0ketid, sensor, payload, signal):
-###     timestamp = 42
-###     user = getr0ketuser(request, r0ketid)
-###     if user:
-### #    if r0ketid in data['r0ketids'].keys():
-### #        #data['r0ketmap'][r0ketid] = [sensor, payload, signal, timestamp]
-### #        data['lastlocation'][user] = sensor
-###         result = login_wlan(request, user)
-###     else:
-###         print('saw unknown r0ket: %s (%s)' % (r0ketid, sensor))
-### #    save()
-###     return "aye"
-### #
-### #def getr0ketmap():
-### #    return data['r0ketmap']
-### #
-### #def registerr0ket(r0ketid, user):
-### #    data['r0ketids'][r0ketid] = user
-### #    save()
-### #    return "aye"
-### #
-### @jsonrpc_method('getr0ketuser')
-### def getr0ketuser(request, r0ketid):
-###     f = LdapNrf24Check("ldap://10.0.1.7:389/", 'ou=crew,dc=c-base,dc=org', '', '', 'nrf24', '(memberOf=cn=crew,ou=groups,dc=c-base,dc=org)')
-###     m = re.search("uid=(.*?),ou.*", f.getUserForNrf24(r0ketid))
-###     return m.group(1)
-###     #return "ID: "+f.getUserForNrf24(r0ketid)
-###     #return data['r0ketids'][r0ketid]
 
 #################################################################
 # reminder methods
@@ -891,9 +891,10 @@ def c_out_play_web(request, sound):
 
 @jsonrpc_method('remind')
 def remind(user, reminder):
-   u = getuser(user)
-   u.reminder = reminder
-   return "aye"
+    u = getuser(user)
+    u.reminder = reminder
+    return "aye"
+
 
 def reminder():
     result = {}
@@ -904,6 +905,7 @@ def reminder():
 #################################################################
 # LTE methods
 #################################################################
+
 
 @jsonrpc_method('lte')
 def lte(request, user, args):
@@ -916,7 +918,7 @@ def lte(request, user, args):
                 LTE.objects.delete(lte)
             return 'lte_removed'
         eta = " ".join(args[1:])
-        eta = re.sub(r'(\d\d):(\d\d)',r'\1\2', eta)
+        eta = re.sub(r'(\d\d):(\d\d)', r'\1\2', eta)
         ltes = LTE.objects.filter(username=user, day=args[0]).order_by('username')
         if len(ltes) > 0:
             for lte in ltes:
@@ -927,16 +929,6 @@ def lte(request, user, args):
         return 'lte_set'
     return "meh"
 
-#
-#def getlteforday(day):
-#    if day in ('MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'):
-#        return LTE.objects.filter(day=day)
-#    else:
-#        return 'err_unknown_day'
-#
-#def getlte():
-#        return data['ltes']
-
 
 #################################################################
 # Web Views
@@ -945,13 +937,13 @@ def lte(request, user, args):
 def index2(request):
     online_users_list = User.objects.filter(status="online").order_by('username')
     eta_list = User.objects.filter(status="eta").order_by('username')
-    #event_list = 
     t = loader.get_template('cbeamd/index.django')
     c = Context({
-         'online_users_list': online_users_list,
-         "eta_list": eta_list,
+        'online_users_list': online_users_list,
+        "eta_list": eta_list,
     })
     return HttpResponse(t.render(c))
+
 
 @login_required
 def index(request):
@@ -963,30 +955,36 @@ def index(request):
     rev.reverse()
     return render(request, 'cbeamd/index.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all', 'activitylog': rev})
 
+
 @login_required
 def user(request, user_id):
     u = get_object_or_404(User, pk=user_id)
     return render(request, 'cbeamd/user_detail.django', {'user': u})
+
 
 @login_required
 def user_online(request):
     user_list = User.objects.filter(status="online").order_by('username')
     return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'online'})
 
+
 @login_required
 def user_offline(request):
     user_list = User.objects.filter(status="offline").order_by('username')
     return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'offline'})
+
 
 @login_required
 def user_eta(request):
     user_list = User.objects.filter(status="eta").order_by('username')
     return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'eta'})
 
+
 @login_required
 def user_all(request):
     user_list_online = User.objects.all().order_by('username')
     return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'all'})
+
 
 @login_required
 def user_list_web(request):
@@ -995,20 +993,21 @@ def user_list_web(request):
     user_list_offline = User.objects.filter(status="offline").order_by('username')
     return render(request, 'cbeamd/user_list.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all'})
 
+
 @jsonrpc_method('user_list')
 def user_list(request):
     users = User.objects.all().order_by('username')
     return [user.dic() for user in users]
 
+
 @jsonrpc_method('stats_list')
 def stats_list(request):
-    #user_list = User.objects.filter(stats_enabled=True).exclude(ap=0).order_by('-ap', 'username')
     user_list = sorted(list(User.objects.filter(stats_enabled=True).exclude(ap=0)), key=lambda x: x.calc_ap(), reverse=True)
     return [user.dic() for user in user_list]
 
+
 @login_required
 def stats(request):
-    #user_list = User.objects.filter(stats_enabled=True).exclude(ap=0).order_by('-ap', 'username')
     user_list = sorted(list(User.objects.filter(stats_enabled=True).exclude(ap=0)), key=lambda x: x.calc_ap(), reverse=True)
     return render(request, 'cbeamd/stats.django', {'user_list': [user.dic() for user in user_list]})
 
@@ -1017,58 +1016,33 @@ def stats(request):
 def control(request):
     return render(request, 'cbeamd/control.django', {})
 
+
 @login_required
 def c_leuse(request):
     return render(request, 'cbeamd/c_leuse.django', {})
 
+
 @login_required
 def c_buttons(request):
     return render(request, 'cbeamd/c_buttons.django', {})
+
 
 @login_required
 def profile_edit(request):
     if request.method == "POST":
         u = getuser(request.user.username)
         form = UserForm(request.POST, instance=u)
-        #m = Mission.objects.get(pk=mission_id)
-        #form = MissionForm(request.POST, instance=m)
         if form.is_valid():
             form.save()
-            #return HttpResponseRedirect('/missions/%s' % mission_id)
     else:
         u = getuser(request.user.username)
         form = UserForm(instance=u)
     return render(request, 'cbeamd/user_form.django', locals())
 
-
-#################################################################
-# Web Login / Logout
-#################################################################
-
-#def auth_login( request ):
-#    redirect_to = request.GET.get( 'next', '' ) or '/'
-#    if request.method == 'POST':
-#        form = LoginForm( request.POST )
-#        if form.is_valid():
-#            username = form.cleaned_data['username']
-#            password = form.cleaned_data['password']
-#            user = authenticate( username=username, password=password )
-#            if user is not None:
-#                if user.is_active:
-#                    login_auth( request, user )
-#                    return HttpResponseRedirect( redirect_to )
-#    else:
-#        form = LoginForm()
-#    return render(request,  'cbeamd/login.django', locals()) #, context_instance = RequestContext(request))
-#
-#def auth_logout( request ):
-#    redirect_to = request.GET.get( 'next', '' ) or '/'
-#    logout_auth( request )
-#    return HttpResponseRedirect( redirect_to )
-
 #################################################################
 # mission handling
 #################################################################
+
 
 @jsonrpc_method('add_mission')
 def add_mission(request, short_description):
@@ -1079,12 +1053,14 @@ def add_mission(request, short_description):
     m.save()
     return "aye"
 
+
 @jsonrpc_method('missions')
 def missions(request):
     """
     returns a list of available missions
     """
     return [str(mission) for mission in Mission.objects.order_by('status', 'short_description')]
+
 
 @jsonrpc_method('mission_detail')
 def mission_detail(request, mission_id):
@@ -1093,7 +1069,7 @@ def mission_detail(request, mission_id):
     """
     mission = get_object_or_404(Mission, pk=mission_id)
     return mission.dic()
-    #return render(request, 'cbeamd/mission_detail.django', {'mission': mission})
+
 
 @jsonrpc_method('mission_assign')
 def mission_assign(request, user, mission_id):
@@ -1108,6 +1084,7 @@ def mission_assign(request, user, mission_id):
         m.save()
         return "success"
     return "mission not available"
+
 
 @jsonrpc_method('mission_cancel')
 def mission_cancel(request, user, mission_id):
@@ -1124,6 +1101,7 @@ def mission_cancel(request, user, mission_id):
         return "success"
     return "not assigned to user"
 
+
 @jsonrpc_method('mission_complete')
 def mission_complete(request, user, mission_id):
     """
@@ -1132,7 +1110,7 @@ def mission_complete(request, user, mission_id):
     u = getuser(user)
     m = Mission.objects.get(id=mission_id)
     if u in m.assigned_to.all() and m.status == mission_assigned:
-        #m.assigned_to.clear()
+        # m.assigned_to.clear()
         m.assigned_to.remove(u)
         if m.assigned_to.count() <= 0:
             if m.repeat_after_days == 0:
@@ -1147,16 +1125,19 @@ def mission_complete(request, user, mission_id):
             al.activity = Activity.objects.get(activity_type="mission completed")
             al.mission = m
             al.save()
-            #u.ap = u.ap + m.ap
+            # u.ap = u.ap + m.ap
             u.ap = u.calc_ap()
             u.save()
             if not u.no_google:
-                try: gcm_send_mission(request, "mission completed", al.notification_str())
-                except: pass
+                try:
+                    gcm_send_mission(request, "mission completed", al.notification_str())
+                except Exception:
+                    pass
             publish("mission/completed", str(al.notification_str()))
 
         return "success"
     return "failure"
+
 
 @login_required
 def mission_assign_web(request, mission_id):
@@ -1170,6 +1151,7 @@ def mission_assign_web(request, mission_id):
         result = "Mission konnte nicht gestartet werden"
     return render(request, 'cbeamd/mission_list.django', locals())
 
+
 @login_required
 def mission_complete_web(request, mission_id):
     missions_available = Mission.objects.filter(status="open").order_by('short_description')
@@ -1181,6 +1163,7 @@ def mission_complete_web(request, mission_id):
     else:
         result = "Mission konnte nicht abgeschlossen werden"
     return render(request, 'cbeamd/mission_list.django', locals())
+
 
 @login_required
 def mission_cancel_web(request, mission_id):
@@ -1196,7 +1179,7 @@ def mission_cancel_web(request, mission_id):
     return render(request, 'cbeamd/mission_list.django', locals())
 
 
-#@login_required
+# @login_required
 @jsonrpc_method('mission_list')
 def mission_list(request):
     """
@@ -1211,8 +1194,10 @@ def mission_list(request):
         cuser = request.user.username
         return render(request, 'cbeamd/mission_list.django', locals())
 
+
 def is_mission_editor(user):
     return True
+
 
 @login_required
 @user_passes_test(is_mission_editor)
@@ -1224,7 +1209,7 @@ def edit_mission(request, mission_id):
             form.save()
             result = "Mission gespeichert"
             return render(request, 'cbeamd/mission_list.django', locals())
-            #return HttpResponseRedirect('/missions/%s' % mission_id)
+            # return HttpResponseRedirect('/missions/%s' % mission_id)
     else:
         m = Mission.objects.get(id=mission_id)
         form = MissionForm(instance=m)
@@ -1234,6 +1219,7 @@ def edit_mission(request, mission_id):
 # Google Cloud Messaging
 #################################################################
 
+
 @jsonrpc_method('gcm_register')
 def gcm_register(request, user, regid):
     s = Subscription()
@@ -1241,6 +1227,7 @@ def gcm_register(request, user, regid):
     s.user = getuser(user)
     s.save()
     return "aye"
+
 
 @jsonrpc_method('gcm_update')
 def gcm_update(request, user, regid):
@@ -1259,6 +1246,8 @@ def gcm_update(request, user, regid):
 
 # This method should usually not be exposed through JSON-RPC
 # @jsonrpc_method('gcm_send')
+
+
 def gcm_send(request, title, text):
     gcm = GCM(apikey)
     if title == "now boarding":
@@ -1266,9 +1255,9 @@ def gcm_send(request, title, text):
     elif title == "ETA":
         users = User.objects.filter(push_eta=True)
     elif title == "mission completed":
-        users = User.objects.filter(push_missions=True,stats_enabled=True)
+        users = User.objects.filter(push_missions=True, stats_enabled=True)
     else:
-        #users = User.objects.all()
+        # users = User.objects.all()
         users = []
         return
     now = timezone.localtime(timezone.now())
@@ -1279,15 +1268,17 @@ def gcm_send(request, title, text):
     response = gcm.json_request(registration_ids=regids, data=data)
     return response
 
+
 def gcm_send_mission(request, title, text):
     gcm = GCM(apikey)
-    users = User.objects.filter(stats_enabled=True,push_missions=True)
-    #users = User.objects.filter(username="smile")
+    users = User.objects.filter(stats_enabled=True, push_missions=True)
+    # users = User.objects.filter(username="smile")
     subscriptions = Subscription.objects.filter(user__in=users)
     regids = [subscription.regid for subscription in subscriptions]
     data = {'title': title, 'text': text}
     response = gcm.json_request(registration_ids=regids, data=data)
     return response
+
 
 @jsonrpc_method('gcm_send_test')
 def gcm_send_test(request, title, text, username):
@@ -1301,8 +1292,8 @@ def gcm_send_test(request, title, text, username):
     response = gcm.json_request(registration_ids=regids, data=data)
     return response
 
-#@jsonrpc_method('test_enc')
-#def test_enc(request):
+# @jsonrpc_method('test_enc')
+# def test_enc(request):
 #    gcm = GCM(apikey)
 #    encrypted_data = crypto.EncryptWithAES("fooderbar")
 #    u = getuser("smile")
@@ -1321,34 +1312,40 @@ def smile(request):
 # CULd method forwarding
 #################################################################
 
-@jsonrpc_method('bluewall()')#, authenticated=True, validate=True)
+
+@jsonrpc_method('bluewall()')  # , authenticated=True, validate=True)
 def bluewall(request):
-    #return culd.bluewall(True)
+    # return culd.bluewall(True)
     return "culd not available"
 
-@jsonrpc_method('darkwall()')#, authenticated=True, validate=True)
+
+@jsonrpc_method('darkwall()')  # , authenticated=True, validate=True)
 def darkwall(request):
-    #return culd.darkwall(False)
+    # return culd.darkwall(False)
     return "culd not available"
 
-#@jsonrpc_method('hwstorage(Boolean)', authenticated=True, validate=True)
+# @jsonrpc_method('hwstorage(Boolean)', authenticated=True, validate=True)
+
+
 @jsonrpc_method('hwstorage')
 def hwstorage(request):
     global timer
-    #global hwstorage_state
-    #if hwstorage_state == "open":
-        #return
-    #hwstorage_state = "open"
-    #culd.hwstorage(True)
-    #culd.hwstorage(True)
+    # global hwstorage_state
+    # if hwstorage_state == "open":
+    # return
+    # hwstorage_state = "open"
+    # culd.hwstorage(True)
+    # culd.hwstorage(True)
+
     def close():
-        #culd.hwstorage(False)
-        #culd.hwstorage(False)
-        #hwstorage_state = "closed"
+        # culd.hwstorage(False)
+        # culd.hwstorage(False)
+        # hwstorage_state = "closed"
         pass
     timer = Timer(30.0, close)
     timer.start()
     return "aye"
+
 
 def hwstorage_web(request):
     result = hwstorage(request, True)
@@ -1357,6 +1354,7 @@ def hwstorage_web(request):
 #################################################################
 # artefact handling
 #################################################################
+
 
 @jsonrpc_method('artefact_list')
 def artefact_list(request):
@@ -1367,7 +1365,7 @@ def artefact_list(request):
     global artefactcache_time
     global artefact_base_url
     artefactlist = {}
-    if True: # artefactcache_time + timedelta(hours=1) < timezone.now():
+    if True:  # artefactcache_time + timedelta(hours=1) < timezone.now():
         parser = MyHTMLParser()
         try:
             response = urlopen("http://10.0.1.44/artefact/").read().decode('utf-8')
@@ -1383,6 +1381,7 @@ def artefact_list(request):
         artefactlist = artefactcache
     # return sorted(artefactlist)
     return artefactlist
+
 
 @jsonrpc_method('artefact_base_url')
 def artefact_base_url(request):
@@ -1400,6 +1399,7 @@ def artefact_list_web(request):
 # article handling
 #################################################################
 
+
 @jsonrpc_method('list_articles')
 def list_articles(request):
     """
@@ -1413,8 +1413,9 @@ def log_stats():
     u = UserStatsEntry()
     u.usercount = len(User.objects.filter(status="online"))
     u.etacount = len(User.objects.filter(status="eta"))
-    #u.save()
+    # u.save()
     return str(u)
+
 
 @jsonrpc_method('get_stats')
 def get_stats(request):
@@ -1434,33 +1435,35 @@ def set_stripe_pattern(request, pattern_id):
     set the airlock led stripe pattern to pattern_id
     """
     pattern_id = int(pattern_id)
-    #if pattern_id == 0:
-        #return cerebrum.partymode()
-    #if pattern_id == 4:
-        #return cerebrum.flimmer()
+    # if pattern_id == 0:
+    # return cerebrum.partymode()
+    # if pattern_id == 4:
+    # return cerebrum.flimmer()
     if pattern_id == 7:
         return cerebrum.statics()
     if pattern_id == 3:
         patterns = cerebrum.get_patterns()['result']
         return cerebrum.set_pattern(random.choice(patterns))
-    #if pattern_id < 20:
+    # if pattern_id < 20:
     result = cerebrum.set_pattern(pattern_id)
-    #if pattern_id == 20:
-        #result = cerebrum.flimmer()
-    #if pattern_id == 21:
-        #result = cerebrum.senso()
-    #if pattern_id == 22:
-        #result = cerebrum.blink()
-    #if pattern_id == 23:
-        #result = cerebrum.partymode()
-    #if result['result'] == "aye":
-        #result['result'] = "pattern has been set"
-    #else:
-        #result['result'] = "failed to set pattern"
+    # if pattern_id == 20:
+    # result = cerebrum.flimmer()
+    # if pattern_id == 21:
+    # result = cerebrum.senso()
+    # if pattern_id == 22:
+    # result = cerebrum.blink()
+    # if pattern_id == 23:
+    # result = cerebrum.partymode()
+    # if result['result'] == "aye":
+    # result['result'] = "pattern has been set"
+    # else:
+    # result['result'] = "failed to set pattern"
     return result
+
 
 def set_stripe_pattern_web(request, pattern_id):
     return render(request, 'cbeamd/c_leuse.django', {'result': 'Pattern wurde gesetzt'})
+
 
 @jsonrpc_method('set_stripe_speed')
 def set_stripe_speed(request, speed):
@@ -1470,9 +1473,11 @@ def set_stripe_speed(request, speed):
     speed = int(speed)
     return cerebrum.set_speed(speed)
 
+
 def set_stripe_speed_web(request, speed):
     cerebrum.set_speed(int(speed))
     return render(request, 'cbeamd/c_leuse.django', {'result': 'Geschwindigkeit wurde gesetzt'})
+
 
 @jsonrpc_method('set_stripe_offset')
 def set_stripe_offset(request, offset):
@@ -1482,13 +1487,15 @@ def set_stripe_offset(request, offset):
     offset = int(offset)
     return cerebrum.set_offset(offset)
 
+
 @jsonrpc_method('set_stripe_buffer')
 def set_stripe_buffer(request, buffer):
     """
     set the airlock led stripe pattern buffer
     """
-    #buffer = [255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0]*32+[0,0,0,0,0,0,0,0,0,0,0,0]
+    # buffer = [255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0]*32+[0,0,0,0,0,0,0,0,0,0,0,0]
     return cerebrum.set_buffer(buffer)
+
 
 @jsonrpc_method('set_stripe_default')
 def set_stripe_default(request):
@@ -1507,8 +1514,9 @@ def set_stripe_default(request):
         default_stripe_speed = 1
     cerebrum.set_pattern(default_stripe_pattern)
     cerebrum.set_speed(default_stripe_speed)
-    #cerebrum.set_offset(default_stripe_offset)
+    # cerebrum.set_offset(default_stripe_offset)
     return "aye"
+
 
 @jsonrpc_method('notbeleuchtung')
 def notbeleuchtung(request):
@@ -1521,6 +1529,7 @@ def notbeleuchtung(request):
     default_stripe_speed = 0
     cerebrum.set_pattern(10)
     cerebrum.set_speed(1)
+
 
 @jsonrpc_method('rainbow')
 def rainbow(request):
@@ -1538,10 +1547,12 @@ def rainbow(request):
 # misc methods
 #################################################################
 
+
 @jsonrpc_method('setdigitalmeter')
 def setdigitalmeter(request, meterid, value):
     os.system('curl -d \'{"method":"set_digital_meter","id":0,"params":[%d,"%s"]}\' http://altar.cbrp3.c-base.org:4568/jsonrpc' % (meterid, value))
     return "aye"
+
 
 @jsonrpc_method('ddate')
 def ddate(request):
@@ -1550,7 +1561,8 @@ def ddate(request):
     """
     now = DDate()
     now.fromDate(date.today())
-    return "Today is "+str(now)
+    return "Today is " + str(now)
+
 
 @jsonrpc_method('fnord')
 def fnord(request):
@@ -1561,12 +1573,14 @@ def fnord(request):
 def isWifiLoginEnabled(request, users):
     return {user.username: user.wlanlogin for user in User.objects.filter(username__in=users)}
 
+
 @jsonrpc_method('set_wlan_login')
 def set_wlan_login(request, user, enabled):
     u = getuser(user)
-    u.wlanlogin=enabled
+    u.wlanlogin = enabled
     u.save()
     return "aye"
+
 
 @csrf_exempt
 def stripe_view(request):
@@ -1581,6 +1595,7 @@ def stripe_view(request):
         form = StripeForm()
         return render(request, 'cbeamd/stripe_form.django', {'form': form})
 
+
 @jsonrpc_method('activitylog')
 def activitylog(request):
     """
@@ -1591,6 +1606,7 @@ def activitylog(request):
     rev.reverse()
     return [ale.dic() for ale in rev]
 
+
 @login_required
 def activitylog_web(request):
     al = ActivityLog.objects.order_by('-timestamp')[:40]
@@ -1598,10 +1614,12 @@ def activitylog_web(request):
     rev.reverse()
     return render(request, 'cbeamd/activitylog.django', {'activitylog': rev})
 
+
 @login_required
 def activitylog_details_web(request, activitylog_id):
     activitylog = ActivityLog.objects.get(id=activitylog_id)
     return render(request, 'cbeamd/activitylog_details.django', locals())
+
 
 @csrf_exempt
 @login_required
@@ -1614,11 +1632,12 @@ def logactivity_web(request):
             ap = form.cleaned_data["ap"]
             logactivity(request, request.user.username, act, ap)
             return render(request, 'cbeamd/activitylog.django', {'form': form, 'result': 'SUCCESS'})
-    #else:
-        #form = StripeForm()
-        #return render(request, 'cbeamd/stripe_form.django', {'form': form})
+    # else:
+        # form = StripeForm()
+        # return render(request, 'cbeamd/stripe_form.django', {'form': form})
 
     return render(request, 'cbeamd/activitylog.django', {'result': 'FAIL'})
+
 
 @jsonrpc_method('logactivity')
 def logactivity(request, user, activity, ap):
@@ -1627,7 +1646,7 @@ def logactivity(request, user, activity, ap):
     """
     global newactivities
     u = getuser(user)
-    #u.ap = u.ap + ap
+    # u.ap = u.ap + ap
     if not u.stats_enabled:
         return "stats disabled for user"
     al = ActivityLog()
@@ -1649,19 +1668,22 @@ def logactivity(request, user, activity, ap):
     newactivities.append(al)
     return "aye"
 
+
 def list_portal_articles():
     result = []
-    #try: result = portal.api.list_articles()['result']
-    #except: pass
+    # try: result = portal.api.list_articles()['result']
+    # except: pass
     return result
+
 
 @jsonrpc_method('app_data')
 def app_data(request):
     """
     returns a large data structure that contains all current status information that is required by the c-beam app
     """
-    missions = [mission.dic() for mission in  Mission.objects.order_by('-status', 'short_description')]
+    missions = [mission.dic() for mission in Mission.objects.order_by('-status', 'short_description')]
     return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'barstatus': get_barstatus(request), 'articles': list_portal_articles(), 'sounds': sounds(request)}
+
 
 @login_required
 def activitylog_json(request):
@@ -1670,8 +1692,10 @@ def activitylog_json(request):
     rev.reverse()
     return HttpResponse(json.dumps([ale.dic() for ale in rev]), content_type="application/json")
 
+
 def not_implemented(request):
     return render(request, 'cbeamd/not_implemented.django', {})
+
 
 @login_required
 def activitylog_post_comment(request, activitylog_id):
@@ -1701,12 +1725,14 @@ def activitylog_post_comment(request, activitylog_id):
                 result = "dance fu:r deinen commentar"
     return render(request, 'cbeamd/activitylog_details.django', locals())
 
+
 @login_required
 def activitylog_delete_comment(request, comment_id):
     alc = ActivityLogComment.objects.get(id=comment_id)
     u = getuser(request.user.username)
     if alc.user == u:
         alc.delete()
+
 
 @jsonrpc_method('set_stats_enabled')
 def set_stats_enabled(request, user, is_enabled):
@@ -1724,6 +1750,7 @@ def set_stats_enabled(request, user, is_enabled):
     u.save()
     return "aye"
 
+
 @jsonrpc_method('set_push_missions')
 def set_push_missions(request, user, is_enabled):
     """
@@ -1739,6 +1766,7 @@ def set_push_missions(request, user, is_enabled):
             u.push_missions = False
     u.save()
     return "aye"
+
 
 @jsonrpc_method('set_push_boarding')
 def set_push_boarding(request, user, is_enabled):
@@ -1756,6 +1784,7 @@ def set_push_boarding(request, user, is_enabled):
     u.save()
     return "aye"
 
+
 @jsonrpc_method('set_push_eta')
 def set_push_eta(request, user, is_enabled):
     """
@@ -1772,6 +1801,7 @@ def set_push_eta(request, user, is_enabled):
     u.save()
     return "aye"
 
+
 @login_required
 def c_out_volume_web(request):
     volume = c_out_volume
@@ -1782,39 +1812,44 @@ def c_out_volume_web(request):
 def c_out_volume_json(request):
     return HttpResponse(json.dumps({'volume': c_out_volume}), content_type="application/json")
 
+
 def c_out_volume_set(request, volume):
     global c_out_volume
     c_out_volume = volume
     return HttpResponse(json.dumps({'result': "OK"}), content_type="application/json")
+
 
 @jsonrpc_method('barschnur')
 def barschnur(request, pizza, sushi, inder):
     publish("bar/schnur", "%d, %d, %d" % (pizza, sushi, inder))
 
     if pizza == 0 and sushi == 1 and inder == 1:
-        #publish("c_out/play", "pizza")
+        # publish("c_out/play", "pizza")
         publish("c_out/announce", "eine pizza-bestellung wartet an der bar")
     if pizza == 1 and sushi == 0 and inder == 1:
-        #publish("c_out/play", "sushi")
+        # publish("c_out/play", "sushi")
         publish("c_out/announce", "eine sushi-bestellung wartet an der bar")
     if pizza == 1 and sushi == 1 and inder == 0:
-        #publish("c_out/play", "inder")
+        # publish("c_out/play", "inder")
         publish("c_out/announce", "eine inder-bestellung wartet an der bar")
+
 
 @jsonrpc_method('c_portal.notify')
 def c_portal_notify(request, notification):
     print(notification)
 
+
 @jsonrpc_method("trafotron")
 def trafotron(request, value):
     newval = (value * 100) / 170
-    #print("trafotron: " + str(newval))
-    #logger.error("trafotron: " + str(newval))
-    #os.system("amixer -c 0 set Master %d%%" % newval)
+    # print("trafotron: " + str(newval))
+    # logger.error("trafotron: " + str(newval))
+    # os.system("amixer -c 0 set Master %d%%" % newval)
     try:
         logger.debug(c_leuse_c_out.setvolume(newval))
     except Exception as e:
         logger.error(e)
+
 
 @jsonrpc_method("cerebrumNotify")
 def cerebrumNotify(request, device_name, event_source_path, new_state):
@@ -1822,21 +1857,21 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
 
     logger.debug("'%s: %s'" % (event_source_path, new_state))
     if event_source_path == '/schaltergang/1':
-        nerdctrl_cout.play('clamp.mp3') 
+        nerdctrl_cout.play('clamp.mp3')
     if event_source_path == '/schaltergang/2':
-        nerdctrl_cout.play('carbon.mp3') 
+        nerdctrl_cout.play('carbon.mp3')
     if event_source_path == '/schaltergang/3':
-        nerdctrl_cout.play('cience.mp3') 
+        nerdctrl_cout.play('cience.mp3')
     if event_source_path == '/schaltergang/4':
-        nerdctrl_cout.play('creatv.mp3') 
+        nerdctrl_cout.play('creatv.mp3')
     if event_source_path == '/schaltergang/5':
-        nerdctrl_cout.play('cultur.mp3') 
+        nerdctrl_cout.play('cultur.mp3')
     if event_source_path == '/schaltergang/6':
-        nerdctrl_cout.play('com.mp3') 
+        nerdctrl_cout.play('com.mp3')
     if event_source_path == '/schaltergang/7':
-        nerdctrl_cout.play('core.mp3') 
+        nerdctrl_cout.play('core.mp3')
     if event_source_path == '/schaltergang/8':
-        nerdctrl_cout.announce('die schalter sind kein spielzeug!') 
+        nerdctrl_cout.announce('die schalter sind kein spielzeug!')
     if event_source_path == '/schaltergang/9':
         if new_state == 0:
             publish("nerdctrl/open", "http://www.c-base.org")
@@ -1862,7 +1897,7 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
         elif new_state == 1:
             publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/sensors")
         elif new_state == 2:
-            #publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/rickshaw/examples/fixed.html")
+            # publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/rickshaw/examples/fixed.html")
             publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/bar-status/")
         else:
             # publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/nerdctrl")
@@ -1879,34 +1914,35 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
             publish("nerdctrl/open", "http://vimeo.com/cbase/videos")
 
     if event_source_path == '/schaltergang/13':
-        nerdctrl_cout.tts('Julia', 'huch!') 
+        nerdctrl_cout.tts('Julia', 'huch!')
         publish("nerdctrl/open", "http://map.norsecorp.com/")
     if event_source_path == '/schaltergang/14':
-        nerdctrl_cout.tts('Julia', 'achtung! alles turisten und nonteknischen lookenpeepers! das komputermaschine ist nicht fuer der gefingerpoken und mittengraben!') 
+        nerdctrl_cout.tts('Julia', 'achtung! alles turisten und nonteknischen lookenpeepers! das komputermaschine ist nicht fuer der gefingerpoken und mittengraben!')
     if event_source_path == '/schaltergang/15':
-        nerdctrl_cout.tts('Julia', 'finger weg!') 
+        nerdctrl_cout.tts('Julia', 'finger weg!')
     if event_source_path == '/schaltergang/16':
-        nerdctrl_cout.play('cantdo.mp3') 
+        nerdctrl_cout.play('cantdo.mp3')
     if event_source_path == '/schaltergang/18':
-        nerdctrl_cout.play('Spock_hat_keinen_Bock.mp3') 
+        nerdctrl_cout.play('Spock_hat_keinen_Bock.mp3')
     if event_source_path == '/schaltergang/19':
-        nerdctrl_cout.play('kommtihrelendendaten.mp3') 
+        nerdctrl_cout.play('kommtihrelendendaten.mp3')
     if event_source_path == '/schaltergang/20':
-        nerdctrl_cout.play('darth.mp3') 
+        nerdctrl_cout.play('darth.mp3')
     if event_source_path == '/schaltergang/21':
-        nerdctrl_cout.play('faszinierend.mp3') 
+        nerdctrl_cout.play('faszinierend.mp3')
     if event_source_path == '/schaltergang/22':
-        nerdctrl_cout.play('zugangzummastercontrollprogramm.mp3') 
+        nerdctrl_cout.play('zugangzummastercontrollprogramm.mp3')
     if event_source_path == '/schaltergang/23':
-        nerdctrl_cout.tts('Julia', 'alles zweifelhafte muss angezweifelt werden') 
+        nerdctrl_cout.tts('Julia', 'alles zweifelhafte muss angezweifelt werden')
     if event_source_path == '/schaltergang/30':
-        nerdctrl_cout.tts('Julia', 'alle mann sofort in die zeitmaschine!') 
+        nerdctrl_cout.tts('Julia', 'alle mann sofort in die zeitmaschine!')
     if event_source_path == '/schaltergang/17':
         nerdctrl_cout.tts('Julia', 'achtung, achtung, hier spricht der bordcomputer. huhu!')
     if event_source_path == '/schaltergang/26':
         if new_state == 0:
             if cerebrum_state[device_name]['/schaltergang/24'] == 0:
-                nerdctrl_cout.play('rocket_countdown_short') 
+                nerdctrl_cout.play('rocket_countdown_short')
+
 
 @jsonrpc_method("barstatus")
 def barstatus(request, status):
@@ -1925,6 +1961,7 @@ def barstatus(request, status):
         notify_bar_closing()
     publish("bar/state", str(status), retain=True)
 
+
 @jsonrpc_method("get_barstatus")
 def get_barstatus(request):
     """
@@ -1932,11 +1969,14 @@ def get_barstatus(request):
     """
     return Status.objects.get().bar_open
 
+
 def notify_bar_opening():
     publish("bar/status", timezone.localtime(timezone.now()).strftime("%H:%M") + " bar opening")
 
+
 def notify_bar_closing():
     publish("bar/status", timezone.localtime(timezone.now()).strftime("%H:%M") + " bar closing")
+
 
 def publish(topic, payload, retain=False):
     try:
@@ -1949,13 +1989,15 @@ def publish(topic, payload, retain=False):
 
         mqtt.publish(topic, payload, qos=1, retain=retain)
 
-    except Exception as e: 
+    except Exception as e:
         logger.error(e)
         pass
+
 
 def create_random_password(length):
     chars = string.letters + string.digits
     return ''.join(choice(chars) for _ in range(length))
+
 
 @jsonrpc_method('set_first_password')
 def set_first_password(request, user):
@@ -1963,7 +2005,7 @@ def set_first_password(request, user):
     # u.tmp_password = create_random_password(16)
     # u.save()
     # send mail to "%s@c-base.org" % u.username including u.tmp_password
-    recipient = '%s@c-base.org' % u.username 
+    recipient = '%s@c-base.org' % u.username
     token = 'generierteseinmaltoken'
     text = 'hallo %s\n\n' % u.username
     text += '$jemand, wahrscheinlich du selbst, hat dein c-beam initialpasswort gesetzt.\n\nklicke auf den folgenden link, '
@@ -1972,6 +2014,7 @@ def set_first_password(request, user):
     text += 'du solltest dein initialpasswort mo:glchst bald unter https://member.cbrp3.c-base.org und in der app a:ndern.\n\n'
     text += 'dance fu:r die beachtung der sicherheitshinweise\nihr bordcomputer\n\n'
     send_mail(recipient, text)
+
 
 def send_mail(recipient, text):
     msg = MIMEText(text)
@@ -1985,6 +2028,7 @@ def send_mail(recipient, text):
 
     return "aye"
 
+
 @jsonrpc_method('set_stealthmode')
 def set_stealthmode(request, user, duration):
     """
@@ -1995,7 +2039,9 @@ def set_stealthmode(request, user, duration):
     u.save()
     return "aye"
 
-#@jsonrpc_method('get_stealthmode')
+# @jsonrpc_method('get_stealthmode')
+
+
 def get_stealthmode(request, user):
     u = getuser(user)
     return str(u.stealthmode)
@@ -2005,34 +2051,42 @@ def get_stealthmode(request, user):
 def toggle_burningman(request):
     try:
         monitord.burningman("foo")
-    except:
+    except Exception:
         pass
     return HttpResponse("OK")
+
 
 def nerdctrl(request):
     return render(request, 'cbeamd/nerdctrl.django', {})
 
+
 def cbeamviewer(request):
     return render(request, 'cbeamd/cbeamviewer.django', {})
+
 
 def weather(request):
     return render(request, 'cbeamd/weather.django', {})
 
+
 def bvg(request):
     return render(request, 'cbeamd/bvg.django', {})
+
 
 def welcome(request, user):
     return render(request, 'cbeamd/welcome.django', {'user': user})
 
+
 def sensors(request):
     return render(request, 'cbeamd/sensors.django', {})
+
 
 def fakelevels():
     levels = {}
     levels['oxygen'] = random.choice(['kritisch', 'bedenklich', 'N/A', 'ööhm'])
     levels['carbon'] = random.choice(['eher so mittel', 'kuschelig', '0.234254 CE/m^3'])
     levels['conscience'] = random.choice(['entspannt', 'erweitert', 'erheitert', 'passt schon'])
-    return levels;
+    return levels
+
 
 def dash(request):
     al = ActivityLog.objects.order_by('-timestamp')[:20]
@@ -2040,71 +2094,92 @@ def dash(request):
     rev.reverse()
     return render(request, 'cbeamd/dash.django', {'activitylog': rev, 'users': userlist_with_online_percentage(), 'barstatus': get_barstatus(request), 'levels': fakelevels()})
 
+
 def mechdisplay(request):
     return render(request, 'cbeamd/mechdisplay.django', {})
-            
+
+
 def he1display(request):
     return render(request, 'cbeamd/he1display.django', {})
+
 
 def ceitlochclocc(request):
     return render(request, 'cbeamd/ceitloch.django', {})
 
+
 def donut(request):
     return render(request, 'cbeamd/donut.django', {})
+
 
 @jsonrpc_method('reddit')
 def reddit(request):
     d = feedparser.parse('http://www.reddit.com/r/cbase/.rss')
     return render(request, 'cbeamd/reddit.django', {'entries': d['entries']})
 
+
 @jsonrpc_method('barbutton')
 def barbutton(request, pressed):
     publish("c-beam-pager/barbot", timezone.localtime(timezone.now()).strftime("%H:%M"))
     return "aye"
 
+
 @jsonrpc_method('ampel')
 def ampel(request, red, yellow, green):
     try:
         logger.debug(ampelrpc.ampel(red, yellow, green))
-    except: pass
+    except Exception:
+        pass
     return "aye"
+
 
 @jsonrpc_method('ampelblink')
 def ampelblink(request, program):
     try:
         logger.debug(ampelrpc.ampel(program))
-    except: pass
+    except Exception:
+        pass
     return "aye"
+
 
 @jsonrpc_method('issues')
 def issues(request):
     url = "https://api.github.com/repos/c-base/meta/issues?state=open"
-    issues = urllib2.urlopen(url).read()
+    import requests
+    response = requests.get(url=url, params=dict(state='open'))
+    issues = response.json()
     return issues
+
 
 @jsonrpc_method('hand_help')
 def hand_help(request):
     return hand.getHandHelp()
 
+
 @jsonrpc_method('hand_commands')
 def hand_commands(request):
     return hand.getHandCommands()
+
 
 @jsonrpc_method('hand_translate')
 def hand_translate(request, command):
     return hand.translate(command)
 
+
 def bar_preise(request):
     return render(request, 'cbeamd/bar_preise.django', {'prices': get_prices()})
+
 
 def bar_leergut(request):
     return render(request, 'cbeamd/bar_leergut.django', {})
 
+
 def bar_calc(request):
     return render(request, 'cbeamd/bar_calc.django', {'prices': get_prices()})
 
+
 def bar_abrechnung(request):
     return render(request, 'cbeamd/bar_abrechnung.django', {})
+
 
 def get_prices():
     prices = []
@@ -2114,16 +2189,18 @@ def get_prices():
             prices.append(row)
     return prices
 
+
 @login_required
 def ampel(request, location, color, state):
     payload = '{"%s": %d}' % (color, int(state))
-    #payload = '{"red": 1, "yellow": 1, "green": 1}'
-    #payload = '{"red": 1}'
+    # payload = '{"red": 1, "yellow": 1, "green": 1}'
+    # payload = '{"red": 1}'
     publish("ampel/%s" % location, str(payload))
-    
+
 
 def mechblast_json(request):
     return HttpResponse(json.dumps({'userlist': userlist(), 'barstatus': get_barstatus(request)}), content_type="application/json")
+
 
 def mpd_volume(request, host):
     with mpd_client(host) as client:
@@ -2133,6 +2210,7 @@ def mpd_volume(request, host):
             result = client.setvol(42)
 
     return HttpResponse(json.dumps(result), content_type="application/json")
+
 
 @ajax
 def mpd_status(request, host):
@@ -2153,7 +2231,7 @@ def mpd_status(request, host):
         else:
             result['elapsed'] = 0
             result['total'] = 0
-    #return HttpResponse(json.dumps(result), content_type="application/json")
+    # return HttpResponse(json.dumps(result), content_type="application/json")
     return result
 
 
@@ -2162,10 +2240,12 @@ def mpd_play(request, host):
         result = client.play()
         return HttpResponse(json.dumps(result), content_type="application/json")
 
+
 def mpd_stop(request, host):
     with mpd_client(host) as client:
         result = client.stop()
         return HttpResponse(json.dumps(result), content_type="application/json")
+
 
 def mpd_command(request, host, command):
     result = {}
@@ -2185,14 +2265,15 @@ def mpd_command(request, host, command):
         elif command == 'forward':
             result = client.seekcur("+10")
         elif command == 'random':
-            result = client.random(abs(mpd_get_random(host)-1))
+            result = client.random(abs(mpd_get_random(host) - 1))
         elif command == 'repeat':
-            result = client.repeat(abs(mpd_get_repeat(host)-1))
+            result = client.repeat(abs(mpd_get_repeat(host) - 1))
         elif command == 'vol_up':
-            result = client.setvol(mpd_get_volume(host)+5)
+            result = client.setvol(mpd_get_volume(host) + 5)
         elif command == 'vol_down':
-            result = client.setvol(mpd_get_volume(host)-5)
+            result = client.setvol(mpd_get_volume(host) - 5)
     return HttpResponse(json.dumps(result), content_type="application/json")
+
 
 def mpd_get_random(host):
     result = 0
@@ -2200,11 +2281,13 @@ def mpd_get_random(host):
         result = int(client.status()['random'])
     return result
 
+
 def mpd_get_repeat(host):
     result = 0
     with mpd_client(host) as client:
         result = int(client.status()['repeat'])
     return result
+
 
 def mpd_get_volume(host):
     result = 0
@@ -2212,24 +2295,27 @@ def mpd_get_volume(host):
         result = int(client.status()['volume'])
     return result
 
+
 @ajax
 def mpd_listplaylists(request, host):
     result = {}
     with mpd_client(host) as client:
         result = client.listplaylists()
-        #result = [item['playlist'] for item in result]
-    #return HttpResponse(json.dumps(result), content_type="application/json")
+        # result = [item['playlist'] for item in result]
+    # return HttpResponse(json.dumps(result), content_type="application/json")
     return result
 
 
 class mpd_client():
     def __init__(self, host='localhost'):
         self.host = host
+
     def __enter__(self):
         self.client = MPDClient()
         self.client.timeout = 10
         self.client.connect(self.host, 6600)
         return self.client
+
     def __exit__(self, type, value, traceback):
         self.client.close()
         self.client.disconnect()

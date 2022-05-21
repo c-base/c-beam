@@ -1,9 +1,9 @@
-#from django.conf.urls import patterns, include, url
+# from django.conf.urls import patterns, include, url
 from django.urls import include, re_path
 from .models import User
 from .models import Mission
 from jsonrpc import jsonrpc_site
-from . import views # you must import the views that need connected
+from . import views  # you must import the views that need connected
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
@@ -12,10 +12,10 @@ from django.contrib import admin
 admin.autodiscover()
 
 mission_dict = {
-            'queryset': Mission.objects.all(),
+    'queryset': Mission.objects.all(),
 }
 user_dict = {
-            'queryset': User.objects.all(),
+    'queryset': User.objects.all(),
 }
 
 urlpatterns = [
@@ -26,29 +26,29 @@ urlpatterns = [
     re_path(r'^activitylog/(?P<activitylog_id>\d+)$', views.activitylog_details_web, name='activitylog_details_web'),
     re_path(r'^activitylog/(?P<activitylog_id>\d+)/postcomment$', views.activitylog_post_comment, name='activitylog_post_comment'),
     re_path(r'^activitylog/deletecomment/(?P<comment_id>\d+)$', views.activitylog_delete_comment, name='activitylog_delete_comment'),
-    #re_path(r'^activitylog/(?P<activitylog_id>\d+)/thanks$, views.not_implemented'),
-    #re_path(r'^activitylog/(?P<activitylog_id>\d+)/protest$, views.not_implemented'),
+    # re_path(r'^activitylog/(?P<activitylog_id>\d+)/thanks$, views.not_implemented'),
+    # re_path(r'^activitylog/(?P<activitylog_id>\d+)/protest$, views.not_implemented'),
     re_path(r'^activitylog_json$', views.activitylog_json, name='activitylog_json'),
     re_path(r'^mechblast_json$', views.mechblast_json, name='mechblast_json'),
 
-     re_path(r'^admin/', admin.site.urls),
-    #re_path(r'^rpc/browse/', jsonrpc.views.browse, name='jsonrpc_browser'),
+    re_path(r'^admin/', admin.site.urls),
+    # re_path(r'^rpc/browse/', jsonrpc.views.browse, name='jsonrpc_browser'),
     re_path(r'^rpc/', jsonrpc_site.dispatch, name="jsonrpc_mountpoint"),
-    #re_path(r'^user/(?P<user_id>\d+)/$', views.user),
-    #re_path(r'^user/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail', dict(user_dict, template_name='user_detail.django'), user_dict),
+    # re_path(r'^user/(?P<user_id>\d+)/$', views.user),
+    # re_path(r'^user/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail', dict(user_dict, template_name='user_detail.django'), user_dict),
     re_path(r'^user/online$', views.user_list_web, name='user_list_web'),
     re_path(r'^user/offline$', views.user_offline, name='user_offline'),
     re_path(r'^user/eta$', views.user_eta, name='user_eta'),
     re_path(r'^user/all$', views.user_all, name='user_all'),
-    #re_path(r'^user/login/(?P<user>.+)$', views.login, name='login'),
-    #re_path(r'^user/logout/(?P<user>.+)$', views.logout, name='logout'),
-    #re_path(r'^user/(?P<user>\d+)/login$', views.login_with_id, name='login_with_id'),
-    #re_path(r'^login$', views.auth_login, name='auth_login'),
-    #re_path(r'^logout$', views.auth_logout, name='auth_logout'),
+    # re_path(r'^user/login/(?P<user>.+)$', views.login, name='login'),
+    # re_path(r'^user/logout/(?P<user>.+)$', views.logout, name='logout'),
+    # re_path(r'^user/(?P<user>\d+)/login$', views.login_with_id, name='login_with_id'),
+    # re_path(r'^login$', views.auth_login, name='auth_login'),
+    # re_path(r'^logout$', views.auth_logout, name='auth_logout'),
     re_path(r'^login/$', auth_views.LoginView.as_view(template_name="cbeamd/login.django"), name='login'),
     re_path(r'^logout/$', auth_views.LogoutView.as_view(template_name="cbeamd/logout.django"), name='logout'),
     re_path(r'^logactivity$', views.logactivity_web, name='logactivity_web'),
-    #re_path(r'^missions/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail, dict(mission_dict, template_name='mission_detail.django'), mission_dict),
+    # re_path(r'^missions/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail, dict(mission_dict, template_name='mission_detail.django'), mission_dict),
     re_path(r'^missions$', views.mission_list, name='mission_list'),
     re_path(r'^missions/(?P<mission_id>\d+)/edit$', views.edit_mission, name='edit_mission'),
     re_path(r'^missions/(?P<mission_id>\d+)/assign$', views.mission_assign_web, name='mission_assign_web'),
@@ -56,7 +56,7 @@ urlpatterns = [
     re_path(r'^missions/(?P<mission_id>\d+)/cancel$', views.mission_cancel_web, name='mission_cancel_web'),
     re_path(r'^artefacts$', views.artefact_list_web, name='artefact_list_web'),
     re_path(r'^events$', views.event_list_web, name='event_list_web'),
-    #re_path(r'^stripe/$', views.stripe_view'),
+    # re_path(r'^stripe/$', views.stripe_view'),
     re_path(r'^control/set_stripe_pattern/(?P<pattern_id>\d+)/$', views.set_stripe_pattern_web, name='set_stripe_pattern'),
     re_path(r'^control/set_stripe_speed/(?P<speed>\d+)/$', views.set_stripe_speed_web, name='set_stripe_speed'),
     re_path(r'^c_leuse/set_stripe_pattern/(?P<pattern_id>\d+)/$', views.set_stripe_pattern_web, name='set_stripe_pattern_web'),
