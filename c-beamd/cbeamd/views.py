@@ -6,7 +6,6 @@ import logging
 import os
 import random
 import re
-import requests
 import smtplib
 import ssl
 import string
@@ -21,6 +20,7 @@ from urllib.request import urlopen
 import cbeamdcfg as cfg
 import feedparser
 import paho.mqtt.client as paho
+import requests
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
@@ -33,6 +33,8 @@ from ics import Calendar
 from jsonrpc import jsonrpc_method
 from jsonrpc.proxy import ServiceProxy
 from mpd import MPDClient
+from rest_framework import permissions, viewsets
+from rest_framework.response import Response
 
 from .forms import (ActivityLogCommentForm, LogActivityForm, MissionForm,
                     StripeForm, UserForm)
@@ -43,9 +45,6 @@ from .tools.ddate import DDate
 from .tools.handTranslate import HandTranslate
 from .tools.LEDStripe import *
 from .tools.MyHTMLParser import MyHTMLParser
-
-from rest_framework import viewsets
-from rest_framework import permissions
 
 logger = logging.getLogger('cbeam')
 hysterese = 15
@@ -2148,7 +2147,6 @@ def ampelblink(request, program):
 @jsonrpc_method('issues')
 def issues(request):
     url = "https://api.github.com/repos/c-base/meta/issues?state=open"
-    import requests
     response = requests.get(url=url, params=dict(state='open'))
     issues = response.json()
     return issues
@@ -2332,3 +2330,10 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+class MemberViewSet(viewsets.ViewSet):
+
+    def list(self, request):
+        return Response(who(request))
+        # return Response(userlist())
