@@ -10,7 +10,7 @@ django-tagging
 django-webpack
 django-webpack-loader
 ics
-gcm
+pyfcm
 python-ldap
 paho-mqtt
 HTMLParser

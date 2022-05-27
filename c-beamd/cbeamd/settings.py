@@ -175,12 +175,15 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
+                'django.template.context_processors.request',
                 'django.contrib.messages.context_processors.messages',
             ],
         },
     },
 
 ]
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 try:
     from cbeamd.local_settings import *

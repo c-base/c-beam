@@ -28,7 +28,6 @@ from django.template import Context, loader
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django_ajax.decorators import ajax
-from gcm import GCM
 from ics import Calendar
 from jsonrpc import jsonrpc_method
 from jsonrpc.proxy import ServiceProxy
@@ -1277,7 +1276,6 @@ def fcm_update(request, user, regid):
 
 def gcm_send(request, title, text):
     logger.error("gcm_Send called: %s - %s", title, text)
-    # gcm = GCM(apikey)
     push_service = FCMNotification(api_key="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
     if title == "now boarding":
         users = User.objects.filter(push_boarding=True)
@@ -1297,7 +1295,6 @@ def gcm_send(request, title, text):
     data = {'title': title, 'text': text, 'timestamp': timestamp}
     logger.error(data)
     # data = {'timestamp': timestamp}
-    # response = gcm.json_request(registration_ids=regids, data=data)
     try:
         response = push_service.notify_multiple_devices(regids, message_title=title, message_body=text, data_message=data)
         # response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
