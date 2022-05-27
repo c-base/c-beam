@@ -1,6 +1,6 @@
-from cbeamd.models import User
-from cbeamd.models import LTE
+from cbeamd.models import User, LTE, Subscription
 from django.contrib import admin
 
 admin.site.register(User)
 admin.site.register(LTE)
+admin.site.register(Subscription)
