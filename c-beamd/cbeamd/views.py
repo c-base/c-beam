@@ -2185,7 +2185,7 @@ def bar_abrechnung(request):
 
 def get_prices():
     prices = []
-    with open('preise.csv', 'rb') as csvfile:
+    with open('preise.csv', 'r') as csvfile:
         pricereader = csv.reader(csvfile, delimiter=';', quotechar='"')
         for row in pricereader:
             prices.append(row)
@@ -2205,7 +2205,7 @@ def mechblast_json(request):
 
 
 def mpd_volume(request, host):
-    with mpd_client(host) as client:
+    with MPDClient(host) as client:
         if request.method == 'GET':
             result = {'volume': client.status()['volume']}
         elif request.method == 'POST':
@@ -2217,7 +2217,7 @@ def mpd_volume(request, host):
 @ajax
 def mpd_status(request, host):
     result = {}
-    with mpd_client(host) as client:
+    with MPDClient(host) as client:
         result = client.status()
         result['current_song'] = client.currentsong()
         if 'title' not in result['current_song'].keys():
@@ -2238,20 +2238,20 @@ def mpd_status(request, host):
 
 
 def mpd_play(request, host):
-    with mpd_client(host) as client:
+    with MPDClient(host) as client:
         result = client.play()
         return HttpResponse(json.dumps(result), content_type="application/json")
 
 
 def mpd_stop(request, host):
-    with mpd_client(host) as client:
+    with MPDClient(host) as client:
         result = client.stop()
         return HttpResponse(json.dumps(result), content_type="application/json")
 
 
 def mpd_command(request, host, command):
     result = {}
-    with mpd_client(host) as client:
+    with MPDClient(host) as client:
         if command == 'play':
             result = client.play()
         elif command == 'pause':
@@ -2279,21 +2279,21 @@ def mpd_command(request, host, command):
 
 def mpd_get_random(host):
     result = 0
-    with mpd_client(host) as client:
+    with MPDClient(host) as client:
         result = int(client.status()['random'])
     return result
 
 
 def mpd_get_repeat(host):
     result = 0
-    with mpd_client(host) as client:
+    with MPDClient(host) as client:
         result = int(client.status()['repeat'])
     return result
 
 
 def mpd_get_volume(host):
     result = 0
-    with mpd_client(host) as client:
+    with MPDClient(host) as client:
         result = int(client.status()['volume'])
     return result
 
@@ -2301,14 +2301,14 @@ def mpd_get_volume(host):
 @ajax
 def mpd_listplaylists(request, host):
     result = {}
-    with mpd_client(host) as client:
+    with MPDClient(host) as client:
         result = client.listplaylists()
         # result = [item['playlist'] for item in result]
     # return HttpResponse(json.dumps(result), content_type="application/json")
     return result
 
 
-class mpd_client():
+class MPDClient():
     def __init__(self, host='localhost'):
         self.host = host
 
@@ -2335,5 +2335,20 @@ class UserViewSet(viewsets.ModelViewSet):
 class MemberViewSet(viewsets.ViewSet):
 
     def list(self, request):
-        return Response(who(request))
+        # return Response(who(request))
         # return Response(userlist())
+        # return Response([user.dic() for user in User.objects.filter(status="online").order_by('username')])
+        return Response([{'username': str(user), 'online_percentage': user.online_percentage()} for user in User.objects.filter(status="online").order_by('username')])
+
+
+class PriceViewSet(viewsets.ViewSet):
+
+    def list(self, request):
+        return Response(get_prices())
+        # return Response(userlist())
+
+
+class EventViewSet(viewsets.ViewSet):
+
+    def list(self, request):
+        return Response(event_list(request))

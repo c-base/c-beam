@@ -13,6 +13,8 @@ from rest_framework import routers
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
 router.register(r'member', views.MemberViewSet, basename='Member')
+router.register(r'prices', views.PriceViewSet, basename='Prices')
+router.register(r'events', views.EventViewSet, basename='Events')
 
 from django.contrib import admin
 admin.autodiscover()
