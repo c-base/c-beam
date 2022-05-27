@@ -1,4 +1,4 @@
-Django==1.11.16
+Django==1.11.20
 bvg-grabber
 djangoajax==2.4.6
 django-appconf

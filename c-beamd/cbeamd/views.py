@@ -42,6 +42,7 @@ from .tools.LEDStripe import *
 
 import paho.mqtt.client as paho
 import string
+from pyfcm import FCMNotification
 
 import os, re, feedparser, json, random, ssl
 
@@ -54,7 +55,7 @@ from email.mime.text import MIMEText
 from mpd import MPDClient
 from django_ajax.decorators import ajax
 
-logger = logging.getLogger('cbeam')
+logger = logging.getLogger(__name__)
 hysterese = 15
 eta_timeout=120
 
@@ -686,7 +687,10 @@ def update_event_cache():
             #end = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_enddate']).group(2).replace(':', '')
             start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', str(entry.begin)).group(2).replace(':', '')
             #start = re.search(r'(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d):(\d\d)', entry['ev_startdate']).group(2).replace(':', '')
-            title = title.replace("c   user", "c++ user")
+            if isinstance(title, str):
+                title = title.replace("c   user", "c++ user")
+            else:
+                title = "-"
             if str(entry.begin).startswith(date.today().strftime("%Y-%m-%d")):
                 description = entry.description # ['summary_detail']['value']
                 events.append('%s (%s-%s)' % (title, start, end))
@@ -955,6 +959,7 @@ def index2(request):
 
 @login_required
 def index(request):
+    logger.error("FOOOOOOOOOOOOO")
     user_list_online = User.objects.filter(status="online").order_by('username')
     user_list_eta = User.objects.filter(status="eta").order_by('username')
     user_list_offline = User.objects.filter(status="offline").order_by('username')
@@ -1257,10 +1262,28 @@ def gcm_update(request, user, regid):
         s.save()
     return "aye"
 
+@jsonrpc_method('fcm_update')
+def fcm_update(request, user, regid):
+    u = getuser(user)
+    logger.error("fcm_update called: %s - %s", user, regid)
+    subs = Subscription.objects.filter(user=u)
+    if len(subs) < 1:
+        s = Subscription()
+        s.regid = regid
+        s.user = u
+        s.save()
+    else:
+        s = subs[0]
+        s.regid = regid
+        s.save()
+    return "aye"
+
 # This method should usually not be exposed through JSON-RPC
 # @jsonrpc_method('gcm_send')
 def gcm_send(request, title, text):
-    gcm = GCM(apikey)
+    logger.error("gcm_Send called: %s - %s", title, text)
+    # gcm = GCM(apikey)
+    push_service = FCMNotification(api_key="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
     if title == "now boarding":
         users = User.objects.filter(push_boarding=True)
     elif title == "ETA":
@@ -1268,37 +1291,48 @@ def gcm_send(request, title, text):
     elif title == "mission completed":
         users = User.objects.filter(push_missions=True,stats_enabled=True)
     else:
-        #users = User.objects.all()
         users = []
+        logger.errors("users is empty")
         return
     now = timezone.localtime(timezone.now())
     timestamp = "%d:%d" % (now.hour, now.minute)
     subscriptions = Subscription.objects.filter(user__in=users)
     regids = [subscription.regid for subscription in subscriptions]
     data = {'title': title, 'text': text, 'timestamp': timestamp}
-    response = gcm.json_request(registration_ids=regids, data=data)
+    logger.error(data)
+    # data = {'timestamp': timestamp}
+    # response = gcm.json_request(registration_ids=regids, data=data)
+    try:
+        response = push_service.notify_multiple_devices(regids, message_title=title, message_body=text, data_message=data)
+        # response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
+        logger.error(response)
+    except Exception as e:
+        logger.exception(e)
+    logger.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>RESPONSE: %s", reponse)
     return response
 
 def gcm_send_mission(request, title, text):
-    gcm = GCM(apikey)
+    push_service = FCMNotification(api_key="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
     users = User.objects.filter(stats_enabled=True,push_missions=True)
     #users = User.objects.filter(username="smile")
+    now = timezone.localtime(timezone.now())
+    timestamp = "%d:%d" % (now.hour, now.minute)
     subscriptions = Subscription.objects.filter(user__in=users)
     regids = [subscription.regid for subscription in subscriptions]
-    data = {'title': title, 'text': text}
-    response = gcm.json_request(registration_ids=regids, data=data)
+    data = {'title': title, 'text': text, 'timestamp': timestamp}
+    response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
     return response
 
 @jsonrpc_method('gcm_send_test')
 def gcm_send_test(request, title, text, username):
-    gcm = GCM(apikey)
+    push_service = FCMNotification(api_key="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
     u = getuser(username)
     now = timezone.localtime(timezone.now())
     timestamp = "%d:%d" % (now.hour, now.minute)
     subscriptions = Subscription.objects.filter(user=u)
     regids = [subscription.regid for subscription in subscriptions]
     data = {'title': title, 'text': text, 'timestamp': timestamp}
-    response = gcm.json_request(registration_ids=regids, data=data)
+    response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
     return response
 
 #@jsonrpc_method('test_enc')
@@ -1405,7 +1439,7 @@ def list_articles(request):
     """
     returns a list of c_portal articles
     """
-    return portal.api.list_articles()
+    return []  # portal.api.list_articles()
 
 
 @jsonrpc_method('log_stats')
