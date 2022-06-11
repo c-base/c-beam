@@ -3,13 +3,16 @@ autopep8
 bvg-grabber
 djangoajax
 django-appconf
+django-auth-ldap
 django-bootstrap3
-django-json-rpc
+# django-json-rpc
 django-rest-framework
 django-tagging
 django-webpack
 django-webpack-loader
+gunicorn
 ics
+psycopg2-binary
 pyfcm
 python-ldap
 paho-mqtt

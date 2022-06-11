@@ -22,17 +22,17 @@ django==4.0.4
     # via
     #   -r requirements.in
     #   django-appconf
+    #   django-auth-ldap
     #   django-bootstrap3
-    #   django-json-rpc
     #   django-node
     #   django-webpack
     #   djangoajax
     #   djangorestframework
 django-appconf==1.0.5
     # via -r requirements.in
-django-bootstrap3==21.2
+django-auth-ldap==4.1.0
     # via -r requirements.in
-django-json-rpc==0.7.2
+django-bootstrap3==21.2
     # via -r requirements.in
 django-node==4.0.0
     # via django-webpack
@@ -50,6 +50,8 @@ djangorestframework==3.13.1
     # via django-rest-framework
 feedparser==6.0.10
     # via -r requirements.in
+gunicorn==20.1.0
+    # via -r requirements.in
 htmlparser==0.0.2
     # via -r requirements.in
 ics==0.7
@@ -59,6 +61,8 @@ idna==3.3
 optional-django==0.1.0
     # via django-webpack
 paho-mqtt==1.6.1
+    # via -r requirements.in
+psycopg2-binary==2.9.3
     # via -r requirements.in
 pyasn1==0.4.8
     # via
@@ -76,7 +80,9 @@ python-dateutil==2.8.2
     #   bvg-grabber
     #   ics
 python-ldap==3.4.0
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   django-auth-ldap
 python-mpd2==3.0.5
     # via -r requirements.in
 pytz==2022.1
@@ -91,7 +97,6 @@ sgmllib3k==1.0.0
 six==1.16.0
     # via
     #   bvg-grabber
-    #   django-json-rpc
     #   ics
     #   python-dateutil
 soupsieve==2.3.2.post1
@@ -106,3 +111,6 @@ urllib3==1.26.9
     # via
     #   pyfcm
     #   requests
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools
