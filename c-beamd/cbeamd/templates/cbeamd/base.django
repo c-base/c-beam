@@ -56,7 +56,7 @@
                 <li><a href="/user/online">an bord</a></li>
                 <li><a href="/events">events</a></li>
                 <li><a href="/artefacts">artefacts</a></li>
-                <li><a href="http://c-portal.c-base.org">c-portal</a></li>
+		<!-- <li><a href="http://c-portal.c-base.org">c-portal</a></li> -->
                 <li><a href="/weather">weather</a></li>
                 <li><a href="/bvg">bvg</a></li>
               </ul>
@@ -96,7 +96,7 @@
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown">help<b class="caret"></b></a>
               <ul class="dropdown-menu">
-                <li align="right"><a href="/doc">API</a></li>
+                <li align="right"><a href="/api">API</a></li>
               </ul>
             </li>
           </ul>
