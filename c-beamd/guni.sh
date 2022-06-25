@@ -14,6 +14,6 @@ source /home/c-beam/c-beam/c-beamd/venv/bin/activate
 cd /home/c-beam/c-beam/c-beamd
 test -d $LOGDIR || mkdir -p $LOGDIR
 exec gunicorn -w $NUM_WORKERS --bind=$ADDRESS \
-  --user=$USER --group=$GROUP --log-level=debug \
+  --user=$USER --group=$GROUP --log-level=warning \
   cbeamd.wsgi:application
   #--log-file=$LOGFILE 2>>$LOGFILE
