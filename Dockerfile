@@ -2,7 +2,7 @@ FROM python:3.10
 
 VOLUME /opt/c-beamd
 
-RUN apt install libsasl2-dev python-dev libldap2-dev libssl-dev
+RUN apt-get install -y python3-dev libldap2-dev libsasl2-dev ldap-utils
 
 ADD requirements.txt /requirements.txt
 RUN pip install --upgrade -r /requirements.txt
