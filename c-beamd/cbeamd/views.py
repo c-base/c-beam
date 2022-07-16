@@ -2387,3 +2387,8 @@ class EventViewSet(viewsets.ViewSet):
 
     def list(self, request):
         return Response(event_list(request))
+
+class BarViewSet(viewsets.ViewSet):
+
+    def list(self, request):
+        return Response(get_barstatus(request))
