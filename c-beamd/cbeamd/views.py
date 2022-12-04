@@ -2202,22 +2202,6 @@ def hand_translate(request, command):
     return hand.translate(command)
 
 
-def bar_preise(request):
-    return render(request, 'cbeamd/bar_preise.django', {'prices': get_prices()})
-
-
-def bar_leergut(request):
-    return render(request, 'cbeamd/bar_leergut.django', {})
-
-
-def bar_calc(request):
-    return render(request, 'cbeamd/bar_calc.django', {'prices': get_prices()})
-
-
-def bar_abrechnung(request):
-    return render(request, 'cbeamd/bar_abrechnung.django', {})
-
-
 def get_prices():
     prices = []
     with open('preise.csv', 'r') as csvfile:
