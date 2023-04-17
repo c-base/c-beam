@@ -16,6 +16,7 @@ router.register(r'member', views.MemberViewSet, basename='Member')
 router.register(r'prices', views.PriceViewSet, basename='Prices')
 router.register(r'events', views.EventViewSet, basename='Events')
 router.register(r'barstatus', views.BarViewSet, basename='Barstatus')
+router.register(r'matelight', views.MatelightViewSet, basename='Matelight')
 
 from django.contrib import admin
 admin.autodiscover()
