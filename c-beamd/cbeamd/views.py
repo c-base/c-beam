@@ -35,8 +35,9 @@ from jsonrpc.proxy import ServiceProxy
 #import urllib2
 from mpd import MPDClient
 from pyfcm import FCMNotification
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, viewsets, status
 from rest_framework.response import Response
+from rest_framework.decorators import action
 
 from .forms import (ActivityLogCommentForm, LogActivityForm, MissionForm,
                     StripeForm, UserForm)
@@ -2392,3 +2393,48 @@ class BarViewSet(viewsets.ViewSet):
 
     def list(self, request):
         return Response(get_barstatus(request))
+
+class MatelightViewSet(viewsets.ViewSet):
+
+    def list(self, request):
+        url = "http://matelight.cbrp3.c-base.org/api/getvideos"
+        response = requests.get(url=url)
+        videos = response.json()
+        return Response(videos)
+
+    def retrieve(self, request, **kwargs):
+        url = "http://matelight.cbrp3.c-base.org/api/getvideos"
+        response = requests.get(url=url)
+        videos = response.json()
+        video = next((x for x in videos if x['title'] == kwargs['pk']), None)
+        if video:
+            return Response(video)
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['get'])
+    def play(self, request, *args, **kwargs):
+        url = "http://matelight.cbrp3.c-base.org/api/play/" + kwargs['pk']
+        response = requests.get(url=url)
+        result = response.json()
+        return Response(result)
+
+    @action(detail=True, methods=['get'])
+    def image(self, request, *args, **kwargs):
+        url = "http://matelight.cbrp3.c-base.org/assets/thumbs/fireplace.jpg"
+        response = requests.get(url=url)
+        return HttpResponse(response.content, content_type='image/jpeg')
+    
+    @action(detail=False, methods=['get'])
+    def stop(self, request):
+        url = "http://matelight.cbrp3.c-base.org/api/stop"
+        response = requests.get(url=url)
+        result = response.json()
+        return Response(result)
+
+    @action(detail=False, methods=['get'])
+    def status(self, request):
+        url = "http://matelight.cbrp3.c-base.org/api/getstatus"
+        response = requests.get(url=url)
+        status = response.json()
+        return Response(status)
