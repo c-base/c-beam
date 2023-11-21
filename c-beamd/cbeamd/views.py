@@ -33,7 +33,7 @@ from jsonrpc import jsonrpc_method
 from jsonrpc.proxy import ServiceProxy
 ### from tools.ldapNrf24 import LdapNrf24Check
 #import urllib2
-from mpd import MPDClient
+from mpd import MPDClient as RealMPDClient
 from pyfcm import FCMNotification
 from rest_framework import permissions, viewsets, status
 from rest_framework.response import Response
@@ -2250,9 +2250,9 @@ def mpd_volume(request, host):
     return HttpResponse(json.dumps(result), content_type="application/json")
 
 
-@ajax
+# @ajax
 def mpd_status(request, host):
-    result = {}
+    result = None
     with MPDClient(host) as client:
         result = client.status()
         result['current_song'] = client.currentsong()
@@ -2269,8 +2269,9 @@ def mpd_status(request, host):
         else:
             result['elapsed'] = 0
             result['total'] = 0
-    # return HttpResponse(json.dumps(result), content_type="application/json")
-    return result
+    resp = {"status": 200, "statusText": "OK", "content": result}
+    return HttpResponse(json.dumps(resp), content_type="application/json")
+    #return result
 
 
 def mpd_play(request, host):
@@ -2349,7 +2350,7 @@ class MPDClient():
         self.host = host
 
     def __enter__(self):
-        self.client = MPDClient()
+        self.client = RealMPDClient()
         self.client.timeout = 10
         self.client.connect(self.host, 6600)
         return self.client
@@ -2438,3 +2439,4 @@ class MatelightViewSet(viewsets.ViewSet):
         response = requests.get(url=url)
         status = response.json()
         return Response(status)
+
