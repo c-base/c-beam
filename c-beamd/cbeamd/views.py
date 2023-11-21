@@ -2421,9 +2421,17 @@ class MatelightViewSet(viewsets.ViewSet):
 
     @action(detail=True, methods=['get'])
     def image(self, request, *args, **kwargs):
-        url = "http://matelight.cbrp3.c-base.org/assets/thumbs/fireplace.jpg"
+        url = "http://matelight.cbrp3.c-base.org/api/getvideos"
         response = requests.get(url=url)
-        return HttpResponse(response.content, content_type='image/jpeg')
+        videos = response.json()
+        video = next((x for x in videos if x['title'] == kwargs['pk']), None)
+        if video:
+            url = "http://matelight.cbrp3.c-base.org/assets/thumbs/" + video['thumbnailName']
+            response = requests.get(url=url)
+            return HttpResponse(response.content, content_type='image/jpeg')
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
     
     @action(detail=False, methods=['get'])
     def stop(self, request):
