@@ -16,4 +16,4 @@ test -d $LOGDIR || mkdir -p $LOGDIR
 exec gunicorn -w $NUM_WORKERS --bind=$ADDRESS \
   --user=$USER --group=$GROUP --log-level=warning \
   cbeamd.wsgi:application
-  #--log-file=$LOGFILE 2>>$LOGFILE
+  --log-file=$LOGFILE 2>>$LOGFILE

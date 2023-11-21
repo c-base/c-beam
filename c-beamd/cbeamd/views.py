@@ -157,6 +157,7 @@ def force_login(request, user):
             pass
     payload = {'user': str(u.username), 'timestamp': timezone.localtime(timezone.now()).strftime("%H:%M")}
     publish("user/boarding", json.dumps(payload))
+    publish('user/who', json.dumps(who_result()), retain=True)
 
     # publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/welcome/%s" % str(u.username))
     if u.status == "eta":
@@ -235,6 +236,7 @@ def force_logout(request, user):
         pass
     payload = {'user': str(u.username), 'timestamp': timezone.localtime(timezone.now()).strftime("%H:%M")}
     publish("user/leaving", json.dumps(payload))
+    publish('user/who', json.dumps(who_result()), retain=True)
     oldstatus = u.status
     u.status = "offline"
     u.logouttime = timezone.now()
@@ -443,8 +445,17 @@ def etalist():
 def who(request):
     """list all user that have logged in."""
     cleanup(request)
-    return {'available': userlist(), 'eta': etalist(), 'etd': [], 'lastlocation': {},
-            'ceitloch': ceitloch(), 'reminder': reminder()}
+    return who_result()
+
+def who_result():
+    return {
+        'available': userlist(),
+        'eta': etalist(),
+        'etd': [],
+        'lastlocation': {},
+        'ceitloch': ceitloch(),
+        'reminder': reminder()
+    }
 
 
 #################################################################
@@ -655,13 +666,17 @@ def cleanup(request):
     # remove expired ETDs
 
     if autologout:
-        set_stripe_default(request)
+        try:
+            set_stripe_default(request)
+        except Exception:
+            pass
 
     for mission in Mission.objects.filter(status="completed").filter(repeat_after_days__gte=0):
         if mission.completed_on + timedelta(mission.repeat_after_days) > timezone.now():
             mission.status = "open"
             mission.save()
 
+    publish('user/who', json.dumps(who_result()), retain=True)
     return "aye"
 
 
@@ -747,6 +762,7 @@ def update_event_cache():
         eventcache = events
         eventdetailcache = event_details
         eventcache_time = timezone.now()
+        publish("events/today", json.dumps(eventcache), retain=True)
 
 
 def event_list_web(request):
