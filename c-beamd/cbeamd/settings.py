@@ -2,6 +2,10 @@ import os
 
 from django.urls import reverse_lazy
 
+import django
+from django.utils.encoding import smart_str
+django.utils.encoding.smart_text = smart_str
+
 # Django settings for cbeamd project.
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -160,7 +164,7 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'WARNING'),
         },
     },
 }
