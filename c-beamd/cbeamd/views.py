@@ -63,7 +63,6 @@ cerebrum = ServiceProxy('http://c-leuse.cbrp3.c-base.org:7777/')
 portal = ServiceProxy('https://c-portal.c-base.org/rpc/')
 monitord = ServiceProxy('http://:c-leuse.cbrp3.c-base.org:9090/')
 c_leuse_c_out = ServiceProxy('http://c-leuse.cbrp3.c-base.org:1775/')
-apikey = 'AIzaSyBLk_iU8ORnHM39YQCUsHngMfG85Rg9yss'
 artefact_base_url = "http://[2a02:f28:4::6b39:2d00]/artefact/"
 
 newarrivallist = {}
@@ -1294,8 +1293,7 @@ def fcm_update(request, user, regid):
 def gcm_send(request, title, text):
     logger.error("gcm_Send called: %s - %s", title, text)
     logger.critical("gcm_Send called: %s - %s", title, text)
-    # push_service = FCMNotification(api_key="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
-    push_service = FCMNotification("/tmp/foo", "c-beam")  # fcm_token="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
+    push_service = FCMNotification("/tmp/foo", "c-beam")
     if title == "now boarding":
         users = User.objects.filter(push_boarding=True)
     elif title == "ETA":
@@ -1303,7 +1301,6 @@ def gcm_send(request, title, text):
     elif title == "mission completed":
         users = User.objects.filter(push_missions=True, stats_enabled=True)
     else:
-        # users = User.objects.all()
         users = []
         logger.errors("users is empty")
         return
@@ -1314,10 +1311,7 @@ def gcm_send(request, title, text):
     data = {'title': title, 'text': text, 'timestamp': timestamp}
     logger.error(data)
     response = None
-    # data = {'timestamp': timestamp}
     try:
-        # response = push_service.notify_multiple_devices(regids, message_title=title, message_body=text, data_message=data)
-        # response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
         params_list =[{"fcm_token": fcm_token, "data_payload": data} for fcm_token in regids]
         response = push_service.async_notify_multiple_devices(params_list)
         logger.error(response)
@@ -1328,16 +1322,13 @@ def gcm_send(request, title, text):
 
 
 def gcm_send_mission(request, title, text):
-    # push_service = FCMNotification(api_key="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
-    push_service = FCMNotification("/tmp/foo", "c-beam")  # fcm_token="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
+    push_service = FCMNotification("/tmp/foo", "c-beam")
     users = User.objects.filter(stats_enabled=True, push_missions=True)
-    # users = User.objects.filter(username="smile")
     now = timezone.localtime(timezone.now())
     timestamp = "%d:%d" % (now.hour, now.minute)
     subscriptions = Subscription.objects.filter(user__in=users)
     regids = [subscription.regid for subscription in subscriptions]
     data = {'title': title, 'text': text, 'timestamp': timestamp}
-    # response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
     params_list =[{"fcm_token": fcm_token, "data_payload": data} for fcm_token in regids]
     response = push_service.async_notify_multiple_devices(params_list)
     return response
@@ -1345,28 +1336,16 @@ def gcm_send_mission(request, title, text):
 
 @jsonrpc_method('gcm_send_test')
 def gcm_send_test(request, title, text, username):
-    push_service = FCMNotification("/tmp/foo", "c-beam")  # fcm_token="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
+    push_service = FCMNotification("/tmp/foo", "c-beam")
     u = getuser(username)
     now = timezone.localtime(timezone.now())
     timestamp = "%d:%d" % (now.hour, now.minute)
     subscriptions = Subscription.objects.filter(user=u)
     regids = [subscription.regid for subscription in subscriptions]
     data = {'title': title, 'text': text, 'timestamp': timestamp}
-    # response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
     params_list =[{"fcm_token": fcm_token, "data_payload": data} for fcm_token in regids]
     response = push_service.async_notify_multiple_devices(params_list)
     return response
-
-# @jsonrpc_method('test_enc')
-# def test_enc(request):
-#    gcm = GCM(apikey)
-#    encrypted_data = crypto.EncryptWithAES("fooderbar")
-#    u = getuser("smile")
-#    s = Subscription.objects.get(user=u)
-#    regids = [s.regid]
-#    data = {'title': "AES", 'text': encrypted_data}
-#    response = gcm.json_request(registration_ids=regids, data=data)
-#    return encrypted_data
 
 
 @jsonrpc_method('smile', authenticated=True)
