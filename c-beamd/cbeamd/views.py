@@ -59,11 +59,10 @@ mqttserver = "127.0.0.1"
 cout = ServiceProxy('http://shout.cbrp3.c-base.org:1775/')
 ampelrpc = ServiceProxy('http://10.0.1.24:1337/')
 nerdctrl_cout = ServiceProxy('http://nerdctrl.cbrp3.c-base.org:1775/')
-cerebrum = ServiceProxy('http://10.0.1.27:7777/')
+cerebrum = ServiceProxy('http://c-leuse.cbrp3.c-base.org:7777/')
 portal = ServiceProxy('https://c-portal.c-base.org/rpc/')
-monitord = ServiceProxy('http://10.0.1.27:9090/')
-c_leuse_c_out = ServiceProxy('http://10.0.1.27:1775/')
-culd = ServiceProxy('http://10.0.1.27:4339/')
+monitord = ServiceProxy('http://:c-leuse.cbrp3.c-base.org:9090/')
+c_leuse_c_out = ServiceProxy('http://c-leuse.cbrp3.c-base.org:1775/')
 apikey = 'AIzaSyBLk_iU8ORnHM39YQCUsHngMfG85Rg9yss'
 artefact_base_url = "http://[2a02:f28:4::6b39:2d00]/artefact/"
 
@@ -150,6 +149,7 @@ def force_login(request, user):
         monitord.login(u.username)
     except Exception:
         pass
+    logger.error(u.no_google)
     if not u.no_google:
         try:
             gcm_send(request, 'now boarding', u.username)
@@ -1293,7 +1293,9 @@ def fcm_update(request, user, regid):
 
 def gcm_send(request, title, text):
     logger.error("gcm_Send called: %s - %s", title, text)
-    push_service = FCMNotification(api_key="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
+    logger.critical("gcm_Send called: %s - %s", title, text)
+    # push_service = FCMNotification(api_key="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
+    push_service = FCMNotification("/tmp/foo", "c-beam")  # fcm_token="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
     if title == "now boarding":
         users = User.objects.filter(push_boarding=True)
     elif title == "ETA":
@@ -1311,10 +1313,13 @@ def gcm_send(request, title, text):
     regids = [subscription.regid for subscription in subscriptions]
     data = {'title': title, 'text': text, 'timestamp': timestamp}
     logger.error(data)
+    response = None
     # data = {'timestamp': timestamp}
     try:
-        response = push_service.notify_multiple_devices(regids, message_title=title, message_body=text, data_message=data)
+        # response = push_service.notify_multiple_devices(regids, message_title=title, message_body=text, data_message=data)
         # response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
+        params_list =[{"fcm_token": fcm_token, "data_payload": data} for fcm_token in regids]
+        response = push_service.async_notify_multiple_devices(params_list)
         logger.error(response)
     except Exception as e:
         logger.exception(e)
@@ -1323,7 +1328,8 @@ def gcm_send(request, title, text):
 
 
 def gcm_send_mission(request, title, text):
-    push_service = FCMNotification(api_key="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
+    # push_service = FCMNotification(api_key="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
+    push_service = FCMNotification("/tmp/foo", "c-beam")  # fcm_token="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
     users = User.objects.filter(stats_enabled=True, push_missions=True)
     # users = User.objects.filter(username="smile")
     now = timezone.localtime(timezone.now())
@@ -1331,20 +1337,24 @@ def gcm_send_mission(request, title, text):
     subscriptions = Subscription.objects.filter(user__in=users)
     regids = [subscription.regid for subscription in subscriptions]
     data = {'title': title, 'text': text, 'timestamp': timestamp}
-    response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
+    # response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
+    params_list =[{"fcm_token": fcm_token, "data_payload": data} for fcm_token in regids]
+    response = push_service.async_notify_multiple_devices(params_list)
     return response
 
 
 @jsonrpc_method('gcm_send_test')
 def gcm_send_test(request, title, text, username):
-    push_service = FCMNotification(api_key="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
+    push_service = FCMNotification("/tmp/foo", "c-beam")  # fcm_token="AAAA5gdiEVo:APA91bHrHsm8kUY_yZd6cq24dg7tHcpa91BmkehZ6xz2xEv4Z9N3n43mpKWURP8d64CkdFyt4p1lHZ-vz6ECwIvF9hykpG56cLBA2XSNEVO-s0wFYyAg_BDGynhhP781MYEr25KCc_w6")
     u = getuser(username)
     now = timezone.localtime(timezone.now())
     timestamp = "%d:%d" % (now.hour, now.minute)
     subscriptions = Subscription.objects.filter(user=u)
     regids = [subscription.regid for subscription in subscriptions]
     data = {'title': title, 'text': text, 'timestamp': timestamp}
-    response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
+    # response = push_service.multiple_devices_data_message(registration_ids=regids, data_message=data)
+    params_list =[{"fcm_token": fcm_token, "data_payload": data} for fcm_token in regids]
+    response = push_service.async_notify_multiple_devices(params_list)
     return response
 
 # @jsonrpc_method('test_enc')
@@ -1370,13 +1380,11 @@ def smile(request):
 
 @jsonrpc_method('bluewall()')  # , authenticated=True, validate=True)
 def bluewall(request):
-    # return culd.bluewall(True)
     return "culd not available"
 
 
 @jsonrpc_method('darkwall()')  # , authenticated=True, validate=True)
 def darkwall(request):
-    # return culd.darkwall(False)
     return "culd not available"
 
 # @jsonrpc_method('hwstorage(Boolean)', authenticated=True, validate=True)
@@ -1389,12 +1397,8 @@ def hwstorage(request):
     # if hwstorage_state == "open":
     # return
     # hwstorage_state = "open"
-    # culd.hwstorage(True)
-    # culd.hwstorage(True)
 
     def close():
-        # culd.hwstorage(False)
-        # culd.hwstorage(False)
         # hwstorage_state = "closed"
         pass
     timer = Timer(30.0, close)
@@ -1584,6 +1588,7 @@ def notbeleuchtung(request):
     default_stripe_speed = 0
     cerebrum.set_pattern(10)
     cerebrum.set_speed(1)
+    # TODO: send MQTT message for new c-leuse LEDs
 
 
 @jsonrpc_method('rainbow')
@@ -1929,9 +1934,9 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
         nerdctrl_cout.announce('die schalter sind kein spielzeug!')
     if event_source_path == '/schaltergang/9':
         if new_state == 0:
-            publish("nerdctrl/open", "http://www.c-base.org")
+            publish("nerdctrl/open", "https://www.c-base.org")
         elif new_state == 1:
-            publish("nerdctrl/open", "http://logbuch.c-base.org/")
+            publish("nerdctrl/open", "https://logbuch.c-base.org/")
         elif new_state == 2:
             # publish("nerdctrl/open", "http://c-portal.c-base.org")
             publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/mainhall/")
@@ -1948,7 +1953,8 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
             publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/weather")
     if event_source_path == '/schaltergang/11':
         if new_state == 0:
-            publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/bvg")
+            # publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/bvg")
+            publish("nerdctrl/open", "https://weilsiedichlieben.de?id=8089019&bus=true&express=true&ferry=true&regional=true&suburban=true&subway=true&tram=true&value=Berlin+Jannowitzbr%C3%BCcke&when=5&results=8&fontSize=26&id=732538&bus=true&express=true&ferry=true&regional=true&suburban=true&subway=true&tram=true&value=Heinrich-Heine-Str.+%28U%29%2C+Berlin&when=5&results=8&fontSize=26")
         elif new_state == 1:
             publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/sensors")
         elif new_state == 2:
@@ -1962,7 +1968,7 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
             publish("nerdctrl/open", "http://c-beam.cbrp3.c-base.org/ceitloch")
         elif new_state == 1:
             # publish("nerdctrl/open", "http://visibletweets.com/#query=@cbase&animation=2")
-            publish("nerdctrl/open", "http://c-base.org/")
+            publish("nerdctrl/open", "https://www.c-base.org")
         elif new_state == 2:
             publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/reddit")
         else:

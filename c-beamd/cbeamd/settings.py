@@ -174,6 +174,8 @@ TTSGREETING = "Hallo %s, willkommen an bord"
 
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
+CSRF_TRUSTED_ORIGINS = ['https://c-beam.cbrp3.c-base.org']
+
 # webpack Configuration #######################################################
 
 WEBPACK_LOADER = {
@@ -212,3 +214,5 @@ try:
 except ImportError as e:
     print('Unable to load local_settings.py:', e)
 
+import logging
+logging.getLogger(__name__).critical("FOO")
