@@ -1,10 +1,11 @@
 from django.db import models
 from datetime import timedelta
 from django.utils import timezone
+from typing import Dict, Any
 
 
 class User(models.Model):
-    username = models.CharField(max_length=200)
+    username = models.CharField(max_length=200, unique=True)
     status = models.CharField(max_length=20)
     logintime = models.DateTimeField()
     extendtime = models.DateTimeField(auto_now_add=True)
@@ -23,73 +24,64 @@ class User(models.Model):
     wlanlogin = models.BooleanField(default=False)
     ap = models.IntegerField(default=0)
     stats_enabled = models.BooleanField(default=False)
-    rfid = models.CharField(max_length=200, default="")
+    rfid = models.CharField(max_length=200, default="", blank=True)
     push_missions = models.BooleanField(default=True)
     push_boarding = models.BooleanField(default=True)
     push_eta = models.BooleanField(default=True)
     stealthmode = models.DateTimeField(auto_now_add=True, blank=True)
     no_google = models.BooleanField(default=False)
 
-    def __str__(self):
+    class Meta:
+        indexes = [
+            models.Index(fields=['username']),
+            models.Index(fields=['status']),
+            models.Index(fields=['logintime']),
+        ]
+
+    def __str__(self) -> str:
         return self.username
 
-    def dic(self):
-        dic = {}
-        dic['id'] = self.id
-        dic['username'] = self.username
-        dic['status'] = self.status
-        dic['logintime'] = self.logintime
-        dic['extendtime'] = str(self.extendtime)
-        dic['logouttime'] = self.logouttime
-        dic['eta'] = self.eta
-        dic['etatimestamp'] = self.etatimestamp
-        dic['etd'] = self.etd
-        dic['etdtimestamp'] = self.etdtimestamp
-        dic['nickspell'] = self.nickspell
-        dic['reminder'] = self.reminder
-        dic['remindertimestamp'] = self.remindertimestamp
-        dic['lastlocation'] = self.lastlocation
-        dic['etasub'] = self.etasub
-        dic['arrivesub'] = self.arrivesub
-        dic['autologout'] = self.autologout
-        dic['autologout_in'] = self.autologout_in()
-        dic['wlanlogin'] = self.wlanlogin
-        dic['ap'] = self.calc_ap()
-        dic['stats_enabled'] = self.stats_enabled
-        dic['push_missions'] = self.push_missions
-        dic['push_boarding'] = self.push_boarding
-        dic['push_eta'] = self.push_eta
-        dic['rfid'] = self.rfid
-        return dic
+    def to_dict(self, stringify_datetimes: bool = False) -> Dict[str, Any]:
+        """Convert User instance to dictionary.
 
-    def dic2(self):
-        dic = {}
-        dic['id'] = self.id
-        dic['username'] = self.username
-        dic['status'] = self.status
-        dic['logintime'] = str(self.logintime)
-        dic['extendtime'] = str(self.extendtime)
-        dic['logouttime'] = str(self.logouttime)
-        dic['eta'] = self.eta
-        dic['etatimestamp'] = str(self.etatimestamp)
-        dic['etd'] = self.etd
-        dic['etdtimestamp'] = str(self.etdtimestamp)
-        dic['nickspell'] = self.nickspell
-        dic['reminder'] = self.reminder
-        dic['remindertimestamp'] = str(self.remindertimestamp)
-        dic['lastlocation'] = self.lastlocation
-        dic['etasub'] = self.etasub
-        dic['arrivesub'] = self.arrivesub
-        dic['autologout'] = self.autologout
-        dic['autologout_in'] = self.autologout_in()
-        dic['wlanlogin'] = self.wlanlogin
-        dic['ap'] = self.calc_ap()
-        dic['stats_enabled'] = self.stats_enabled
-        dic['push_missions'] = self.push_missions
-        dic['push_boarding'] = self.push_boarding
-        dic['push_eta'] = self.push_eta
-        dic['rfid'] = self.rfid
-        return dic
+        Args:
+            stringify_datetimes: If True, convert datetime objects to strings
+        """
+        data = {
+            'id': self.id,
+            'username': self.username,
+            'status': self.status,
+            'logintime': str(self.logintime) if stringify_datetimes else self.logintime,
+            'extendtime': str(self.extendtime) if stringify_datetimes else self.extendtime,
+            'logouttime': str(self.logouttime) if stringify_datetimes else self.logouttime,
+            'eta': self.eta,
+            'etatimestamp': str(self.etatimestamp) if stringify_datetimes else self.etatimestamp,
+            'etd': self.etd,
+            'etdtimestamp': str(self.etdtimestamp) if stringify_datetimes else self.etdtimestamp,
+            'nickspell': self.nickspell,
+            'reminder': self.reminder,
+            'remindertimestamp': str(self.remindertimestamp) if stringify_datetimes else self.remindertimestamp,
+            'lastlocation': self.lastlocation,
+            'etasub': self.etasub,
+            'arrivesub': self.arrivesub,
+            'autologout': self.autologout,
+            'autologout_in': self.autologout_in(),
+            'wlanlogin': self.wlanlogin,
+            'ap': self.calc_ap(),
+            'stats_enabled': self.stats_enabled,
+            'push_missions': self.push_missions,
+            'push_boarding': self.push_boarding,
+            'push_eta': self.push_eta,
+            'rfid': self.rfid,
+        }
+        return data
+
+    # Backward compatibility
+    def dic(self) -> Dict[str, Any]:
+        return self.to_dict(stringify_datetimes=False)
+
+    def dic2(self) -> Dict[str, Any]:
+        return self.to_dict(stringify_datetimes=True)
 
     def autologout_in(self):
         autologout_at = self.extendtime + timedelta(minutes=self.autologout)
@@ -102,15 +94,17 @@ class User(models.Model):
     def online_percentage(self):
         return "%.2f" % (self.autologout_in() / self.autologout * 100)
 
-    def calc_ap(self):
-        sum = 0
-        for activity in ActivityLog.objects.filter(user=self).filter(timestamp__gt=timezone.now() - timedelta(days=90)):
-            sum += activity.ap
-        # TODO fixme
-        # if self.ap != sum:
-        #    self.ap = sum
-        #    self.save()
-        return sum
+    def calc_ap(self) -> int:
+        """Calculate total AP for this user from activities in the last 90 days."""
+        from django.db.models import Sum
+
+        ninety_days_ago = timezone.now() - timedelta(days=90)
+        result = ActivityLog.objects.filter(
+            user=self,
+            timestamp__gte=ninety_days_ago
+        ).aggregate(total_ap=Sum('ap'))
+
+        return result['total_ap'] or 0
 
 
 class LTE(models.Model):
@@ -209,38 +203,50 @@ class ActivityLog(models.Model):
     thanks = models.IntegerField(default=0)
     comments = models.ManyToManyField(ActivityLogComment, blank=True)
 
-    def short_str(self):
-        if self.activity.activity_type == "mission completed" and self.mission is not None:
-            return "%s %s: %d AP: mission %d: %s" % (str(self.timestamp)[11:19], self.user.username, self.ap, self.mission.id, self.mission.short_description)
-        else:
-            return "%s %s: %d AP: %s" % (str(self.timestamp)[11:19], self.user.username, self.ap, self.activity.activity_text)
+    class Meta:
+        indexes = [
+            models.Index(fields=['timestamp']),
+            models.Index(fields=['user', 'timestamp']),
+            models.Index(fields=['activity']),
+        ]
+        ordering = ['-timestamp']
 
-    def notification_str(self):
+    def short_str(self) -> str:
         if self.activity.activity_type == "mission completed" and self.mission is not None:
-            return "%s: %d AP: mission %d: %s" % (self.user.username, self.ap, self.mission.id, self.mission.short_description)
+            return f"{self.timestamp.strftime('%H:%M:%S')} {self.user.username}: {self.ap} AP: mission {self.mission.id}: {self.mission.short_description}"
         else:
-            return "%s: %d AP: %s" % (self.user.username, self.ap, self.activity.activity_text)
+            return f"{self.timestamp.strftime('%H:%M:%S')} {self.user.username}: {self.ap} AP: {self.activity.activity_text}"
 
-    def __str__(self):
+    def notification_str(self) -> str:
         if self.activity.activity_type == "mission completed" and self.mission is not None:
-            return "%s %s erha:lt %d AP fu:r mission %d: %s" % (str(self.timestamp)[:19], self.user.username, self.ap, self.mission.id, self.mission.short_description)
+            return f"{self.user.username}: {self.ap} AP: mission {self.mission.id}: {self.mission.short_description}"
         else:
-            return "%s %s erha:lt %d AP fu:r %s" % (str(self.timestamp)[:19], self.user.username, self.ap, self.activity.activity_text)
+            return f"{self.user.username}: {self.ap} AP: {self.activity.activity_text}"
 
-    def dic(self):
-        dic = {}
-        dic['activity'] = self.activity.activity_text
-        dic['timestamp'] = str(self.timestamp)[:26]
-        dic['mission'] = {}
-        dic['ap'] = self.ap
-        dic['user'] = self.user.dic2()
-        dic['str'] = self.short_str()
-        dic['id'] = self.id
-        dic['protests'] = self.protests
-        dic['thanks'] = self.thanks
-        dic['comments'] = [comment.dic()
-                           for comment in self.comments.order_by('-timestamp')]
-        return dic
+    def __str__(self) -> str:
+        if self.activity.activity_type == "mission completed" and self.mission is not None:
+            return f"{self.timestamp.strftime('%Y-%m-%d %H:%M:%S')} {self.user.username} erha:lt {self.ap} AP fu:r mission {self.mission.id}: {self.mission.short_description}"
+        else:
+            return f"{self.timestamp.strftime('%Y-%m-%d %H:%M:%S')} {self.user.username} erha:lt {self.ap} AP fu:r {self.activity.activity_text}"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert ActivityLog instance to dictionary."""
+        return {
+            'activity': self.activity.activity_text,
+            'timestamp': self.timestamp.isoformat()[:26],
+            'mission': {},
+            'ap': self.ap,
+            'user': self.user.to_dict(stringify_datetimes=True),
+            'str': self.short_str(),
+            'id': self.id,
+            'protests': self.protests,
+            'thanks': self.thanks,
+            'comments': [comment.dic() for comment in self.comments.order_by('-timestamp')],
+        }
+
+    # Backward compatibility
+    def dic(self) -> Dict[str, Any]:
+        return self.to_dict()
 
 
 class Status(models.Model):

@@ -12,6 +12,9 @@ django-webpack
 django-webpack-loader
 gunicorn
 ics
+python-decouple
+pytest
+pytest-django
 # json-rpc
 psycopg2-binary
 pyfcm
