@@ -100,6 +100,8 @@ SECRET_KEY = config('SECRET_KEY')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'cbeamd.middleware.RequestLoggingMiddleware',
+    'cbeamd.middleware.SecurityLoggingMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -121,7 +123,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'cbeamd',
-    'jsonrpc',
+    # 'jsonrpc',  # Temporarily disabled for testing
     'rest_framework',
     'drf_spectacular',
     'bootstrap3',
@@ -159,42 +161,77 @@ LOGIN_URL = reverse_lazy('login')
 LOGOUT_URL = reverse_lazy('logout')
 LOGIN_REDIRECT_URL = reverse_lazy('index')
 
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error when DEBUG=False.
-# See http://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
-#LOGGING = {
-    #'version': 1,
-    #'disable_existing_loggers': False,
-    #'handlers': {
-        #'file': {
-            #'level': 'DEBUG',
-            #'class': 'logging.FileHandler',
-            #'filename': '/home/c-beam/c-beam-debug.log',
-        #},
-    #},
-    #'loggers': {
-        #'django.request': {
-            #'handlers': ['file'],
-            #'level': 'DEBUG',
-            #'propagate': True,
-        #},
-    #},
-#}
-
+# Logging Configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+        'json': {
+            'format': '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}',
+            'class': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'simple',
         },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': config('LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam.log')),
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'error_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': config('ERROR_LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam-error.log')),
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 5,
+            'level': 'ERROR',
+            'formatter': 'verbose',
+        },
+        'security_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': config('SECURITY_LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam-security.log')),
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 5,
+            'level': 'WARNING',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': config('LOG_LEVEL', default='INFO'),
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'WARNING'),
+            'handlers': ['console', 'file'],
+            'level': config('DJANGO_LOG_LEVEL', default='INFO'),
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['error_file'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['security_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'cbeamd': {
+            'handlers': ['console', 'file'],
+            'level': config('APP_LOG_LEVEL', default='DEBUG'),
+            'propagate': False,
         },
     },
 }

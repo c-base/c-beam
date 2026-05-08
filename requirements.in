@@ -14,6 +14,7 @@ django-webpack-loader
 gunicorn
 ics
 python-decouple
+python-json-logger
 pytest
 pytest-django
 # json-rpc

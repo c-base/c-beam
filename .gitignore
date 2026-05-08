@@ -19,6 +19,7 @@ c-beamd/c-beam-debug.log
 c-beamd/cbeamd/local_settings.py.prod
 c-beamd/cbeamd/local_settings.py.old
 c-beamd/cbeamd/yarn-error.log
+c-beamd/logs/
 
 # Environment variables
 .env
