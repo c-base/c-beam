@@ -140,8 +140,8 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'C-Beam API',
-    'DESCRIPTION': 'API for C-Beam space station management system',
+    'TITLE': 'c-beam API',
+    'DESCRIPTION': 'API for c-beam space station management system',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
