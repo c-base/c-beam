@@ -123,11 +123,32 @@ INSTALLED_APPS = (
     'cbeamd',
     'jsonrpc',
     'rest_framework',
+    'drf_spectacular',
     'bootstrap3',
     'django.contrib.admin',
     'webpack_loader',
     # "fcm_django",
 )
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
+    'DEFAULT_VERSION': 'v1',
+    'ALLOWED_VERSIONS': ['v1'],
+    'VERSION_PARAM': 'version',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'C-Beam API',
+    'DESCRIPTION': 'API for C-Beam space station management system',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+}
 
 
 AUTHENTICATION_BACKENDS = (

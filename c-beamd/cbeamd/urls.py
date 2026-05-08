@@ -9,6 +9,7 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 from rest_framework import routers
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
@@ -106,6 +107,10 @@ urlpatterns = [
     re_path(r'^mpd/(?P<host>.+)/mpd_listplaylists/$', views.mpd_listplaylists, name='mpd_listplaylists'),
     re_path(r'^mpd/(?P<host>.+)/status/$', views.mpd_status, name='mpd_status'),
     re_path(r'^mpd/(?P<host>.+)/command/(?P<command>\w+)/$', views.mpd_command, name='mpd_command'),
-    path('api/', include(router.urls)),
+    # API versioning and documentation
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('api/v1/', include(router.urls)),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -7,6 +7,7 @@ django-auth-ldap
 django-bootstrap3
 django-json-rpc
 django-rest-framework
+drf-spectacular
 django-tagging
 django-webpack
 django-webpack-loader
