@@ -1,12 +1,10 @@
-# from django.conf.urls import patterns, include, url
 from django.urls import include, re_path
 from .models import User
 from .models import Mission
-# from jsonrpc import jsonrpc_site  # Temporarily disabled for testing
 from . import views  # you must import the views that need connected
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib.auth import auth_views
+from django.contrib.auth import views as auth_views
 from django.urls import include, path
 from rest_framework import routers
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView

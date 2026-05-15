@@ -22,17 +22,15 @@ import feedparser
 import paho.mqtt.client as paho
 import requests
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.template import Context, loader
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-# from django_ajax.decorators import ajax  # Temporarily disabled for testing
+from django.views.decorators.http import require_http_methods
+from django_ajax.decorators import ajax
 from ics import Calendar
-# from jsonrpc import jsonrpc_method  # Temporarily disabled for testing
-# from jsonrpc.proxy import ServiceProxy  # Temporarily disabled for testing
-### from tools.ldapNrf24 import LdapNrf24Check
-#import urllib2
+from .json_rpc_client import jsonrpc_method, get_jsonrpc_method
 from mpd import MPDClient as RealMPDClient
 from pyfcm import FCMNotification
 from rest_framework import permissions, viewsets, status
@@ -2251,7 +2249,7 @@ def mpd_volume(request, host):
     return HttpResponse(json.dumps(result), content_type="application/json")
 
 
-# @ajax
+@ajax
 def mpd_status(request, host):
     result = None
     with MPDClient(host) as client:
@@ -2622,3 +2620,79 @@ class MatelightViewSet(viewsets.ViewSet):
         status_data = response.json()
         return Response(status_data)
 
+
+
+#################################################################
+# JSON-RPC Endpoint Handler (replacing deprecated jsonrpc package)
+#################################################################
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+def jsonrpc_handler(request):
+    """
+    JSON-RPC 2.0 endpoint handler.
+    Replaces deprecated jsonrpc.jsonrpc_site.dispatch.
+    
+    Dispatches JSON-RPC method calls to decorated handlers registered via @jsonrpc_method.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'jsonrpc': '2.0',
+            'error': {'code': -32700, 'message': 'Parse error'},
+            'id': None,
+        }, status=400)
+    
+    method = data.get('method')
+    params = data.get('params', [])
+    request_id = data.get('id')
+    jsonrpc_version = data.get('jsonrpc', '2.0')
+    
+    # Look up method in the registry
+    handler = get_jsonrpc_method(method)
+    
+    # Check if method exists
+    if handler is None:
+        return JsonResponse({
+            'jsonrpc': jsonrpc_version,
+            'error': {'code': -32601, 'message': 'Method not found'},
+            'id': request_id,
+        })
+    
+    try:
+        # Call the method with params
+        if isinstance(params, list):
+            result = handler(request, *params)
+        else:
+            result = handler(request, **params)
+        
+        # Handle different return types
+        if isinstance(result, str):
+            response_result = result
+        elif isinstance(result, HttpResponse):
+            # If view returns HttpResponse directly, extract content
+            response_result = result.content.decode('utf-8') if isinstance(result.content, bytes) else result.content
+        elif isinstance(result, JsonResponse):
+            # If it's a JsonResponse, extract the data
+            response_result = json.loads(result.content.decode('utf-8'))
+        else:
+            response_result = result
+        
+        return JsonResponse({
+            'jsonrpc': jsonrpc_version,
+            'result': response_result,
+            'id': request_id,
+        })
+    except Exception as e:
+        logger.exception(f"Error calling JSON-RPC method {method}")
+        return JsonResponse({
+            'jsonrpc': jsonrpc_version,
+            'error': {
+                'code': -32603,
+                'message': 'Internal error',
+                'data': str(e),
+            },
+            'id': request_id,
+        })

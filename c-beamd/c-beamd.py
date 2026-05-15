@@ -9,23 +9,28 @@ import ddate
 from ddate import DDate
 import time
 
-import jsonrpclib
-
 import cbeamdcfg as cfg
+
+# JSON-RPC client (replaces deprecated jsonrpclib)
+try:
+    from cbeamd.json_rpc_client import JSONRPCClient
+except ImportError:
+    # Fallback import path when running as a script
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from cbeamd.json_rpc_client import JSONRPCClient
 
 from tornadorpc.json import JSONRPCHandler
 from tornadorpc import private, start_server
 
 
-jsonrpclib.config.version = 1.0
-
 nickspells = {}
 
-c_outd = jsonrpclib.Server(cfg.c_outurl)
-localc_outd = jsonrpclib.Server("http://127.0.0.1:1775")
+c_outd = JSONRPCClient(cfg.c_outurl)
+localc_outd = JSONRPCClient("http://127.0.0.1:1775")
 monitord = None
-if cfg.monitorurl != "": monitord = jsonrpclib.Server(cfg.monitorurl)
-print cfg.monitorurl
+if cfg.monitorurl != "": monitord = JSONRPCClient(cfg.monitorurl)
 
 r0ketmap = {}
 

@@ -1,11 +1,11 @@
-Django
+Django==5.2.*
 autopep8
 bvg-grabber
 djangoajax
 django-appconf
 django-auth-ldap
 django-bootstrap3
-django-json-rpc
+# django-json-rpc  # Removed - incompatible with Django 5.2
 django-rest-framework
 drf-spectacular
 django-tagging
