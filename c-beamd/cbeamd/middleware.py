@@ -21,7 +21,7 @@ class RequestLoggingMiddleware(MiddlewareMixin):
         logger.info(
             f"REQUEST: {request.method} {request.path} "
             f"from {self._get_client_ip(request)} "
-            f"user={request.user.username if request.user.is_authenticated else 'anonymous'}"
+            f"user={request.user.username if hasattr(request, 'user') and request.user.is_authenticated else 'anonymous'}"
         )
 
     def process_response(self, request, response):
@@ -42,7 +42,7 @@ class RequestLoggingMiddleware(MiddlewareMixin):
             f"RESPONSE: {request.method} {request.path} "
             f"status={response.status_code} "
             f"duration={duration:.3f}s "
-            f"user={request.user.username if hasattr(request, 'user') and request.user.is_authenticated else 'anonymous'}"
+            f"user={request.user.username if hasattr(request, 'user') and hasattr(request.user, 'is_authenticated') and request.user.is_authenticated else 'anonymous'}"
         )
 
         return response
@@ -52,7 +52,7 @@ class RequestLoggingMiddleware(MiddlewareMixin):
         logger.error(
             f"EXCEPTION: {request.method} {request.path} "
             f"exception={type(exception).__name__}: {str(exception)} "
-            f"user={request.user.username if hasattr(request, 'user') and request.user.is_authenticated else 'anonymous'}",
+            f"user={request.user.username if hasattr(request, 'user') and hasattr(request.user, 'is_authenticated') and request.user.is_authenticated else 'anonymous'}",
             exc_info=True
         )
 
@@ -90,7 +90,7 @@ class SecurityLoggingMiddleware(MiddlewareMixin):
                     f"SECURITY: Suspicious request detected: {request.method} {request.path} "
                     f"from {self._get_client_ip(request)} "
                     f"GET={dict(request.GET)} "
-                    f"user={request.user.username if request.user.is_authenticated else 'anonymous'}"
+                    f"user={request.user.username if hasattr(request, 'user') and hasattr(request.user, 'is_authenticated') and request.user.is_authenticated else 'anonymous'}"
                 )
                 break
 

@@ -31,10 +31,10 @@ class JSONRPCError(Exception):
 class JSONRPCClient:
     """
     Lightweight JSON-RPC 2.0 client.
-    
+
     Replaces deprecated jsonrpclib.Server() with a modern implementation
     using requests library.
-    
+
     Usage:
         client = JSONRPCClient('http://example.com:1234/')
         result = client.some_method(arg1, arg2, kwarg1=value1)
@@ -43,7 +43,7 @@ class JSONRPCClient:
     def __init__(self, url: str, timeout: int = 30):
         """
         Initialize JSON-RPC client.
-        
+
         Args:
             url: The JSON-RPC server URL
             timeout: Request timeout in seconds
@@ -54,36 +54,36 @@ class JSONRPCClient:
     def _call(self, method: str, *args, **kwargs) -> Any:
         """
         Make a JSON-RPC 2.0 call.
-        
+
         Args:
             method: The JSON-RPC method name
             *args: Positional arguments
             **kwargs: Keyword arguments
-            
+
         Returns:
             The result from the JSON-RPC response
-            
+
         Raises:
             JSONRPCError: If the server returns an error
             requests.RequestException: If the HTTP request fails
         """
         request_id = str(uuid.uuid4())
-        
+
         # Build params: prioritize kwargs if present, otherwise use args
         if kwargs:
             params = kwargs
         else:
             params = list(args) if args else []
-        
+
         payload = {
             'jsonrpc': '2.0',
             'method': method,
             'params': params,
             'id': request_id,
         }
-        
+
         headers = {'Content-Type': 'application/json'}
-        
+
         try:
             response = requests.post(
                 self.url,
@@ -95,13 +95,13 @@ class JSONRPCClient:
         except requests.RequestException as e:
             logger.error(f"JSON-RPC request failed: {e}")
             raise
-        
+
         try:
             result_data = response.json()
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON-RPC response: {e}\nResponse: {response.text}")
             raise
-        
+
         # Check for JSON-RPC error
         if 'error' in result_data and result_data['error'] is not None:
             error = result_data['error']
@@ -110,13 +110,13 @@ class JSONRPCClient:
                 message=error.get('message', 'Unknown error'),
                 data=error.get('data'),
             )
-        
+
         return result_data.get('result')
 
     def __getattr__(self, name: str):
         """
         Allow calling JSON-RPC methods as attributes.
-        
+
         Example:
             client = JSONRPCClient('http://example.com/rpc/')
             result = client.some_method(arg1, arg2)
@@ -126,43 +126,48 @@ class JSONRPCClient:
         return method_call
 
 
-def jsonrpc_method(method_name: str):
+def jsonrpc_method(method_name: str, **kwargs):
     """
     Decorator to register a function as a JSON-RPC method.
-    
+
     Replaces the deprecated @jsonrpc_method decorator from the jsonrpc package.
-    
+
     Usage:
         @jsonrpc_method('login')
         def login(request, username):
             return "logged in"
-    
+
+        @jsonrpc_method('protected', authenticated=True)
+        def protected_func(request):
+            return "protected"
+
     Args:
         method_name: The JSON-RPC method name to register
-        
+        **kwargs: Extra parameters (e.g., authenticated, validate) - currently ignored
+
     Returns:
         Decorator function
     """
     def decorator(func: Callable) -> Callable:
         """Register the function and return it unchanged."""
         _jsonrpc_method_registry[method_name] = func
-        
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
-        
+
         return wrapper
-    
+
     return decorator
 
 
 def get_jsonrpc_method(method_name: str) -> Optional[Callable]:
     """
     Retrieve a registered JSON-RPC method by name.
-    
+
     Args:
         method_name: The JSON-RPC method name
-        
+
     Returns:
         The callable method, or None if not registered
     """
@@ -172,7 +177,7 @@ def get_jsonrpc_method(method_name: str) -> Optional[Callable]:
 def get_jsonrpc_methods() -> Dict[str, Callable]:
     """
     Get all registered JSON-RPC methods.
-    
+
     Returns:
         Dictionary of method name -> callable
     """

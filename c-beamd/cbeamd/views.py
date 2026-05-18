@@ -28,7 +28,22 @@ from django.template import Context, loader
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django_ajax.decorators import ajax
+# Custom ajax decorator to replace deprecated django-ajax decorator
+from functools import wraps
+from django.http import HttpResponse
+
+def ajax(func):
+    """
+    Decorator that automatically converts return values to JSON responses.
+    Replaces the deprecated django_ajax.decorators.ajax decorator.
+    """
+    @wraps(func)
+    def _wrapper(request, *args, **kwargs):
+        result = func(request, *args, **kwargs)
+        if isinstance(result, HttpResponse):
+            return result
+        return HttpResponse(json.dumps(result), content_type="application/json")
+    return _wrapper
 from ics import Calendar
 from .json_rpc_client import jsonrpc_method, get_jsonrpc_method
 from mpd import MPDClient as RealMPDClient
@@ -2633,7 +2648,7 @@ def jsonrpc_handler(request):
     """
     JSON-RPC 2.0 endpoint handler.
     Replaces deprecated jsonrpc.jsonrpc_site.dispatch.
-    
+
     Dispatches JSON-RPC method calls to decorated handlers registered via @jsonrpc_method.
     """
     try:
@@ -2644,15 +2659,15 @@ def jsonrpc_handler(request):
             'error': {'code': -32700, 'message': 'Parse error'},
             'id': None,
         }, status=400)
-    
+
     method = data.get('method')
     params = data.get('params', [])
     request_id = data.get('id')
     jsonrpc_version = data.get('jsonrpc', '2.0')
-    
+
     # Look up method in the registry
     handler = get_jsonrpc_method(method)
-    
+
     # Check if method exists
     if handler is None:
         return JsonResponse({
@@ -2660,14 +2675,14 @@ def jsonrpc_handler(request):
             'error': {'code': -32601, 'message': 'Method not found'},
             'id': request_id,
         })
-    
+
     try:
         # Call the method with params
         if isinstance(params, list):
             result = handler(request, *params)
         else:
             result = handler(request, **params)
-        
+
         # Handle different return types
         if isinstance(result, str):
             response_result = result
@@ -2679,7 +2694,7 @@ def jsonrpc_handler(request):
             response_result = json.loads(result.content.decode('utf-8'))
         else:
             response_result = result
-        
+
         return JsonResponse({
             'jsonrpc': jsonrpc_version,
             'result': response_result,
