@@ -6,12 +6,13 @@ User preference views - stats, push notifications, stealth mode.
 import json
 from datetime import timedelta
 
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
 from ..json_rpc_client import jsonrpc_method
-from .view_helpers import c_out_volume, getuser, models, send_mail, create_random_password
+from .helpers import c_out_volume, getuser, models, send_mail, create_random_password
 
 
 reminder_store = {}

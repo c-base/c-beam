@@ -9,7 +9,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from ..json_rpc_client import jsonrpc_method
-from .view_helpers import (
+from .helpers import (
     artefact_base_url, artefactcache, artefactcache_time, hwstorage_state, models, publish
 )
 
@@ -102,14 +102,14 @@ def list_articles(request):
 
 @jsonrpc_method('log_stats')
 def log_stats_view():
-    from .view_helpers import log_stats
+    from .helpers import log_stats
     log_stats()
     return "aye"
 
 
 @jsonrpc_method('get_stats')
 def get_stats_view():
-    from .view_helpers import get_stats
+    from .helpers import get_stats
     return get_stats()
 
 
@@ -118,9 +118,9 @@ def list_portal_articles(request):
 
 
 def app_data(request):
-    from .event_views import event_list
-    from .eta_views import etalist
-    from .user_views import userlist
+    from .events import event_list
+    from .eta import etalist
+    from .user import userlist
     return {
         'events': event_list(request),
         'eta': etalist(),

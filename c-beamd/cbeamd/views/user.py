@@ -6,7 +6,7 @@ User handling views - get user info, nick spelling, wifi login settings.
 from django.utils import timezone
 
 from ..json_rpc_client import jsonrpc_method
-from .view_helpers import (
+from .helpers import (
     getuser, getuser_eta, is_logged_in, models, userlist, userlist_with_online_percentage
 )
 
@@ -83,8 +83,8 @@ def ceitloch():
 
 
 def who_result():
-    from .eta_views import etalist
-    from .preferences_views import reminder
+    from .eta import etalist
+    from .preferences import reminder
     return {
         'available': userlist(),
         'eta': etalist(),

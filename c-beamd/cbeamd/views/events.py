@@ -11,7 +11,7 @@ from django.utils import timezone
 from ics import Calendar
 
 from ..json_rpc_client import jsonrpc_method
-from .view_helpers import (
+from .helpers import (
     eventcache, eventdetailcache, eventcache_time, publish
 )
 

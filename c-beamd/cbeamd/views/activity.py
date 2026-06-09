@@ -15,7 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .. import models
 from ..forms import ActivityLogCommentForm, LogActivityForm
 from ..json_rpc_client import jsonrpc_method
-from .view_helpers import getuser, newactivities, publish
+from .helpers import getuser, newactivities, publish
 
 
 @jsonrpc_method('activitylog')

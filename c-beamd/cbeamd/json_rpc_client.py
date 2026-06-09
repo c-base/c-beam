@@ -182,3 +182,17 @@ def get_jsonrpc_methods() -> Dict[str, Callable]:
         Dictionary of method name -> callable
     """
     return _jsonrpc_method_registry.copy()
+
+
+def ajax(func):
+    """
+    Decorator that automatically converts return values to JSON responses.
+    Replaces the deprecated django_ajax.decorators.ajax decorator.
+    """
+    @wraps(func)
+    def _wrapper(request, *args, **kwargs):
+        result = func(request, *args, **kwargs)
+        if isinstance(result, HttpResponse):
+            return result
+        return HttpResponse(json.dumps(result), content_type="application/json")
+    return _wrapper

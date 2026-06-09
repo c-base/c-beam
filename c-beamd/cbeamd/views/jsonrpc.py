@@ -20,7 +20,7 @@ def jsonrpc_handler(request):
 
     Dispatches JSON-RPC method calls to decorated handlers registered via @jsonrpc_method.
     """
-    from .view_helpers import logger
+    from .helpers import logger
 
     try:
         data = json.loads(request.body)

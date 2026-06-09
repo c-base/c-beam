@@ -11,11 +11,11 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from ..json_rpc_client import jsonrpc_method
-from .view_helpers import (
+from .helpers import (
     getuser, hysterese, log_stats, newarrivallist, publish, reply
 )
-from .audio_views import tts
-from .user_views import getnickspell, is_logged_in
+from .audio import tts
+from .user import getnickspell, is_logged_in
 
 
 @jsonrpc_method('login_with_id')
@@ -39,8 +39,8 @@ def force_login(request, user):
     """
     login to c-beam ignoring the current status
     """
-    from .user_views import who_result
-    from .view_helpers import logger
+    from .user import who_result
+    from .helpers import logger
     u = getuser(user)
     try:
         # monitord.login(u.username)
@@ -113,7 +113,7 @@ def force_logout(request, user):
     """
     log out from c-beam ignoring the current status
     """
-    from .user_views import who_result
+    from .user import who_result
     u = getuser(user)
     try:
         # monitord.logout(u.username)
@@ -129,7 +129,7 @@ def force_logout(request, user):
     u.save()
     log_stats()
     if u.logintime + timedelta(minutes=60) < timezone.now() and oldstatus == "online":
-        from .activity_views import logactivity
+        from .activity import logactivity
         logactivity(request, user, "logout", 2)
     return reply(request, "%s logged out" % u.username)
 
@@ -146,7 +146,7 @@ def login_wlan(request, user):
     """
     login to c-beam via wifi
     """
-    from .view_helpers import logger
+    from .helpers import logger
     u = getuser(user)
     if u.stealthmode > timezone.now():
         return "user in stealth mode"
@@ -179,8 +179,8 @@ def tagevent(request, user):
 
 @jsonrpc_method('unknown_tag')
 def unknown_tag(request, rfid):
-    from .view_helpers import models
-    from .audio_views import monmessage
+    from .helpers import models
+    from .audio import monmessage
     u = models.User.objects.filter(rfid__icontains=rfid)
     if len(u) > 0:
         return tagevent(request, u[0].username)
@@ -196,5 +196,5 @@ def welcometts(request, user):
         if user == "kristall":
             tts(request, "Julia", "a loa crew")
         else:
-            from .view_helpers import cfg
+            from .helpers import cfg
             tts(request, "Julia", cfg.ttsgreeting % getnickspell(request, user))

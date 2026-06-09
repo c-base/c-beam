@@ -63,7 +63,7 @@ class PriceViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        from .view_helpers import get_prices
+        from .helpers import get_prices
         return Response(get_prices())
 
 
@@ -78,7 +78,7 @@ class EventViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        from .event_views import event_list
+        from .events import event_list
         return Response(event_list(request))
 
 
@@ -93,7 +93,7 @@ class BarViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        from .bar_views import get_barstatus
+        from .bar import get_barstatus
         return Response(get_barstatus(request))
 
 

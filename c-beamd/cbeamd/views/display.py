@@ -14,10 +14,10 @@ from django.shortcuts import render
 
 from .. import models
 from ..json_rpc_client import jsonrpc_method
-from .view_helpers import (
+from .helpers import (
     c_out_volume, cerebrum_state, hand, hwstorage_state, publish
 )
-from .tools.ddate import DDate
+from ..tools.ddate import DDate
 
 
 def toggle_burningman(request):
@@ -41,7 +41,7 @@ def bvg(request):
 
 
 def welcome(request, user):
-    from .auth_views import welcometts
+    from .auth import welcometts
     welcometts(request, user)
     return render(request, 'cbeamd/welcome.django', {'user': user})
 
@@ -72,7 +72,7 @@ def he1display(request):
 
 
 def ceitlochclocc(request):
-    from .user_views import ceitloch
+    from .user import ceitloch
     return render(request, 'cbeamd/ceitlochclocc.django', {'ceitloch': ceitloch()})
 
 
@@ -113,8 +113,8 @@ def fnord(request):
 
 @jsonrpc_method('lte')
 def lte(request, user, text):
-    from .user_views import getuser
-    from .view_helpers import logger
+    from .user import getuser
+    from .helpers import logger
     u = getuser(user)
     logger.debug("lte: %s %s" % (user, text))
     import feedparser
@@ -163,7 +163,7 @@ def hand_translate(request, command):
 def cerebrumNotify(request, device_name, event_source_path, new_state):
     cerebrum_state[device_name][event_source_path] = new_state
 
-    from .view_helpers import logger
+    from .helpers import logger
     logger.debug("'%s: %s'" % (event_source_path, new_state))
     # Switch handler for various gang switches...
     # (kept minimal - original had many sound/play triggers)

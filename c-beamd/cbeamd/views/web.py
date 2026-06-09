@@ -6,8 +6,8 @@ Web page rendering views.
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
-from .view_helpers import models, getuser
-from .user_views import userlist, userlist_with_online_percentage
+from .helpers import models, getuser
+from .user import userlist, userlist_with_online_percentage
 
 
 @login_required
@@ -43,7 +43,7 @@ def user_offline(request):
 
 @login_required
 def user_eta(request):
-    from .eta_views import etalist
+    from .eta import etalist
     return render(request, 'cbeamd/user_eta.django', {'etalist': etalist()})
 
 
@@ -67,13 +67,13 @@ def user_list(request):
 
 @login_required
 def stats_list(request):
-    from .view_helpers import get_stats
+    from .helpers import get_stats
     return render(request, 'cbeamd/stats_list.django', {'stats': get_stats()})
 
 
 @login_required
 def stats(request):
-    from .view_helpers import get_stats
+    from .helpers import get_stats
     return render(request, 'cbeamd/stats.django', {'stats': get_stats()})
 
 
@@ -94,7 +94,7 @@ def c_buttons(request):
 
 @login_required
 def profile_edit(request):
-    from .forms import UserForm
+    from ..forms import UserForm
     if request.method == "POST":
         u = getuser(request.user.username)
         form = UserForm(request.POST, instance=u)

@@ -10,12 +10,12 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 
 from ..json_rpc_client import jsonrpc_method
-from .view_helpers import (
+from .helpers import (
     eta_timeout, getuser, getuser_eta, log_stats, models,
     newetalist, publish, reply
 )
-from .audio_views import tts
-from .user_views import getnickspell
+from .audio import tts
+from .user import getnickspell
 
 
 @jsonrpc_method('eta')
@@ -86,7 +86,7 @@ def seteta(request, user, eta):
         u.save()
         if not u.no_google:
             try:
-                from .mission_views import gcm_send
+                from .missions import gcm_send
                 gcm_send(request, 'ETA', '%s (%s)' % (user, eta))
             except Exception:
                 pass
@@ -161,7 +161,7 @@ def newetas(request):
 
 @jsonrpc_method('arrivals')
 def arrivals(request):
-    from .view_helpers import newarrivallist
+    from .helpers import newarrivallist
     tmp = newarrivallist
     newarrivallist.clear()
     newarrivallist.update({})
@@ -170,7 +170,7 @@ def arrivals(request):
 
 @jsonrpc_method('achievements')
 def achievements(request):
-    from .view_helpers import achievements as achievements_store
+    from .helpers import achievements as achievements_store
     tmp = achievements_store
     achievements_store.clear()
     achievements_store.update({})
@@ -179,7 +179,7 @@ def achievements(request):
 
 @jsonrpc_method('activities')
 def activities(request):
-    from .view_helpers import newactivities
+    from .helpers import newactivities
     tmp = newactivities
     newactivities.clear()
     return tmp
@@ -190,9 +190,9 @@ def cleanup(request):
     """
     Clean up expired users, ETAs, and missions.
     """
-    from .stripe_views import set_stripe_default
-    from .user_views import userlist, who_result
-    from .view_helpers import log_stats, models, mission_completed, publish
+    from .stripe import set_stripe_default
+    from .user import userlist, who_result
+    from .helpers import log_stats, models, mission_completed, publish
 
     users = userlist()
     usercount = len(users)
@@ -234,5 +234,5 @@ def cleanup(request):
 def who(request):
     """list all user that have logged in."""
     cleanup(request)
-    from .user_views import who_result
+    from .user import who_result
     return who_result()

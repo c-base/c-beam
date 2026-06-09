@@ -10,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from ..forms import StripeForm
 from ..json_rpc_client import jsonrpc_method
-from .view_helpers import (
+from .helpers import (
     cerebrum, default_stripe_offset, default_stripe_pattern, default_stripe_speed,
     models, publish
 )

@@ -6,7 +6,7 @@ Audio and TTS (Text-to-Speech) views - c_out, play, voices.
 from django.shortcuts import render
 
 from ..json_rpc_client import jsonrpc_method
-from .view_helpers import publish, reply
+from .helpers import publish, reply
 
 
 @jsonrpc_method('monmessage')
@@ -120,7 +120,7 @@ def c_out_play_web(request, sound):
 
 @jsonrpc_method('remind')
 def remind(request, user, text):
-    from .preferences_views import reminder
+    from .preferences import reminder
     r = reminder()
     r[user] = text
     return "aye"
@@ -128,5 +128,5 @@ def remind(request, user, text):
 
 @jsonrpc_method('reminder')
 def reminder_view(request):
-    from .preferences_views import reminder
+    from .preferences import reminder
     return reminder()

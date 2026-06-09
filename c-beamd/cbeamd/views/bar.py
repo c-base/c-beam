@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from .. import models
 from ..json_rpc_client import jsonrpc_method
-from .view_helpers import c_out_volume, getuser, log_stats, publish, send_mail
+from .helpers import c_out_volume, getuser, log_stats, publish, send_mail
 
 
 @jsonrpc_method('barschnur')
@@ -36,7 +36,7 @@ def c_portal_notify(request, notification):
 def trafotron(request, value):
     newval = (value * 100) / 170
     try:
-        from .view_helpers import logger
+        from .helpers import logger
         logger.debug(c_leuse_c_out.setvolume(newval))
     except Exception as e:
         logger.error(e)
@@ -77,7 +77,7 @@ def notify_bar_closing():
 
 
 def bar_preise(request):
-    from .view_helpers import get_prices
+    from .helpers import get_prices
     return render(request, 'cbeamd/bar_preise.django', {'prices': get_prices()})
 
 
@@ -86,7 +86,7 @@ def bar_leergut(request):
 
 
 def bar_calc(request):
-    from .view_helpers import get_prices
+    from .helpers import get_prices
     return render(request, 'cbeamd/bar_calc.django', {'prices': get_prices()})
 
 
@@ -95,10 +95,10 @@ def bar_abrechnung(request):
 
 
 def get_prices():
-    from .view_helpers import get_prices as _get_prices
+    from .helpers import get_prices as _get_prices
     return _get_prices()
 
 
 def mechblast_json(request):
-    from .user_views import userlist
+    from .user import userlist
     return HttpResponse(json.dumps({'userlist': userlist(), 'barstatus': get_barstatus(request)}), content_type="application/json")

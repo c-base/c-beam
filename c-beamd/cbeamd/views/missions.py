@@ -13,7 +13,7 @@ from pyfcm import FCMNotification
 from .. import models
 from ..forms import MissionForm
 from ..json_rpc_client import jsonrpc_method
-from ..view_helpers import (
+from .helpers import (
     getuser, log_stats, mission_assigned, mission_completed, mission_open, publish
 )
 
@@ -214,7 +214,7 @@ def gcm_update(request, user, regid):
 @jsonrpc_method('fcm_update')
 def fcm_update(request, user, regid):
     u = getuser(user)
-    from .view_helpers import logger
+    from .helpers import logger
     logger.error("fcm_update called: %s - %s", user, regid)
     subs = models.Subscription.objects.filter(user=u)
     if len(subs) < 1:
@@ -232,7 +232,7 @@ def fcm_update(request, user, regid):
 @jsonrpc_method('gcm_send')
 def gcm_send(request, subtype, text):
     import cbeamdcfg as cfg
-    from .view_helpers import logger
+    from .helpers import logger
     api_key = cfg.fcm_server_key
     push_service = FCMNotification(api_key=api_key)
 

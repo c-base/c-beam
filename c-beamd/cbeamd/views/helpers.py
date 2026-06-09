@@ -34,6 +34,10 @@ from ..tools.ddate import DDate
 from ..tools.handTranslate import HandTranslate
 from ..tools.LEDStripe import *
 
+# cerebrum was originally a ServiceProxy that was commented out in views.py
+# cerebrum = ServiceProxy('http://c-leuse.cbrp3.c-base.org:7777/')
+cerebrum = None
+
 logger = logging.getLogger(__name__)
 hysterese = 15
 eta_timeout = 120

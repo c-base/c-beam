@@ -74,7 +74,7 @@ def metrics(request):
     """
     Prometheus-style metrics endpoint.
     """
-    from .view_helpers import models
+    from .helpers import models
 
     metrics_data = {
         'timestamp': timezone.now().isoformat(),
