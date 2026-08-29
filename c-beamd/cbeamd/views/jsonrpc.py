@@ -10,7 +10,7 @@ import json
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from ..json_rpc_client import get_jsonrpc_method
+from ..json_rpc_client import get_jsonrpc_method, method_requires_authentication
 
 from ..tools.LEDStripe import *
 
@@ -50,6 +50,18 @@ def jsonrpc_handler(request):
             'error': {'code': -32601, 'message': 'Method not found'},
             'id': request_id,
         })
+
+    # methods declared with @jsonrpc_method(..., authenticated=True) require a
+    # logged-in django session. -32000 is in the implementation-defined server
+    # error range reserved by the JSON-RPC 2.0 spec.
+    rpc_user = getattr(request, 'user', None)
+    if method_requires_authentication(handler) and not (rpc_user and rpc_user.is_authenticated):
+        logger.warning("unauthenticated json-rpc call to protected method %s", method)
+        return JsonResponse({
+            'jsonrpc': jsonrpc_version,
+            'error': {'code': -32000, 'message': 'Authentication required'},
+            'id': request_id,
+        }, status=401)
 
     try:
         # Call the method with params

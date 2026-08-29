@@ -42,7 +42,7 @@ from .bar import (bar_abrechnung, bar_calc, bar_leergut, bar_preise, barschnur, 
     c_portal_notify, get_barstatus, mechblast_json, notify_bar_closing, notify_bar_opening,
     trafotron)
 from .preferences import (c_out_volume_json, c_out_volume_set, c_out_volume_web,
-    get_stealthmode, isWifiLoginEnabled, set_first_password, set_push_boarding, set_push_eta,
+    get_stealthmode, isWifiLoginEnabled, set_push_boarding, set_push_eta,
     set_push_missions, set_stats_enabled, set_stealthmode, set_wlan_login)
 from .display import (ampel, ampelblink, barbutton, bvg, cbeamviewer, ceitlochclocc,
     cerebrumNotify, dash, ddate, donut, fakelevels, fnord, hand_commands, hand_help,

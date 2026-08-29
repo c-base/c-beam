@@ -26,3 +26,15 @@ c-beamd/static_collected/
 .env
 .env.local
 .env.production
+
+# editor / os cruft
+*.swp
+*.swo
+*~
+
+# local databases (the default DATABASE_NAME is c-beamd/c-beam.sqlite)
+*.sqlite
+*.sqlite3
+
+# local settings override - imported last by settings.py, must never be shared
+c-beamd/cbeamd/local_settings.py

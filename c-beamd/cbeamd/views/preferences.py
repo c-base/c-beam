@@ -18,7 +18,7 @@ from ..models import User
 from ..tools.LEDStripe import *
 
 from . import helpers
-from .helpers import getuser, send_mail
+from .helpers import getuser
 
 
 @jsonrpc_method('isWifiLoginEnabled()')
@@ -116,23 +116,6 @@ def c_out_volume_json(request):
 def c_out_volume_set(request, volume):
     helpers.c_out_volume = volume
     return HttpResponse(json.dumps({'result': "OK"}), content_type="application/json")
-
-
-@jsonrpc_method('set_first_password')
-def set_first_password(request, user):
-    u = getuser(user)
-    # u.tmp_password = create_random_password(16)
-    # u.save()
-    # send mail to "%s@c-base.org" % u.username including u.tmp_password
-    recipient = '%s@c-base.org' % u.username
-    token = 'generierteseinmaltoken'
-    text = 'hallo %s\n\n' % u.username
-    text += '$jemand, wahrscheinlich du selbst, hat dein c-beam initialpasswort gesetzt.\n\nklicke auf den folgenden link, '
-    text += 'um das passwort zu aktivieren:\n\n'
-    text += 'https://ein-link-der-von-ueberall-erreichbar-sein-sollte.org/approve/%s\n\n' % token
-    text += 'du solltest dein initialpasswort mo:glchst bald unter https://member.cbrp3.c-base.org und in der app a:ndern.\n\n'
-    text += 'dance fu:r die beachtung der sicherheitshinweise\nihr bordcomputer\n\n'
-    send_mail(recipient, text)
 
 
 @jsonrpc_method('set_stealthmode')

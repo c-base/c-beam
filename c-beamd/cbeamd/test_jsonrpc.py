@@ -16,6 +16,7 @@ from cbeamd.json_rpc_client import (
     get_jsonrpc_methods,
     JSONRPCError,
     JSONRPCClient,
+    method_requires_authentication,
     _jsonrpc_method_registry,
 )
 
@@ -107,6 +108,22 @@ class TestJSONRPCDecorator(TestCase):
         """Test that get_jsonrpc_method returns None for unregistered method."""
         result = get_jsonrpc_method('nonexistent')
         self.assertIsNone(result)
+
+    def test_authenticated_flag_is_recorded(self):
+        """authenticated=True must survive registration, not be silently dropped."""
+        @jsonrpc_method('needs_auth', authenticated=True)
+        def needs_auth(request):
+            return "secret"
+
+        self.assertTrue(method_requires_authentication(get_jsonrpc_method('needs_auth')))
+
+    def test_methods_are_unauthenticated_by_default(self):
+        """A method with no explicit flag stays open."""
+        @jsonrpc_method('open_method')
+        def open_method(request):
+            return "public"
+
+        self.assertFalse(method_requires_authentication(get_jsonrpc_method('open_method')))
 
 
 class TestJSONRPCClient(TestCase):

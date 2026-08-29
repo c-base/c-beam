@@ -168,7 +168,7 @@ def publish(topic, payload, retain=False):
 
 
 def create_random_password(length):
-    chars = string.letters + string.digits
+    chars = string.ascii_letters + string.digits
     return ''.join(choice(chars) for _ in range(length))
 
 

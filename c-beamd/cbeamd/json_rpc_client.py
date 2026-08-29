@@ -127,7 +127,7 @@ class JSONRPCClient:
         return method_call
 
 
-def jsonrpc_method(method_name: str, **kwargs):
+def jsonrpc_method(method_name: str, authenticated: bool = False, **kwargs):
     """
     Decorator to register a function as a JSON-RPC method.
 
@@ -144,13 +144,19 @@ def jsonrpc_method(method_name: str, **kwargs):
 
     Args:
         method_name: The JSON-RPC method name to register
-        **kwargs: Extra parameters (e.g., authenticated, validate) - currently ignored
+        authenticated: If True, the dispatcher refuses the call unless the
+            request carries an authenticated django session.
+        **kwargs: Further parameters (e.g. validate) - accepted but not acted on.
 
     Returns:
         Decorator function
     """
     def decorator(func: Callable) -> Callable:
         """Register the function and return it unchanged."""
+        # the dispatcher reads this off the registered callable. the registry
+        # deliberately keeps storing plain callables so that callers can invoke
+        # what get_jsonrpc_method() hands back.
+        func.jsonrpc_authenticated = bool(authenticated)
         _jsonrpc_method_registry[method_name] = func
 
         @wraps(func)
@@ -173,6 +179,11 @@ def get_jsonrpc_method(method_name: str) -> Optional[Callable]:
         The callable method, or None if not registered
     """
     return _jsonrpc_method_registry.get(method_name)
+
+
+def method_requires_authentication(method: Callable) -> bool:
+    """Whether a registered method was declared with authenticated=True."""
+    return bool(getattr(method, 'jsonrpc_authenticated', False))
 
 
 def get_jsonrpc_methods() -> Dict[str, Callable]:
