@@ -1,28 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-MPD (Music Player Daemon) control views.
+MPD remote control.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
 import json
-from django.http import HttpResponse
 
-from ..json_rpc_client import jsonrpc_method, ajax
+from django.http import HttpResponse
+from ..json_rpc_client import ajax
 from mpd import MPDClient as RealMPDClient
 
-
-class MPDClient():
-    def __init__(self, host='localhost'):
-        self.host = host
-
-    def __enter__(self):
-        self.client = RealMPDClient()
-        self.client.timeout = 10
-        self.client.connect(self.host, 6600)
-        return self.client
-
-    def __exit__(self, type, value, traceback):
-        self.client.close()
-        self.client.disconnect()
+from ..tools.LEDStripe import *
 
 
 def mpd_volume(request, host):
@@ -44,6 +33,7 @@ def mpd_status(request, host):
         if 'title' not in result['current_song'].keys():
             result['current_song']['title'] = 'unknown'
         result['playlist'] = client.playlist()
+        # 'time': '364:4535'
         elapsed = 0
         total = 0
         if 'time' in result.keys():
@@ -55,6 +45,7 @@ def mpd_status(request, host):
             result['total'] = 0
     resp = {"status": 200, "statusText": "OK", "content": result}
     return HttpResponse(json.dumps(resp), content_type="application/json")
+    #return result
 
 
 def mpd_play(request, host):
@@ -123,4 +114,21 @@ def mpd_listplaylists(request, host):
     result = {}
     with MPDClient(host) as client:
         result = client.listplaylists()
+        # result = [item['playlist'] for item in result]
+    # return HttpResponse(json.dumps(result), content_type="application/json")
     return result
+
+
+class MPDClient():
+    def __init__(self, host='localhost'):
+        self.host = host
+
+    def __enter__(self):
+        self.client = RealMPDClient()
+        self.client.timeout = 10
+        self.client.connect(self.host, 6600)
+        return self.client
+
+    def __exit__(self, type, value, traceback):
+        self.client.close()
+        self.client.disconnect()

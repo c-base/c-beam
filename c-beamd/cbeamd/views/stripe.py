@@ -1,28 +1,56 @@
 # -*- coding: utf-8 -*-
 """
-LED Stripe and lighting control views.
+LED stripe control.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+import random
+
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
+from ..json_rpc_client import jsonrpc_method
 
 from ..forms import StripeForm
-from ..json_rpc_client import jsonrpc_method
-from .helpers import (
-    cerebrum, default_stripe_offset, default_stripe_pattern, default_stripe_speed,
-    models, publish
-)
+from ..models import User
+from ..tools.LEDStripe import *
 
+from . import helpers
+
+#################################################################
+# cerebrum leds methods
+#################################################################
 
 @jsonrpc_method('set_stripe_pattern')
 def set_stripe_pattern(request, pattern_id):
     """
-    set the airlock led stripe pattern
+    set the airlock led stripe pattern to pattern_id
     """
     pattern_id = int(pattern_id)
-    return "aye"
+    # if pattern_id == 0:
+    # return cerebrum.partymode()
+    # if pattern_id == 4:
+    # return cerebrum.flimmer()
+    if pattern_id == 7:
+        return cerebrum.statics()
+    if pattern_id == 3:
+        patterns = cerebrum.get_patterns()['result']
+        return cerebrum.set_pattern(random.choice(patterns))
+    # if pattern_id < 20:
+    result = cerebrum.set_pattern(pattern_id)
+    # if pattern_id == 20:
+    # result = cerebrum.flimmer()
+    # if pattern_id == 21:
+    # result = cerebrum.senso()
+    # if pattern_id == 22:
+    # result = cerebrum.blink()
+    # if pattern_id == 23:
+    # result = cerebrum.partymode()
+    # if result['result'] == "aye":
+    # result['result'] = "pattern has been set"
+    # else:
+    # result['result'] = "failed to set pattern"
+    return result
 
 
 def set_stripe_pattern_web(request, pattern_id):
@@ -57,6 +85,7 @@ def set_stripe_buffer(request, buffer):
     """
     set the airlock led stripe pattern buffer
     """
+    # buffer = [255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0]*32+[0,0,0,0,0,0,0,0,0,0,0,0]
     return cerebrum.set_buffer(buffer)
 
 
@@ -65,16 +94,16 @@ def set_stripe_default(request):
     """
     set the airlock led stripe pattern to the default pattern
     """
-    global default_stripe_pattern, default_stripe_speed, default_stripe_offset
 
-    if len(models.User.objects.filter(status="online")) > 0:
-        default_stripe_pattern = 1
-        default_stripe_speed = 3
+    if len(User.objects.filter(status="online")) > 0:
+        helpers.default_stripe_pattern = 1
+        helpers.default_stripe_speed = 3
     else:
-        default_stripe_pattern = 10
-        default_stripe_speed = 1
-    cerebrum.set_pattern(default_stripe_pattern)
-    cerebrum.set_speed(default_stripe_speed)
+        helpers.default_stripe_pattern = 10
+        helpers.default_stripe_speed = 1
+    cerebrum.set_pattern(helpers.default_stripe_pattern)
+    cerebrum.set_speed(helpers.default_stripe_speed)
+    # cerebrum.set_offset(default_stripe_offset)
     return "aye"
 
 
@@ -83,11 +112,11 @@ def notbeleuchtung(request):
     """
     set the airlock led stripe pattern to emergency lights
     """
-    global default_stripe_pattern, default_stripe_speed
-    default_stripe_pattern = 10
-    default_stripe_speed = 0
+    helpers.default_stripe_pattern = 10
+    helpers.default_stripe_speed = 0
     cerebrum.set_pattern(10)
     cerebrum.set_speed(1)
+    # TODO: send MQTT message for new c-leuse LEDs
 
 
 @jsonrpc_method('rainbow')
@@ -95,11 +124,10 @@ def rainbow(request):
     """
     set the airlock led stripe pattern to rainbow
     """
-    global default_stripe_pattern, default_stripe_speed
-    default_stripe_pattern = 1
-    default_stripe_speed = 3
-    cerebrum.set_pattern(default_stripe_pattern)
-    cerebrum.set_speed(default_stripe_speed)
+    helpers.default_stripe_pattern = 1
+    helpers.default_stripe_speed = 3
+    cerebrum.set_pattern(helpers.default_stripe_pattern)
+    cerebrum.set_speed(helpers.default_stripe_speed)
 
 
 @csrf_exempt

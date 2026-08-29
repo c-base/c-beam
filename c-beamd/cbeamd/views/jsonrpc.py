@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
 """
 JSON-RPC endpoint handler.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
 import json
+
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-
 from ..json_rpc_client import get_jsonrpc_method
+
+from ..tools.LEDStripe import *
+
+from .helpers import logger
 
 
 @csrf_exempt
@@ -20,8 +26,6 @@ def jsonrpc_handler(request):
 
     Dispatches JSON-RPC method calls to decorated handlers registered via @jsonrpc_method.
     """
-    from .helpers import logger
-
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
@@ -58,8 +62,10 @@ def jsonrpc_handler(request):
         if isinstance(result, str):
             response_result = result
         elif isinstance(result, HttpResponse):
+            # If view returns HttpResponse directly, extract content
             response_result = result.content.decode('utf-8') if isinstance(result.content, bytes) else result.content
         elif isinstance(result, JsonResponse):
+            # If it's a JsonResponse, extract the data
             response_result = json.loads(result.content.decode('utf-8'))
         else:
             response_result = result

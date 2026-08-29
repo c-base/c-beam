@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-User handling views - get user info, nick spelling, wifi login settings.
+User information and per-user settings.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
-from django.utils import timezone
 
+from django.utils import timezone
 from ..json_rpc_client import jsonrpc_method
-from .helpers import (
-    getuser, getuser_eta, is_logged_in, models, userlist, userlist_with_online_percentage
-)
+
+from ..models import User
+from ..tools.LEDStripe import *
+
+from .audio import reminder
+from .helpers import getuser, userlist
 
 
 @jsonrpc_method('get_user_by_id')
@@ -16,16 +21,16 @@ def get_user_by_id(request, id):
     """
     get information about a user using his id
     """
-    u = models.User.objects.get(id=id)
+    u = User.objects.get(id=id)
     return u.dic()
 
 
 @jsonrpc_method('get_user_by_name')
-def get_user_by_name(request, username):
+def get_user_by_id(request, username):
     """
     get information about a user using his nickname
     """
-    u = models.User.objects.get(username=username)
+    u = User.objects.get(username=username)
     return u.dic()
 
 
@@ -59,7 +64,7 @@ def getwlanlogin(request, user):
     return u.wlanlogin
 
 
-@jsonrpc_method('autologout')
+@jsonrpc_method('get_autologout')
 def get_autologout(request, user):
     u = getuser(user)
     return u.autologout
@@ -76,15 +81,14 @@ def set_autologout(request, user, autologout):
 def ceitloch():
     now = int(timezone.now().strftime("%Y%m%d%H%M%S"))
     cl = {}
-    for user in models.User.objects.filter(status="online"):
+    for user in User.objects.filter(status="online"):
         td = timezone.now() - user.logintime
         cl[str(user)] = td.seconds
     return cl
 
 
 def who_result():
-    from .eta import etalist
-    from .preferences import reminder
+    from .eta import etalist  # deferred: avoids user <-> eta import cycle
     return {
         'available': userlist(),
         'eta': etalist(),
@@ -93,20 +97,3 @@ def who_result():
         'ceitloch': ceitloch(),
         'reminder': reminder()
     }
-
-
-def userlist():
-    return [str(user) for user in models.User.objects.filter(status="online").order_by('username')]
-
-
-def userlist_with_online_percentage():
-    return [str(user) + " (" + user.online_percentage() + "%)" for user in models.User.objects.filter(status="online").order_by('username')]
-
-
-def is_logged_in(user):
-    u = models.User.objects.filter(username=user)
-    if len(u) > 0:
-        u = u[0]
-        if u.status == "online":
-            return True
-    return False

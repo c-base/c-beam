@@ -1,18 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-Bar operations views - bar status, prices, orders.
+Bar status and prices.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
 import json
-from datetime import timedelta
 
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
-
-from .. import models
 from ..json_rpc_client import jsonrpc_method
-from .helpers import c_out_volume, getuser, log_stats, publish, send_mail
+
+from ..models import Status
+from ..tools.LEDStripe import *
+
+from .helpers import logger
+from .helpers import get_prices, publish, userlist
 
 
 @jsonrpc_method('barschnur')
@@ -20,10 +24,13 @@ def barschnur(request, pizza, sushi, inder):
     publish("bar/schnur", "%d, %d, %d" % (pizza, sushi, inder))
 
     if pizza == 0 and sushi == 1 and inder == 1:
+        # publish("c_out/play", "pizza")
         publish("c_out/announce", "eine pizza-bestellung wartet an der bar")
     if pizza == 1 and sushi == 0 and inder == 1:
+        # publish("c_out/play", "sushi")
         publish("c_out/announce", "eine sushi-bestellung wartet an der bar")
     if pizza == 1 and sushi == 1 and inder == 0:
+        # publish("c_out/play", "inder")
         publish("c_out/announce", "eine inder-bestellung wartet an der bar")
 
 
@@ -35,8 +42,10 @@ def c_portal_notify(request, notification):
 @jsonrpc_method("trafotron")
 def trafotron(request, value):
     newval = (value * 100) / 170
+    # print("trafotron: " + str(newval))
+    # logger.error("trafotron: " + str(newval))
+    # os.system("amixer -c 0 set Master %d%%" % newval)
     try:
-        from .helpers import logger
         logger.debug(c_leuse_c_out.setvolume(newval))
     except Exception as e:
         logger.error(e)
@@ -48,7 +57,7 @@ def barstatus(request, status):
     set the bar status to status
     status can be "open" or "closed"
     """
-    status_object = models.Status.objects.get()
+    status_object = Status.objects.get()
     if status == "open":
         status_object.bar_open = True
         status_object.save()
@@ -65,7 +74,7 @@ def get_barstatus(request):
     """
     get the current bar status
     """
-    return models.Status.objects.get().bar_open
+    return Status.objects.get().bar_open
 
 
 def notify_bar_opening():
@@ -77,7 +86,6 @@ def notify_bar_closing():
 
 
 def bar_preise(request):
-    from .helpers import get_prices
     return render(request, 'cbeamd/bar_preise.django', {'prices': get_prices()})
 
 
@@ -86,7 +94,6 @@ def bar_leergut(request):
 
 
 def bar_calc(request):
-    from .helpers import get_prices
     return render(request, 'cbeamd/bar_calc.django', {'prices': get_prices()})
 
 
@@ -94,11 +101,5 @@ def bar_abrechnung(request):
     return render(request, 'cbeamd/bar_abrechnung.django', {})
 
 
-def get_prices():
-    from .helpers import get_prices as _get_prices
-    return _get_prices()
-
-
 def mechblast_json(request):
-    from .user import userlist
     return HttpResponse(json.dumps({'userlist': userlist(), 'barstatus': get_barstatus(request)}), content_type="application/json")

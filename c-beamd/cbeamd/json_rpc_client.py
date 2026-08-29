@@ -11,6 +11,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, Optional
 
 import requests
+from django.http import HttpResponse
 
 logger = logging.getLogger(__name__)
 

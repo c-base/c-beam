@@ -1,50 +1,42 @@
 # -*- coding: utf-8 -*-
 """
-Shared helpers and utilities for views.
+Shared state, constants and helper functions used across the view modules.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
 import csv
-import json
 import logging
-import os
-import random
-import re
 import smtplib
 import ssl
 import string
-import traceback
-from datetime import date, datetime, timedelta
+from datetime import timedelta
 from email.mime.text import MIMEText
 from random import choice
-from threading import Timer
-from urllib.request import urlopen
 
 import cbeamdcfg as cfg
-import feedparser
-import paho.mqtt.client as paho
-import requests
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render
-from django.template import Context, loader
+from django.http import HttpResponse
 from django.utils import timezone
-from ics import Calendar
+from ..json_rpc_client import jsonrpc_method
 
-from .. import models
-from ..tools.ddate import DDate
+from ..models import User, UserStatsEntry
 from ..tools.handTranslate import HandTranslate
 from ..tools.LEDStripe import *
-
-# cerebrum was originally a ServiceProxy that was commented out in views.py
-# cerebrum = ServiceProxy('http://c-leuse.cbrp3.c-base.org:7777/')
-cerebrum = None
 
 logger = logging.getLogger(__name__)
 hysterese = 15
 eta_timeout = 120
 
+# TODO: move strings to settings
 # mqtt = paho.Client("c-beam")  # Temporarily disabled for testing
 mqttserver = "127.0.0.1"
-
+# cout = ServiceProxy('http://shout.cbrp3.c-base.org:1775/')
+# ampelrpc = ServiceProxy('http://10.0.1.24:1337/')
+# nerdctrl_cout = ServiceProxy('http://nerdctrl.cbrp3.c-base.org:1775/')
+# cerebrum = ServiceProxy('http://c-leuse.cbrp3.c-base.org:7777/')
+# portal = ServiceProxy('https://c-portal.c-base.org/rpc/')
+# monitord = ServiceProxy('http://:c-leuse.cbrp3.c-base.org:9090/')
+# c_leuse_c_out = ServiceProxy('http://c-leuse.cbrp3.c-base.org:1775/')
 artefact_base_url = "http://[2a02:f28:4::6b39:2d00]/artefact/"
 
 newarrivallist = {}
@@ -78,7 +70,6 @@ c_out_volume = 0
 
 hand = HandTranslate()
 
-
 def AddPadding(data, interrupt, pad, block_size):
     new_data = ''.join([data, interrupt])
     new_data_len = len(new_data)
@@ -106,9 +97,9 @@ def getuser(user):
     if user == "azt":
         user = "pille"
     try:
-        u = models.User.objects.get(username=user)
+        u = User.objects.get(username=user)
     except Exception:
-        u = models.User(username=user, logintime=timezone.now() - timedelta(seconds=hysterese), extendtime=timezone.now() - timedelta(
+        u = User(username=user, logintime=timezone.now() - timedelta(seconds=hysterese), extendtime=timezone.now() - timedelta(
             seconds=hysterese), logouttime=timezone.now() - timedelta(seconds=hysterese), status="unknown")
         u.save()
     return u
@@ -121,27 +112,43 @@ def getuser_eta(user):
     if user == "azt":
         user = "pille"
     try:
-        u = models.User.objects.get(username=user)
+        u = User.objects.get(username=user)
     except Exception:
         return None
     return u
 
 
+def is_logged_in(user):
+    if user == "nielc":
+        user = "keiner"
+    if user == "azt":
+        user = "pille"
+    return len(User.objects.filter(username=user, status="online")) > 0
+
+
 def userlist():
-    return [str(user) for user in models.User.objects.filter(status="online").order_by('username')]
+    return [str(user) for user in User.objects.filter(status="online").order_by('username')]
 
 
 def userlist_with_online_percentage():
-    return [str(user) + " (" + user.online_percentage() + "%)" for user in models.User.objects.filter(status="online").order_by('username')]
+    return [str(user) + " (" + user.online_percentage() + "%)" for user in User.objects.filter(status="online").order_by('username')]
 
 
-def is_logged_in(user):
-    u = models.User.objects.filter(username=user)
-    if len(u) > 0:
-        u = u[0]
-        if u.status == "online":
-            return True
-    return False
+@jsonrpc_method('log_stats')
+def log_stats():
+    u = UserStatsEntry()
+    u.usercount = len(User.objects.filter(status="online"))
+    u.etacount = len(User.objects.filter(status="eta"))
+    # u.save()
+    return str(u)
+
+
+@jsonrpc_method('get_stats')
+def get_stats(request):
+    """
+    returns the currents user stats
+    """
+    return str(UserStatsEntry.objects.all())
 
 
 def publish(topic, payload, retain=False):
@@ -160,28 +167,6 @@ def publish(topic, payload, retain=False):
         pass
 
 
-def log_stats():
-    from .models import UserStatsEntry
-    now = timezone.now()
-    entry, created = UserStatsEntry.objects.get_or_create(date=now.date())
-    entry.count += 1
-    entry.save()
-
-
-def get_stats():
-    from .models import UserStatsEntry
-    return list(UserStatsEntry.objects.all().values())
-
-
-def get_prices():
-    prices = []
-    with open('preise.csv', 'r') as csvfile:
-        pricereader = csv.reader(csvfile, delimiter=';', quotechar='"')
-        for row in pricereader:
-            prices.append(row)
-    return prices
-
-
 def create_random_password(length):
     chars = string.letters + string.digits
     return ''.join(choice(chars) for _ in range(length))
@@ -198,3 +183,12 @@ def send_mail(recipient, text):
     s.quit()
 
     return "aye"
+
+
+def get_prices():
+    prices = []
+    with open('preise.csv', 'r') as csvfile:
+        pricereader = csv.reader(csvfile, delimiter=';', quotechar='"')
+        for row in pricereader:
+            prices.append(row)
+    return prices

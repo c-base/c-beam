@@ -1,24 +1,30 @@
 # -*- coding: utf-8 -*-
 """
-Authentication views - Login and Logout functionality.
+Login / logout views.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
 import json
 from datetime import timedelta
 
+import cbeamdcfg as cfg
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils import timezone
-
 from ..json_rpc_client import jsonrpc_method
-from .helpers import (
-    getuser, hysterese, log_stats, newarrivallist, publish, reply
-)
-from .audio import tts
-from .user import getnickspell, is_logged_in
 
+from ..models import User
+from ..tools.LEDStripe import *
 
-@jsonrpc_method('login_with_id')
+from . import helpers
+from .helpers import hysterese, logger
+from .activity import logactivity
+from .audio import monmessage, tts
+from .helpers import getuser, is_logged_in, log_stats, publish, reply
+from .missions import gcm_send
+from .user import getnickspell, who_result
+
 def login_with_id(request, user):
     return "not implemented yet"
 
@@ -28,6 +34,7 @@ def login(request, user):
     """
     login in to c-beam
     """
+
     u = getuser(user)
     if u.logouttime + timedelta(seconds=hysterese) > timezone.now():
         return reply(request, "hysterese")
@@ -37,42 +44,54 @@ def login(request, user):
 @jsonrpc_method('force_login')
 def force_login(request, user):
     """
-    login to c-beam ignoring the current status
+    login in to c-beam ignoring the current online state
     """
-    from .user import who_result
-    from .helpers import logger
     u = getuser(user)
+    welcometts(request, u.username)
     try:
-        # monitord.login(u.username)
-        pass
+        monitord.login(u.username)
     except Exception:
         pass
+    logger.error(u.no_google)
+    if not u.no_google:
+        try:
+            gcm_send(request, 'now boarding', u.username)
+        except Exception:
+            pass
     payload = {'user': str(u.username), 'timestamp': timezone.localtime(timezone.now()).strftime("%H:%M")}
-    publish("user/entering", json.dumps(payload))
+    publish("user/boarding", json.dumps(payload))
     publish('user/who', json.dumps(who_result()), retain=True)
+
+    # publish("nerdctrl/open", "https://c-beam.cbrp3.c-base.org/welcome/%s" % str(u.username))
+    if u.status == "eta":
+        u.eta = ""
+    oldstatus = u.status
     u.status = "online"
     u.logintime = timezone.now()
+    u.extendtime = timezone.now()
     u.save()
     log_stats()
-    # logactivity(request, user, "login")
-    newarrivallist[u.username] = timezone.now()
+    if u.logouttime + timedelta(minutes=60) < timezone.now() and oldstatus in ["offline", "eta"]:
+        logactivity(request, user, "login", 1)
+    helpers.newarrivallist[u.username] = timezone.now()
     return reply(request, "%s logged in" % u.username)
 
 
 @jsonrpc_method('stealth_login')
 def stealth_login(request, user):
     """
-    login to c-beam without text-to-speech greeting
+    log in to c-beam without text-to-speech greeting
     """
     u = getuser(user)
-    if u.logouttime + timedelta(seconds=hysterese) > timezone.now():
-        return reply(request, "hysterese")
-    else:
-        u.status = "online"
-        u.logintime = timezone.now()
-        u.save()
-        log_stats()
-        newarrivallist[u.username] = timezone.now()
+    if u.status == "eta":
+        u.eta = ""
+    u.status = "online"
+    u.logintime = timezone.now()
+    u.extendtime = timezone.now()
+    u.save()
+    log_stats()
+    # logactivity(request, user, "login")
+    helpers.newarrivallist[u.username] = timezone.now()
     return reply(request, "%s logged in" % u.username)
 
 
@@ -113,11 +132,9 @@ def force_logout(request, user):
     """
     log out from c-beam ignoring the current status
     """
-    from .user import who_result
     u = getuser(user)
     try:
-        # monitord.logout(u.username)
-        pass
+        monitord.logout(u.username)
     except Exception:
         pass
     payload = {'user': str(u.username), 'timestamp': timezone.localtime(timezone.now()).strftime("%H:%M")}
@@ -129,7 +146,6 @@ def force_logout(request, user):
     u.save()
     log_stats()
     if u.logintime + timedelta(minutes=60) < timezone.now() and oldstatus == "online":
-        from .activity import logactivity
         logactivity(request, user, "logout", 2)
     return reply(request, "%s logged out" % u.username)
 
@@ -146,7 +162,6 @@ def login_wlan(request, user):
     """
     login to c-beam via wifi
     """
-    from .helpers import logger
     u = getuser(user)
     if u.stealthmode > timezone.now():
         return "user in stealth mode"
@@ -179,9 +194,7 @@ def tagevent(request, user):
 
 @jsonrpc_method('unknown_tag')
 def unknown_tag(request, rfid):
-    from .helpers import models
-    from .audio import monmessage
-    u = models.User.objects.filter(rfid__icontains=rfid)
+    u = User.objects.filter(rfid__icontains=rfid)
     if len(u) > 0:
         return tagevent(request, u[0].username)
     else:
@@ -196,5 +209,4 @@ def welcometts(request, user):
         if user == "kristall":
             tts(request, "Julia", "a loa crew")
         else:
-            from .helpers import cfg
             tts(request, "Julia", cfg.ttsgreeting % getnickspell(request, user))

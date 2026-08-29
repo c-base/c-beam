@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-User preference views - stats, push notifications, stealth mode.
+User preference toggles.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
 import json
@@ -10,22 +12,32 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
-
 from ..json_rpc_client import jsonrpc_method
-from .helpers import c_out_volume, getuser, models, send_mail, create_random_password
+
+from ..models import User
+from ..tools.LEDStripe import *
+
+from . import helpers
+from .helpers import getuser, send_mail
 
 
-reminder_store = {}
+@jsonrpc_method('isWifiLoginEnabled()')
+def isWifiLoginEnabled(request, users):
+    return {user.username: user.wlanlogin for user in User.objects.filter(username__in=users)}
 
 
-def reminder():
-    return reminder_store
+@jsonrpc_method('set_wlan_login')
+def set_wlan_login(request, user, enabled):
+    u = getuser(user)
+    u.wlanlogin = enabled
+    u.save()
+    return "aye"
 
 
 @jsonrpc_method('set_stats_enabled')
 def set_stats_enabled(request, user, is_enabled):
     """
-    enable or disable stats tracking for user
+    enable or disable c-game stats
     """
     u = getuser(user)
     if type(is_enabled) is bool:
@@ -92,24 +104,26 @@ def set_push_eta(request, user, is_enabled):
 
 @login_required
 def c_out_volume_web(request):
-    volume = c_out_volume
+    volume = helpers.c_out_volume
     return render(request, 'cbeamd/c_out_volume.django', locals())
 
 
 @login_required
 def c_out_volume_json(request):
-    return HttpResponse(json.dumps({'volume': c_out_volume}), content_type="application/json")
+    return HttpResponse(json.dumps({'volume': helpers.c_out_volume}), content_type="application/json")
 
 
 def c_out_volume_set(request, volume):
-    global c_out_volume
-    c_out_volume = volume
+    helpers.c_out_volume = volume
     return HttpResponse(json.dumps({'result': "OK"}), content_type="application/json")
 
 
 @jsonrpc_method('set_first_password')
 def set_first_password(request, user):
     u = getuser(user)
+    # u.tmp_password = create_random_password(16)
+    # u.save()
+    # send mail to "%s@c-base.org" % u.username including u.tmp_password
     recipient = '%s@c-base.org' % u.username
     token = 'generierteseinmaltoken'
     text = 'hallo %s\n\n' % u.username
@@ -132,20 +146,7 @@ def set_stealthmode(request, user, duration):
     return "aye"
 
 
-@jsonrpc_method('get_stealthmode')
+# @jsonrpc_method('get_stealthmode')
 def get_stealthmode(request, user):
     u = getuser(user)
     return str(u.stealthmode)
-
-
-@jsonrpc_method('set_wlan_login')
-def set_wlan_login(request, user, enabled):
-    u = getuser(user)
-    u.wlanlogin = enabled
-    u.save()
-    return "aye"
-
-
-@jsonrpc_method('isWifiLoginEnabled()')
-def isWifiLoginEnabled(request, users):
-    return {user.username: user.wlanlogin for user in models.User.objects.filter(username__in=users)}

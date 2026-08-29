@@ -1,80 +1,101 @@
 # -*- coding: utf-8 -*-
 """
-Web page rendering views.
+HTML front-end views.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
+
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, render
+from django.template import Context, loader
+from ..json_rpc_client import jsonrpc_method
 
-from .helpers import models, getuser
-from .user import userlist, userlist_with_online_percentage
+from ..forms import UserForm
+from ..models import ActivityLog, User
+from ..tools.LEDStripe import *
 
+from .helpers import logger
+from .helpers import getuser
 
-@login_required
 def index2(request):
-    return render(request, 'cbeamd/index.django', {
-        'userlist': userlist(),
-        'userlist_with_online_percentage': userlist_with_online_percentage()
+    online_users_list = User.objects.filter(status="online").order_by('username')
+    eta_list = User.objects.filter(status="eta").order_by('username')
+    t = loader.get_template('cbeamd/index.django')
+    c = Context({
+        'online_users_list': online_users_list,
+        "eta_list": eta_list,
     })
+    return HttpResponse(t.render(c))
 
 
 @login_required
 def index(request):
-    return render(request, 'cbeamd/index.django', {
-        'userlist': userlist(),
-        'userlist_with_online_percentage': userlist_with_online_percentage()
-    })
+    logger.error("FOOOOOOOOOOOOO")
+    user_list_online = User.objects.filter(status="online").order_by('username')
+    user_list_eta = User.objects.filter(status="eta").order_by('username')
+    user_list_offline = User.objects.filter(status="offline").order_by('username')
+    al = ActivityLog.objects.order_by('-timestamp')[:20]
+    rev = list(al)
+    rev.reverse()
+    return render(request, 'cbeamd/index.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all', 'activitylog': rev})
 
 
 @login_required
-def user(request):
-    return render(request, 'cbeamd/user.django', {'userlist': userlist()})
+def user(request, user_id):
+    u = get_object_or_404(User, pk=user_id)
+    return render(request, 'cbeamd/user_detail.django', {'user': u})
 
 
 @login_required
 def user_online(request):
-    return render(request, 'cbeamd/user_online.django', {'userlist': userlist()})
+    user_list = User.objects.filter(status="online").order_by('username')
+    return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'online'})
 
 
 @login_required
 def user_offline(request):
-    return render(request, 'cbeamd/user_offline.django', {'userlist': userlist()})
+    user_list = User.objects.filter(status="offline").order_by('username')
+    return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'offline'})
 
 
 @login_required
 def user_eta(request):
-    from .eta import etalist
-    return render(request, 'cbeamd/user_eta.django', {'etalist': etalist()})
+    user_list = User.objects.filter(status="eta").order_by('username')
+    return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'eta'})
 
 
 @login_required
 def user_all(request):
-    return render(request, 'cbeamd/user_all.django', {'userlist': userlist()})
+    user_list_online = User.objects.all().order_by('username')
+    return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'all'})
 
 
 @login_required
 def user_list_web(request):
-    return render(request, 'cbeamd/user_list.django', {
-        'userlist': userlist(),
-        'userlist_with_online_percentage': userlist_with_online_percentage()
-    })
+    user_list_online = User.objects.filter(status="online").order_by('username')
+    user_list_eta = User.objects.filter(status="eta").order_by('username')
+    user_list_offline = User.objects.filter(status="offline").order_by('username')
+    return render(request, 'cbeamd/user_list.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all'})
 
 
-@login_required
+@jsonrpc_method('user_list')
 def user_list(request):
-    return render(request, 'cbeamd/user_list.django', {'userlist': userlist()})
+    users = User.objects.all().order_by('username')
+    return [user.dic() for user in users]
 
 
-@login_required
+@jsonrpc_method('stats_list')
 def stats_list(request):
-    from .helpers import get_stats
-    return render(request, 'cbeamd/stats_list.django', {'stats': get_stats()})
+    user_list = sorted(list(User.objects.filter(stats_enabled=True).exclude(ap=0)), key=lambda x: x.calc_ap(), reverse=True)
+    return [user.dic() for user in user_list]
 
 
 @login_required
 def stats(request):
-    from .helpers import get_stats
-    return render(request, 'cbeamd/stats.django', {'stats': get_stats()})
+    user_list = sorted(list(User.objects.filter(stats_enabled=True).exclude(ap=0)), key=lambda x: x.calc_ap(), reverse=True)
+    return render(request, 'cbeamd/stats.django', {'user_list': [user.dic() for user in user_list]})
 
 
 @login_required
@@ -94,7 +115,6 @@ def c_buttons(request):
 
 @login_required
 def profile_edit(request):
-    from ..forms import UserForm
     if request.method == "POST":
         u = getuser(request.user.username)
         form = UserForm(request.POST, instance=u)

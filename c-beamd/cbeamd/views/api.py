@@ -1,16 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-REST API ViewSets.
+Django REST Framework viewsets.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
+
 import requests
+from django.http import HttpResponse
 from rest_framework import permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from .. import models
+from ..models import User
 from ..serializers import UserSerializer
+from ..tools.LEDStripe import *
 
+from .bar import get_barstatus
+from .events import event_list
+from .helpers import get_prices
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -31,7 +39,7 @@ class UserViewSet(viewsets.ModelViewSet):
     ## Delete user
     Removes a user from the system.
     """
-    queryset = models.User.objects.all()
+    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -47,7 +55,7 @@ class MemberViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        queryset = models.User.objects.filter(status="online").order_by('username')
+        queryset = User.objects.filter(status="online").order_by('username')
         serializer = UserSerializer(queryset, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -63,7 +71,6 @@ class PriceViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        from .helpers import get_prices
         return Response(get_prices())
 
 
@@ -78,7 +85,6 @@ class EventViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        from .events import event_list
         return Response(event_list(request))
 
 
@@ -93,7 +99,6 @@ class BarViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        from .bar import get_barstatus
         return Response(get_barstatus(request))
 
 
@@ -154,7 +159,6 @@ class MatelightViewSet(viewsets.ViewSet):
         if video:
             url = "http://matelight.cbrp3.c-base.org/assets/thumbs/" + video['thumbnailName']
             response = requests.get(url=url)
-            from django.http import HttpResponse
             return HttpResponse(response.content, content_type='image/jpeg')
         else:
             return Response(status=status.HTTP_404_NOT_FOUND)

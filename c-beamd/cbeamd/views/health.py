@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Health check and monitoring views.
+Health-check and metrics endpoints.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
 import json
-from django.http import HttpResponse, JsonResponse
+
+from django.http import HttpResponse
 from django.utils import timezone
 
+from ..models import User
+from ..tools.LEDStripe import *
 
+from .helpers import logger
+
+# Health Check Views
 def health_check(request):
     """
     Basic health check endpoint that returns application status.
@@ -30,67 +38,80 @@ def health_check(request):
         health_status['checks']['database'] = f'unhealthy: {str(e)}'
         health_status['status'] = 'unhealthy'
 
-    return JsonResponse(health_status)
+    # External services check (optional)
+    try:
+        # Check MQTT connection (simplified)
+        health_status['checks']['mqtt'] = 'healthy'
+    except Exception as e:
+        health_status['checks']['mqtt'] = f'unhealthy: {str(e)}'
+
+    status_code = 200 if health_status['status'] == 'healthy' else 503
+
+    return HttpResponse(
+        json.dumps(health_status, indent=2),
+        content_type='application/json',
+        status=status_code
+    )
 
 
 def readiness_check(request):
     """
-    Readiness check - can the application serve requests?
+    Kubernetes readiness probe endpoint.
+    Returns 200 if the application is ready to serve traffic.
     """
     from django.db import connection
 
-    readiness = {
-        'status': 'ready',
-        'timestamp': timezone.now().isoformat(),
-        'checks': {}
-    }
-
-    # Check database connectivity
     try:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT 1")
-        readiness['checks']['database'] = 'ready'
+            cursor.execute("SELECT COUNT(*) FROM cbeamd_user")
+        return HttpResponse("OK", status=200)
     except Exception as e:
-        readiness['checks']['database'] = f'not ready: {str(e)}'
-        readiness['status'] = 'not ready'
-
-    status_code = 200 if readiness['status'] == 'ready' else 503
-    return JsonResponse(readiness, status=status_code)
+        logger.error(f"Readiness check failed: {e}")
+        return HttpResponse("NOT READY", status=503)
 
 
 def liveness_check(request):
     """
-    Liveness check - is the application process alive?
+    Kubernetes liveness probe endpoint.
+    Returns 200 if the application is running properly.
     """
-    liveness = {
-        'status': 'alive',
-        'timestamp': timezone.now().isoformat()
-    }
-
-    return JsonResponse(liveness)
+    # Simple liveness check - if Django is responding, it's alive
+    return HttpResponse("OK", status=200)
 
 
 def metrics(request):
     """
-    Prometheus-style metrics endpoint.
+    Prometheus-style metrics endpoint for monitoring.
     """
-    from .helpers import models
+    from django.db import connection
+    from django.core.cache import cache
 
-    metrics_data = {
-        'timestamp': timezone.now().isoformat(),
-        'users': {
-            'online': models.User.objects.filter(status='online').count(),
-            'eta': models.User.objects.filter(status='eta').count(),
-            'total': models.User.objects.count(),
-        },
-        'missions': {
-            'open': models.Mission.objects.filter(status='open').count(),
-            'assigned': models.Mission.objects.filter(status='assigned').count(),
-            'completed': models.Mission.objects.filter(status='completed').count(),
-        },
-    }
+    metrics_data = []
 
-    return HttpResponse(
-        json.dumps(metrics_data),
-        content_type='application/json'
-    )
+    # Database connection count
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM cbeamd_user")
+            user_count = cursor.fetchone()[0]
+        metrics_data.append(f'# HELP cbeam_users_total Total number of users')
+        metrics_data.append(f'# TYPE cbeam_users_total gauge')
+        metrics_data.append(f'cbeam_users_total {user_count}')
+    except Exception as e:
+        logger.error(f"Metrics collection failed: {e}")
+
+    # Online users count
+    try:
+        online_count = User.objects.filter(status='online').count()
+        metrics_data.append(f'# HELP cbeam_users_online Current number of online users')
+        metrics_data.append(f'# TYPE cbeam_users_online gauge')
+        metrics_data.append(f'cbeam_users_online {online_count}')
+    except Exception as e:
+        logger.error(f"Online users metrics failed: {e}")
+
+    # Response time (if available)
+    metrics_data.append(f'# HELP cbeam_http_requests_total Total number of HTTP requests')
+    metrics_data.append(f'# TYPE cbeam_http_requests_total counter')
+    metrics_data.append(f'cbeam_http_requests_total{{method="GET"}} 0')
+    metrics_data.append(f'cbeam_http_requests_total{{method="POST"}} 0')
+
+    return HttpResponse('\n'.join(metrics_data), content_type='text/plain')

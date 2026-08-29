@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-ETA (Estimated Time of Arrival) tracking views.
+ETA / arrival tracking.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
 import json
@@ -8,15 +10,43 @@ import re
 from datetime import datetime, timedelta
 
 from django.utils import timezone
-
 from ..json_rpc_client import jsonrpc_method
-from .helpers import (
-    eta_timeout, getuser, getuser_eta, log_stats, models,
-    newetalist, publish, reply
-)
-from .audio import tts
-from .user import getnickspell
 
+from ..models import Mission, User
+from ..tools.LEDStripe import *
+
+from . import helpers
+from .helpers import eta_timeout
+from .audio import tts
+from .helpers import getuser, getuser_eta, log_stats, publish, userlist
+from .missions import gcm_send
+from .stripe import set_stripe_default
+from .user import getnickspell, who_result
+
+
+@jsonrpc_method('available')
+def available(request):
+    cleanup(request)
+    return userlist()
+
+
+def etalist():
+    result = {}
+    for u in User.objects.filter(status="eta").order_by('username'):
+        result[u.username] = u.eta
+    return result
+
+
+@jsonrpc_method('who')
+def who(request):
+    """list all user that have logged in."""
+    cleanup(request)
+    return who_result()
+
+
+#################################################################
+# ETA
+#################################################################
 
 @jsonrpc_method('eta')
 def eta(request, user, text):
@@ -30,6 +60,11 @@ def eta(request, user, text):
     if user == 'bernd':
         return "meh"
 
+    # if the first argument is a weekday, delegate to LTE
+    # TODO
+    # if text[:2].upper() in weekdays:
+        # return lte(bot, ievent)
+
     if text in ('gleich', 'bald', 'demnaechst', 'demnächst', 'demn\xe4chst'):
         etaval = datetime.now() + timedelta(minutes=30)
         eta = etaval.strftime("%H%M")
@@ -37,10 +72,13 @@ def eta(request, user, text):
         foo = int(text[1:])
         etaval = datetime.now() + timedelta(minutes=foo)
         eta = etaval.strftime("%H%M")
+    # elif ievent.rest == 'heute nicht mehr':
+    #    eta = "0"
     else:
         eta = text
-    # remove superfluous colons
+    # remove superflous colons
     eta = re.sub(r'(\d\d):(\d\d)', r'\1\2', eta)
+    # eta = re.sub(r'(\d\d).(\d\d)',r'\1\2',eta)
 
     if eta != "0" and extract_eta(eta) == "9999":
         return 'err_timeparser'
@@ -57,11 +95,13 @@ def seteta(request, user, eta):
     """
     set eta for user to the time specified in eta (HHMM)
     """
+    # data['newetas'][user] = eta
+
     u = getuser_eta(user)
     if u is None:
         return "you do not exist"
 
-    newetalist[user] = eta
+    helpers.newetalist[user] = eta
     if eta == '0':
         # delete eta for user
         u.eta = ""
@@ -86,12 +126,12 @@ def seteta(request, user, eta):
         u.save()
         if not u.no_google:
             try:
-                from .missions import gcm_send
                 gcm_send(request, 'ETA', '%s (%s)' % (user, eta))
             except Exception:
                 pass
         payload = {'user': str(u.username), 'timestamp': timezone.localtime(timezone.now()).strftime("%H:%M"), 'eta': eta}
         publish("user/eta", json.dumps(payload))
+        # publish("user/eta", '%s (%s)' % (user, eta))
         log_stats()
         return 'eta_set'
 
@@ -104,17 +144,10 @@ def extract_eta(text):
         return "9999"
 
 
-def etalist():
-    result = {}
-    for u in models.User.objects.filter(status="eta").order_by('username'):
-        result[u.username] = u.eta
-    return result
-
-
 @jsonrpc_method('subeta')
 def subeta(request, user):
     """
-    subscribe to ETA notifications via XMPP/IRC
+    subscripe to ETA notifications via XMPP/IRC
     """
     u = getuser(user)
     u.etasub = True
@@ -124,7 +157,7 @@ def subeta(request, user):
 @jsonrpc_method('unsubeta')
 def unsubeta(request, user):
     """
-    unsubscribe to ETA notifications via XMPP/IRC
+    unsubscripe to ETA notifications via XMPP/IRC
     """
     u = getuser(user)
     u.etasub = False
@@ -153,53 +186,42 @@ def unsubarrive(request, user):
 
 @jsonrpc_method('newetas')
 def newetas(request):
-    tmp = newetalist
-    newetalist.clear()
-    newetalist.update({})
+    tmp = helpers.newetalist
+    helpers.newetalist = {}
     return tmp
 
 
 @jsonrpc_method('arrivals')
 def arrivals(request):
-    from .helpers import newarrivallist
-    tmp = newarrivallist
-    newarrivallist.clear()
-    newarrivallist.update({})
+    tmp = helpers.newarrivallist
+    helpers.newarrivallist = {}
     return tmp
 
 
 @jsonrpc_method('achievements')
 def achievements(request):
-    from .helpers import achievements as achievements_store
-    tmp = achievements_store
-    achievements_store.clear()
-    achievements_store.update({})
+    tmp = helpers.achievements
+    helpers.achievements = {}
     return tmp
 
 
 @jsonrpc_method('activities')
 def activities(request):
-    from .helpers import newactivities
-    tmp = newactivities
-    newactivities.clear()
+    tmp = helpers.newactivities
+    helpers.newactivities = []
     return tmp
 
 
 @jsonrpc_method('cleanup')
 def cleanup(request):
-    """
-    Clean up expired users, ETAs, and missions.
-    """
-    from .stripe import set_stripe_default
-    from .user import userlist, who_result
-    from .helpers import log_stats, models, mission_completed, publish
-
     users = userlist()
     usercount = len(users)
     autologout = False
 
+    now = int(timezone.now().strftime("%Y%m%d%H%M%S"))
+
     # remove expired users
-    for u in models.User.objects.filter(status="online"):
+    for u in User.objects.filter(status="online"):
         if u.autologout_in() <= 0:
             autologout = True
             u.status = "offline"
@@ -208,12 +230,14 @@ def cleanup(request):
             log_stats()
 
     # remove expired ETAs
-    for u in models.User.objects.filter(status="eta"):
+    for u in User.objects.filter(status="eta"):
         if u.etatimestamp < timezone.now():
             u.eta = ""
             u.status = "offline"
             u.save()
             log_stats()
+
+    # remove expired ETDs
 
     if autologout:
         try:
@@ -221,18 +245,10 @@ def cleanup(request):
         except Exception:
             pass
 
-    for mission in models.Mission.objects.filter(status=mission_completed).filter(repeat_after_days__gte=0):
+    for mission in Mission.objects.filter(status="completed").filter(repeat_after_days__gte=0):
         if mission.completed_on + timedelta(mission.repeat_after_days) > timezone.now():
             mission.status = "open"
             mission.save()
 
     publish('user/who', json.dumps(who_result()), retain=True)
     return "aye"
-
-
-@jsonrpc_method('who')
-def who(request):
-    """list all user that have logged in."""
-    cleanup(request)
-    from .user import who_result
-    return who_result()

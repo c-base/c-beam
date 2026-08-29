@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Audio and TTS (Text-to-Speech) views - c_out, play, voices.
+c_out audio: TTS, sounds and volume.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
-from django.shortcuts import render
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 from ..json_rpc_client import jsonrpc_method
-from .helpers import publish, reply
+
+from ..models import User
+from ..tools.LEDStripe import *
+
+from .helpers import getuser, publish
 
 
 @jsonrpc_method('monmessage')
@@ -27,6 +34,10 @@ def tts(request, voice, text):
     perform text-to-speech over c_out with voice saying text
     """
     result = "aye"
+    # try:
+    #     result = cout.tts(voice, text)
+    # except:
+    #     pass
     return result
 
 
@@ -48,6 +59,10 @@ def play(request, file):
         publish("c_out/loop", "")
     else:
         publish("c_out/play", str(file))
+    # try:
+        # result = cout.play(file)
+    # except:
+        # pass
     return result
 
 
@@ -110,23 +125,30 @@ def announce(request, text):
     return result
 
 
+@login_required
 def c_out_web(request):
-    return c_out(request)
+    return render(request, 'cbeamd/c_out.django', {'sound_list': sounds(request)})
 
 
+@login_required
 def c_out_play_web(request, sound):
-    return play(request, sound)
+    result = play(request, sound)
+    return render(request, 'cbeamd/c_out.django', {'sound_list': sounds(request), 'result': "sound wurde abgespielt"})
 
+
+#################################################################
+# reminder methods
+#################################################################
 
 @jsonrpc_method('remind')
-def remind(request, user, text):
-    from .preferences import reminder
-    r = reminder()
-    r[user] = text
+def remind(user, reminder):
+    u = getuser(user)
+    u.reminder = reminder
     return "aye"
 
 
-@jsonrpc_method('reminder')
-def reminder_view(request):
-    from .preferences import reminder
-    return reminder()
+def reminder():
+    result = {}
+    for u in User.objects.filter(status="eta"):
+        result[u.username] = u.reminder
+    return result

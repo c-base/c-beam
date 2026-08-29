@@ -1,128 +1,126 @@
 # -*- coding: utf-8 -*-
 """
-Hardware storage and artefact views.
+Hardware, artefacts and portal articles.
+
+Split out of the original views.py; function bodies are unchanged.
 """
 
-import json
-from django.http import HttpResponse
+import sys
+import traceback
+from threading import Timer
+from urllib.request import urlopen
+
 from django.shortcuts import render
 from django.utils import timezone
-
 from ..json_rpc_client import jsonrpc_method
-from .helpers import (
-    artefact_base_url, artefactcache, artefactcache_time, hwstorage_state, models, publish
-)
+
+from ..models import Mission
+from ..tools.LEDStripe import *
+from ..tools.MyHTMLParser import MyHTMLParser
+
+from . import helpers
+from .helpers import logger
+from .activity import activitylog
+from .audio import sounds
+from .bar import get_barstatus
+from .events import event_list
+from .web import stats_list, user_list
 
 
+@jsonrpc_method('smile', authenticated=True)
 def smile(request):
-    return render(request, 'cbeamd/smile.django', {})
+    return "aye"
 
 
+@jsonrpc_method('bluewall()')  # , authenticated=True, validate=True)
 def bluewall(request):
-    return render(request, 'cbeamd/bluewall.django', {})
+    return "culd not available"
 
 
+@jsonrpc_method('darkwall()')  # , authenticated=True, validate=True)
 def darkwall(request):
-    return render(request, 'cbeamd/darkwall.django', {})
+    return "culd not available"
 
 
+# @jsonrpc_method('hwstorage(Boolean)', authenticated=True, validate=True)
 @jsonrpc_method('hwstorage')
-def hwstorage(request, state):
-    global hwstorage_state
-    hwstorage_state = state
-    publish("hwstorage/state", state, retain=True)
+def hwstorage(request):
+    global timer
+    # global hwstorage_state
+    # if hwstorage_state == "open":
+    # return
+    # hwstorage_state = "open"
 
     def close():
-        global hwstorage_state
-        hwstorage_state = "closed"
-        publish("hwstorage/state", "closed", retain=True)
-
-    if state == "open":
-        from threading import Timer
-        timer = Timer(60, close)
-        timer.start()
-
+        # hwstorage_state = "closed"
+        pass
+    timer = Timer(30.0, close)
+    timer.start()
     return "aye"
 
 
 def hwstorage_web(request):
-    return render(request, 'cbeamd/hwstorage.django', {'hwstorage_state': hwstorage_state})
+    result = hwstorage(request, True)
+    return render(request, 'cbeamd/c_buttons.django', {'result': 'Software-Endlager wurde geöffnet: %s' % result})
 
 
 @jsonrpc_method('artefact_list')
 def artefact_list(request):
     """
-    returns a list of artefacts
+    returns a list of available artefacts
     """
-    from datetime import timedelta
-    from urllib.request import urlopen
+    global artefact_base_url
+    artefactlist = {}
+    if True:  # artefactcache_time + timedelta(hours=1) < timezone.now():
+        parser = MyHTMLParser()
+        try:
+            response = urlopen("http://10.0.1.44/artefact/").read().decode('utf-8')
+            parser.feed(response)
+            artefacts = parser.get_artefacts()
+            artefactlist = [{'name': key, 'slug': artefacts[key]} for key in artefacts.keys()]
+            helpers.artefactcache = artefactlist
+            helpers.artefactcache_time = timezone.now()
+        except Exception as e:
+            logger.error(e)
+            traceback.print_exc(file=sys.stdout)
+    else:
+        artefactlist = helpers.artefactcache
+    # return sorted(artefactlist)
+    return artefactlist
 
-    global artefactcache, artefactcache_time
-    if artefactcache_time + timedelta(hours=1) > timezone.now():
-        return artefactcache
 
-    try:
-        result = urlopen(artefact_base_url + "json").read()
-        artefactcache = json.loads(result)
-        artefactcache_time = timezone.now()
-    except Exception:
-        pass
-
-    return artefactcache
-
-
-def artefact_base_url_view(request):
-    return artefact_base_url
+@jsonrpc_method('artefact_base_url')
+def artefact_base_url(request):
+    """
+    returns the base URL for artefacts
+    """
+    global artefact_base_url
+    return [artefact_base_url]
 
 
 def artefact_list_web(request):
-    return render(request, 'cbeamd/artefact_list.django', {'artefacts': artefact_list(request)})
+    return render(request, 'cbeamd/artefact_list.django', {'artefact_list': artefact_list(request)})
 
 
+@jsonrpc_method('list_articles')
 def list_articles(request):
-    from urllib.request import urlopen
-    import feedparser
-
-    try:
-        d = feedparser.parse('https://www.c-base.org/blog/feed/')
-    except Exception:
-        d = None
-
-    articles = []
-    if d is not None:
-        for entry in d['entries'][:10]:
-            articles.append({
-                'title': entry['title'],
-                'link': entry['link'],
-                'summary': entry.get('summary', ''),
-                'published': entry.get('published', ''),
-            })
-    return articles
+    """
+    returns a list of c_portal articles
+    """
+    return []  # portal.api.list_articles()
 
 
-@jsonrpc_method('log_stats')
-def log_stats_view():
-    from .helpers import log_stats
-    log_stats()
-    return "aye"
+def list_portal_articles():
+    result = []
+    # try: result = portal.api.list_articles()['result']
+    # except: pass
+    return result
 
 
-@jsonrpc_method('get_stats')
-def get_stats_view():
-    from .helpers import get_stats
-    return get_stats()
-
-
-def list_portal_articles(request):
-    return list_articles(request)
-
-
+@jsonrpc_method('app_data')
 def app_data(request):
-    from .events import event_list
-    from .eta import etalist
-    from .user import userlist
-    return {
-        'events': event_list(request),
-        'eta': etalist(),
-        'users': userlist(),
-    }
+    """
+    returns a large data structure that contains all current status information that is required by the c-beam app
+    """
+    missions = [mission.dic() for mission in Mission.objects.order_by('-status', 'short_description')]
+    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'barstatus': get_barstatus(request), 'articles': list_portal_articles(), 'sounds': sounds(request)}
