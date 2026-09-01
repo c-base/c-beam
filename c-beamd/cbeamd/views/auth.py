@@ -18,7 +18,7 @@ from ..models import User
 from ..tools.LEDStripe import *
 
 from . import helpers
-from .helpers import hysterese, logger
+from .helpers import hysterese, logger, monitord
 from .activity import logactivity
 from .audio import monmessage, tts
 from .helpers import getuser, is_logged_in, log_stats, publish, reply

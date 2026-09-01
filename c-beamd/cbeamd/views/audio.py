@@ -13,7 +13,7 @@ from ..json_rpc_client import jsonrpc_method
 from ..models import User
 from ..tools.LEDStripe import *
 
-from .helpers import getuser, publish
+from .helpers import cout, getuser, monitord, publish
 
 
 @jsonrpc_method('monmessage')
@@ -97,7 +97,7 @@ def sounds(request):
     """
     result = []
     try:
-        result = sorted(cout.sounds()['result'])
+        result = sorted(cout.sounds())
     except Exception:
         pass
     return result

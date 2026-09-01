@@ -15,7 +15,7 @@ from ..json_rpc_client import jsonrpc_method
 from ..models import Status
 from ..tools.LEDStripe import *
 
-from .helpers import logger
+from .helpers import c_leuse_c_out, logger
 from .helpers import get_prices, publish, userlist
 
 

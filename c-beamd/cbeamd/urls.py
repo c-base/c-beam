@@ -41,8 +41,10 @@ urlpatterns = [
     re_path(r'^mechblast_json$', views.mechblast_json, name='mechblast_json'),
 
     re_path(r'^admin/', admin.site.urls),
-    # re_path(r'^rpc/browse/', jsonrpc.views.browse, name='jsonrpc_browser'),
-    # re_path(r'^rpc/', jsonrpc_site.dispatch, name="jsonrpc_mountpoint"),  # Temporarily disabled for testing
+    # the json-rpc surface is open by design and relies on the crew-network
+    # boundary; individual methods can be tightened with
+    # @jsonrpc_method(..., authenticated=True), which the dispatcher enforces.
+    re_path(r'^rpc/$', views.jsonrpc_handler, name='jsonrpc_mountpoint'),
     # re_path(r'^user/(?P<user_id>\d+)/$', views.user),
     # re_path(r'^user/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail', dict(user_dict, template_name='user_detail.django'), user_dict),
     re_path(r'^user/online$', views.user_list_web, name='user_list_web'),

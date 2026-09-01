@@ -92,6 +92,10 @@ class User(models.Model):
         return 0.0
 
     def online_percentage(self):
+        # autologout is a user-editable field; 0 would otherwise take down every
+        # view that renders a user list
+        if not self.autologout:
+            return "0.00"
         return "%.2f" % (self.autologout_in() / self.autologout * 100)
 
     def calc_ap(self) -> int:

@@ -15,9 +15,10 @@ from email.mime.text import MIMEText
 from random import choice
 
 import cbeamdcfg as cfg
+from paho.mqtt import publish as mqtt_publish
 from django.http import HttpResponse
 from django.utils import timezone
-from ..json_rpc_client import jsonrpc_method
+from ..json_rpc_client import JSONRPCClient, jsonrpc_method
 
 from ..models import User, UserStatsEntry
 from ..tools.handTranslate import HandTranslate
@@ -28,15 +29,29 @@ hysterese = 15
 eta_timeout = 120
 
 # TODO: move strings to settings
-# mqtt = paho.Client("c-beam")  # Temporarily disabled for testing
 mqttserver = "127.0.0.1"
-# cout = ServiceProxy('http://shout.cbrp3.c-base.org:1775/')
-# ampelrpc = ServiceProxy('http://10.0.1.24:1337/')
-# nerdctrl_cout = ServiceProxy('http://nerdctrl.cbrp3.c-base.org:1775/')
-# cerebrum = ServiceProxy('http://c-leuse.cbrp3.c-base.org:7777/')
-# portal = ServiceProxy('https://c-portal.c-base.org/rpc/')
-# monitord = ServiceProxy('http://:c-leuse.cbrp3.c-base.org:9090/')
-# c_leuse_c_out = ServiceProxy('http://c-leuse.cbrp3.c-base.org:1775/')
+# clients for the collaborating c-base services. these replace the ServiceProxy
+# objects from the removed django-json-rpc package; JSONRPCClient is the
+# in-tree replacement and is lazy, so constructing one performs no i/o.
+#
+# note the semantic difference: ServiceProxy handed back the whole JSON-RPC
+# envelope, so call sites indexed ['result']. JSONRPCClient unwraps it and
+# returns the payload directly - the two call sites that did that have been
+# adjusted.
+def _service(url):
+    """a JSONRPCClient for url, or None when the url is blank (client disabled)."""
+    if not url:
+        return None
+    return JSONRPCClient(url, timeout=cfg.service_timeout)
+
+
+cout = _service(cfg.cout_url)
+ampelrpc = _service(cfg.ampelrpc_url)
+nerdctrl_cout = _service(cfg.nerdctrl_cout_url)
+cerebrum = _service(cfg.cerebrum_url)
+portal = _service(cfg.portal_url)
+monitord = _service(cfg.monitord_url)
+c_leuse_c_out = _service(cfg.c_leuse_c_out_url)
 artefact_base_url = "http://[2a02:f28:4::6b39:2d00]/artefact/"
 
 newarrivallist = {}
@@ -139,7 +154,7 @@ def log_stats():
     u = UserStatsEntry()
     u.usercount = len(User.objects.filter(status="online"))
     u.etacount = len(User.objects.filter(status="eta"))
-    # u.save()
+    u.save()
     return str(u)
 
 
@@ -152,19 +167,37 @@ def get_stats(request):
 
 
 def publish(topic, payload, retain=False):
+    """
+    publish one station-state message to the c-base mqtt broker.
+
+    uses paho's one-shot helper, which connects, flushes the message and
+    disconnects again. the previous implementation reconnected a single shared
+    client on every call and never disconnected it, and had been dead entirely
+    since the module-level client was commented out.
+    """
+    if not cfg.mqtt_enabled:
+        logger.debug("mqtt disabled, dropping publish to %s", topic)
+        return
+
+    auth = {'username': cfg.mqtt_client_name}
+    if cfg.mqtt_client_password:
+        auth['password'] = cfg.mqtt_client_password
+
+    tls = None
+    port = 1883
+    if cfg.mqtt_server_tls:
+        tls = {'ca_certs': cfg.mqtt_server_cert, 'cert_reqs': ssl.CERT_OPTIONAL}
+        port = 1884
+
     try:
-        mqtt.username_pw_set(cfg.mqtt_client_name, password=cfg.mqtt_client_password)
-        if cfg.mqtt_server_tls:
-            mqtt.tls_set(cfg.mqtt_server_cert, cert_reqs=ssl.CERT_OPTIONAL)
-            mqtt.connect(cfg.mqtt_server, port=1884)
-        else:
-            mqtt.connect(cfg.mqtt_server, port=1883)
-
-        mqtt.publish(topic, payload, qos=1, retain=retain)
-
-    except Exception as e:
-        logger.error(e)
-        pass
+        mqtt_publish.single(
+            topic, payload, qos=1, retain=retain,
+            hostname=cfg.mqtt_server, port=port, auth=auth, tls=tls,
+        )
+    except Exception:
+        # station state is best effort - a broker outage must not fail the
+        # request, but it should be visible in the log rather than silent
+        logger.warning("mqtt publish to %s failed", topic, exc_info=True)
 
 
 def create_random_password(length):

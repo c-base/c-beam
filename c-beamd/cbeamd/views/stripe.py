@@ -16,6 +16,7 @@ from ..models import User
 from ..tools.LEDStripe import *
 
 from . import helpers
+from .helpers import cerebrum
 
 #################################################################
 # cerebrum leds methods
@@ -34,7 +35,7 @@ def set_stripe_pattern(request, pattern_id):
     if pattern_id == 7:
         return cerebrum.statics()
     if pattern_id == 3:
-        patterns = cerebrum.get_patterns()['result']
+        patterns = cerebrum.get_patterns()
         return cerebrum.set_pattern(random.choice(patterns))
     # if pattern_id < 20:
     result = cerebrum.set_pattern(pattern_id)

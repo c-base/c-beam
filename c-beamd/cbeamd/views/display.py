@@ -22,7 +22,7 @@ from ..models import LTE, ActivityLog
 from ..tools.ddate import DDate
 from ..tools.LEDStripe import *
 
-from .helpers import cerebrum_state, hand, logger
+from .helpers import ampelrpc, cerebrum_state, hand, logger, monitord, nerdctrl_cout
 from .bar import get_barstatus
 from .helpers import publish, userlist_with_online_percentage
 

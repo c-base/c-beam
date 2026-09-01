@@ -10,6 +10,9 @@ from django.utils import timezone
 from datetime import timedelta
 
 from cbeamd.models import User
+# importing the views package is what registers the json-rpc methods;
+# without it the registry is empty and the registration tests below fail
+import cbeamd.views  # noqa: F401
 from cbeamd.json_rpc_client import (
     jsonrpc_method,
     get_jsonrpc_method,
@@ -21,11 +24,19 @@ from cbeamd.json_rpc_client import (
 )
 
 
+def _restore_registry(backup):
+    """Put the real registry back after a test that cleared it."""
+    _jsonrpc_method_registry.clear()
+    _jsonrpc_method_registry.update(backup)
+
+
 class TestJSONRPCDecorator(TestCase):
     """Tests for the @jsonrpc_method decorator and registry system."""
 
     def setUp(self):
         """Clear registry before each test."""
+        self._registry_backup = dict(_jsonrpc_method_registry)
+        self.addCleanup(_restore_registry, self._registry_backup)
         _jsonrpc_method_registry.clear()
 
     def test_decorator_registers_method(self):
@@ -179,6 +190,8 @@ class TestJSONRPCHandler(TestCase):
     def setUp(self):
         """Set up test client and clear registry."""
         self.client = Client()
+        self._registry_backup = dict(_jsonrpc_method_registry)
+        self.addCleanup(_restore_registry, self._registry_backup)
         _jsonrpc_method_registry.clear()
 
         # Register test methods
@@ -456,6 +469,8 @@ class TestJSONRPCEndpointSecurity(TestCase):
     def setUp(self):
         """Set up test client and clear registry."""
         self.client = Client()
+        self._registry_backup = dict(_jsonrpc_method_registry)
+        self.addCleanup(_restore_registry, self._registry_backup)
         _jsonrpc_method_registry.clear()
 
         @jsonrpc_method('safe_method')
@@ -512,6 +527,8 @@ class TestJSONRPCIntegration(TestCase):
     def setUp(self):
         """Set up test client and test data."""
         self.client = Client()
+        self._registry_backup = dict(_jsonrpc_method_registry)
+        self.addCleanup(_restore_registry, self._registry_backup)
         _jsonrpc_method_registry.clear()
 
         self.test_user = User.objects.create(
