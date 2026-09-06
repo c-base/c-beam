@@ -3,10 +3,6 @@ import os
 from django.urls import reverse_lazy
 from decouple import config
 
-import django
-from django.utils.encoding import smart_str
-django.utils.encoding.smart_text = smart_str
-
 # Django settings for cbeamd project.
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
