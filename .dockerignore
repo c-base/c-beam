@@ -16,6 +16,7 @@
 .env.*
 c-beamd/cbeamd/local_settings.py
 c-beamd/cbeamd/local_settings.py.*
+c-beamd/Makefile.local
 
 # local databases and runtime output
 **/*.sqlite

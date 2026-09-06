@@ -86,6 +86,13 @@ make docker-run-dev
 
 Both serve on <http://localhost:4254>.
 
+The make targets work with either engine: they call whichever of `docker` and
+`podman` is on `PATH`, docker first. Force one with `make CONTAINER=podman
+docker-run`, or pin it for this machine in an untracked `c-beamd/Makefile.local`
+(`CONTAINER := podman`), which can also override `image`, `name` and `port`. On
+an SELinux host, rootless podman may need `:z` appended to the bind mount in
+`docker-run-dev`.
+
 The database follows `DATABASE_NAME`. Under `docker-run` it defaults into the
 container's writable layer and dies with the container; to keep it, point
 `DATABASE_NAME` at `/data/c-beam.sqlite` and add `-v c-beamd-data:/data`.

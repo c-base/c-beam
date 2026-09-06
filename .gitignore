@@ -38,3 +38,6 @@ c-beamd/static_collected/
 
 # local settings override - imported last by settings.py, must never be shared
 c-beamd/cbeamd/local_settings.py
+
+# local, untracked make config (container engine, port, image name)
+c-beamd/Makefile.local
