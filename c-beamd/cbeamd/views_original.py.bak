@@ -73,7 +73,6 @@ mqttserver = "127.0.0.1"
 # ampelrpc = ServiceProxy('http://10.0.1.24:1337/')
 # nerdctrl_cout = ServiceProxy('http://nerdctrl.cbrp3.c-base.org:1775/')
 # cerebrum = ServiceProxy('http://c-leuse.cbrp3.c-base.org:7777/')
-# portal = ServiceProxy('https://c-portal.c-base.org/rpc/')
 # monitord = ServiceProxy('http://:c-leuse.cbrp3.c-base.org:9090/')
 # c_leuse_c_out = ServiceProxy('http://c-leuse.cbrp3.c-base.org:1775/')
 artefact_base_url = "http://[2a02:f28:4::6b39:2d00]/artefact/"
@@ -1446,18 +1445,6 @@ def artefact_base_url(request):
 def artefact_list_web(request):
     return render(request, 'cbeamd/artefact_list.django', {'artefact_list': artefact_list(request)})
 
-#################################################################
-# article handling
-#################################################################
-
-
-@jsonrpc_method('list_articles')
-def list_articles(request):
-    """
-    returns a list of c_portal articles
-    """
-    return []  # portal.api.list_articles()
-
 
 @jsonrpc_method('log_stats')
 def log_stats():
@@ -1721,20 +1708,13 @@ def logactivity(request, user, activity, ap):
     return "aye"
 
 
-def list_portal_articles():
-    result = []
-    # try: result = portal.api.list_articles()['result']
-    # except: pass
-    return result
-
-
 @jsonrpc_method('app_data')
 def app_data(request):
     """
     returns a large data structure that contains all current status information that is required by the c-beam app
     """
     missions = [mission.dic() for mission in Mission.objects.order_by('-status', 'short_description')]
-    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'barstatus': get_barstatus(request), 'articles': list_portal_articles(), 'sounds': sounds(request)}
+    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'barstatus': get_barstatus(request), 'sounds': sounds(request)}
 
 
 @login_required
@@ -1886,11 +1866,6 @@ def barschnur(request, pizza, sushi, inder):
         publish("c_out/announce", "eine inder-bestellung wartet an der bar")
 
 
-@jsonrpc_method('c_portal.notify')
-def c_portal_notify(request, notification):
-    print(notification)
-
-
 @jsonrpc_method("trafotron")
 def trafotron(request, value):
     newval = (value * 100) / 170
@@ -1930,7 +1905,6 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
         elif new_state == 1:
             publish("nerdctrl/open", "https://logbuch.c-base.org/")
         elif new_state == 2:
-            # publish("nerdctrl/open", "http://c-portal.c-base.org")
             publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/mainhall/")
         elif new_state == 3:
             publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/events/")

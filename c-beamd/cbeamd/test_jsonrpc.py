@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Tests for JSON-RPC method registration and endpoint handling.
 """

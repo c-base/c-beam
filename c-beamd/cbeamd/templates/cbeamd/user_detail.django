@@ -14,7 +14,6 @@
     <tr><td>reminder:</td><td> {{ object.reminder }}</td></tr>
     <tr><td>lastlocation:</td><td> {{ object.lastlocation }}</td></tr>
     <tr><td>crewpage:</td><td><a href="http://{{ object.username }}.crew.c-base.org">http://{{ object.username }}.crew.c-base.org</a></td></tr>
-    <tr><td>c-portal-page:</td><td><a href="https://c-portal.c-base.org/members/{{ object.username }}">https://c-portal.c-base.org/members/{{ object.username }}</a></td></tr>
   </table>
 
 {% endblock%}

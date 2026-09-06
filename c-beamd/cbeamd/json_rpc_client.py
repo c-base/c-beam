@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Lightweight JSON-RPC 2.0 implementation to replace deprecated jsonrpc package.
 Includes both client and decorator-based server registration.

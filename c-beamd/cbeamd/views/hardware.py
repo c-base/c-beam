@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Hardware, artefacts and portal articles.
+Hardware and artefacts
 
 Split out of the original views.py; function bodies are unchanged.
 """
@@ -102,25 +101,10 @@ def artefact_list_web(request):
     return render(request, 'cbeamd/artefact_list.django', {'artefact_list': artefact_list(request)})
 
 
-@jsonrpc_method('list_articles')
-def list_articles(request):
-    """
-    returns a list of c_portal articles
-    """
-    return []  # portal.api.list_articles()
-
-
-def list_portal_articles():
-    result = []
-    # try: result = portal.api.list_articles()['result']
-    # except: pass
-    return result
-
-
 @jsonrpc_method('app_data')
 def app_data(request):
     """
     returns a large data structure that contains all current status information that is required by the c-beam app
     """
     missions = [mission.dic() for mission in Mission.objects.order_by('-status', 'short_description')]
-    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'barstatus': get_barstatus(request), 'articles': list_portal_articles(), 'sounds': sounds(request)}
+    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'barstatus': get_barstatus(request), 'sounds': sounds(request)}

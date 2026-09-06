@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Shared state, constants and helper functions used across the view modules.
 
@@ -49,7 +48,6 @@ cout = _service(cfg.cout_url)
 ampelrpc = _service(cfg.ampelrpc_url)
 nerdctrl_cout = _service(cfg.nerdctrl_cout_url)
 cerebrum = _service(cfg.cerebrum_url)
-portal = _service(cfg.portal_url)
 monitord = _service(cfg.monitord_url)
 c_leuse_c_out = _service(cfg.c_leuse_c_out_url)
 artefact_base_url = "http://[2a02:f28:4::6b39:2d00]/artefact/"

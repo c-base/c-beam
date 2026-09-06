@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Views package - split out of the original views.py.
 
@@ -31,7 +30,7 @@ from .missions import (add_mission, edit_mission, fcm_update, gcm_register, gcm_
     mission_assign_web, mission_cancel, mission_cancel_web, mission_complete,
     mission_complete_web, mission_detail, mission_list, missions)
 from .hardware import (app_data, artefact_base_url, artefact_list, artefact_list_web, bluewall,
-    darkwall, hwstorage, hwstorage_web, list_articles, list_portal_articles, smile)
+    darkwall, hwstorage, hwstorage_web, list_articles, smile)
 from .stripe import (notbeleuchtung, rainbow, set_stripe_buffer, set_stripe_default,
     set_stripe_offset, set_stripe_pattern, set_stripe_pattern_web, set_stripe_speed,
     set_stripe_speed_web, stripe_view)
@@ -39,7 +38,7 @@ from .activity import (activitylog, activitylog_delete_comment, activitylog_deta
     activitylog_json, activitylog_post_comment, activitylog_web, logactivity, logactivity_web,
     not_implemented)
 from .bar import (bar_abrechnung, bar_calc, bar_leergut, bar_preise, barschnur, barstatus,
-    c_portal_notify, get_barstatus, mechblast_json, notify_bar_closing, notify_bar_opening,
+    get_barstatus, mechblast_json, notify_bar_closing, notify_bar_opening,
     trafotron)
 from .preferences import (c_out_volume_json, c_out_volume_set, c_out_volume_web,
     get_stealthmode, isWifiLoginEnabled, set_push_boarding, set_push_eta,

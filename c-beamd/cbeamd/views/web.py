@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 HTML front-end views.
 
@@ -32,7 +31,6 @@ def index2(request):
 
 @login_required
 def index(request):
-    logger.error("FOOOOOOOOOOOOO")
     user_list_online = User.objects.filter(status="online").order_by('username')
     user_list_eta = User.objects.filter(status="eta").order_by('username')
     user_list_offline = User.objects.filter(status="offline").order_by('username')

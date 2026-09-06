@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 User information and per-user settings.
 

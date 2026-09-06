@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 c-base event feed views.
 

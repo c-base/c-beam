@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Standalone test script for JSON-RPC decorator and registry system.
 This can be run without Django or pytest to verify basic functionality.

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Health-check and metrics endpoints.
 

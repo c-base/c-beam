@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Dashboards, displays and misc. widgets.
 
@@ -98,7 +97,6 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
         elif new_state == 1:
             publish("nerdctrl/open", "https://logbuch.c-base.org/")
         elif new_state == 2:
-            # publish("nerdctrl/open", "http://c-portal.c-base.org")
             publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/mainhall/")
         elif new_state == 3:
             publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/events/")

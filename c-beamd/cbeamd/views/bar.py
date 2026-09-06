@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Bar status and prices.
 
@@ -33,10 +32,6 @@ def barschnur(request, pizza, sushi, inder):
         # publish("c_out/play", "inder")
         publish("c_out/announce", "eine inder-bestellung wartet an der bar")
 
-
-@jsonrpc_method('c_portal.notify')
-def c_portal_notify(request, notification):
-    print(notification)
 
 
 @jsonrpc_method("trafotron")

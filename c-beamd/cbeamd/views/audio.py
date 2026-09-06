@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 c_out audio: TTS, sounds and volume.
 

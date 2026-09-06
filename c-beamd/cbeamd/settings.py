@@ -11,7 +11,6 @@ django.utils.encoding.smart_text = smart_str
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-print(BASE_DIR)
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
@@ -82,8 +81,6 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "cbeamd/static"),
     os.path.join(BASE_DIR, "cbeamd/assets"),
 ]
-
-print(STATICFILES_DIRS)
 
 # List of finder classes that know how to find static files in
 # various locations.
@@ -295,5 +292,3 @@ try:
 except ImportError as e:
     print('Unable to load local_settings.py:', e)
 
-import logging
-logging.getLogger(__name__).critical("FOO")

@@ -56,7 +56,6 @@
                 <li><a href="/user/online">an bord</a></li>
                 <li><a href="/events">events</a></li>
                 <li><a href="/artefacts">artefacts</a></li>
-		<!-- <li><a href="http://c-portal.c-base.org">c-portal</a></li> -->
                 <li><a href="/weather">weather</a></li>
                 <li><a href="/bvg">bvg</a></li>
               </ul>

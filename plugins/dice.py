@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from jsb.lib.commands import cmnds
 
 import random
