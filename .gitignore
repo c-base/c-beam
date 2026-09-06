@@ -41,3 +41,9 @@ c-beamd/cbeamd/local_settings.py
 
 # local, untracked make config (container engine, port, image name)
 c-beamd/Makefile.local
+
+# coverage output
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml

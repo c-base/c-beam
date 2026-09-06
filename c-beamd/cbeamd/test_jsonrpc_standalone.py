@@ -28,7 +28,7 @@ class Colors:
     END = '\033[0m'
 
 
-def test_result(test_name, passed, message=""):
+def record_result(test_name, passed, message=""):
     """Print test result."""
     symbol = f"{Colors.GREEN}✓{Colors.END}" if passed else f"{Colors.RED}✗{Colors.END}"
     msg = f" - {message}" if message else ""
@@ -54,7 +54,7 @@ def main():
     def func1(request):
         return "result1"
 
-    if test_result("Basic registration", get_jsonrpc_method('test1') is not None):
+    if record_result("Basic registration", get_jsonrpc_method('test1') is not None):
         passed_tests += 1
 
     # Test 2: Multiple methods
@@ -68,19 +68,19 @@ def main():
         return "result3"
 
     methods = get_jsonrpc_methods()
-    if test_result("Multiple methods", len(methods) == 3, f"Found {len(methods)} methods"):
+    if record_result("Multiple methods", len(methods) == 3, f"Found {len(methods)} methods"):
         passed_tests += 1
 
     # Test 3: Method lookup
     total_tests += 1
     method = get_jsonrpc_method('test1')
-    if test_result("Method lookup", method is not None):
+    if record_result("Method lookup", method is not None):
         passed_tests += 1
 
     # Test 4: Call registered method
     total_tests += 1
     result = method(None)
-    if test_result("Call registered method", result == "result1", f"Got: {result}"):
+    if record_result("Call registered method", result == "result1", f"Got: {result}"):
         passed_tests += 1
 
     # Test 5: Metadata preservation
@@ -94,7 +94,7 @@ def main():
         return "result"
 
     registered = get_jsonrpc_method('documented')
-    if test_result(
+    if record_result(
         "Metadata preserved",
         registered.__name__ == 'documented_func',
         f"Name: {registered.__name__}"
@@ -103,7 +103,7 @@ def main():
 
     total_tests += 1
     has_doc = "documented" in registered.__doc__.lower()
-    if test_result("Docstring preserved", has_doc):
+    if record_result("Docstring preserved", has_doc):
         passed_tests += 1
 
     # Test 6: Parameters handling
@@ -117,13 +117,13 @@ def main():
 
     registered = get_jsonrpc_method('add')
     result = registered(None, 5, 3)
-    if test_result("Parameter passing", result == 8, f"5 + 3 = {result}"):
+    if record_result("Parameter passing", result == 8, f"5 + 3 = {result}"):
         passed_tests += 1
 
     # Test 7: Method not found
     total_tests += 1
     result = get_jsonrpc_method('nonexistent')
-    if test_result("Method not found returns None", result is None):
+    if record_result("Method not found returns None", result is None):
         passed_tests += 1
 
     # Test 8: Registry isolation
@@ -133,7 +133,7 @@ def main():
     methods1 = get_jsonrpc_methods()
     methods2 = get_jsonrpc_methods()
     is_copy = methods1 is not methods2
-    if test_result("Registry returns copy", is_copy):
+    if record_result("Registry returns copy", is_copy):
         passed_tests += 1
 
     # Test 10: Many methods
@@ -145,7 +145,7 @@ def main():
             return method_num
 
     methods = get_jsonrpc_methods()
-    if test_result("Register 100 methods", len(methods) == 100):
+    if record_result("Register 100 methods", len(methods) == 100):
         passed_tests += 1
 
     # Summary

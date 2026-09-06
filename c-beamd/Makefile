@@ -28,6 +28,22 @@ port ?= 4254
 # container's writable layer and dies with it; point DATABASE_NAME at
 # /data/c-beam.sqlite and add -v c-beamd-data:/data to keep it.
 
+# tests run from the repository root, where pytest.ini lives. MQTT_ENABLED
+# defaults to False so a test run never waits on a broker it cannot reach;
+# override with `make MQTT_ENABLED=True test` inside the c-base network.
+MQTT_ENABLED ?= False
+repo_root := $(current_dir)/..
+
+test:
+	cd $(repo_root) && MQTT_ENABLED=$(MQTT_ENABLED) pytest
+
+coverage:
+	cd $(repo_root) && MQTT_ENABLED=$(MQTT_ENABLED) pytest --cov --cov-report=term-missing
+
+coverage-html:
+	cd $(repo_root) && MQTT_ENABLED=$(MQTT_ENABLED) pytest --cov --cov-report=html
+	@echo "open $(repo_root)/htmlcov/index.html"
+
 docker-image: check-engine
 	$(CONTAINER) build .. -t $(image)
 
@@ -42,4 +58,4 @@ check-engine:
 	@test -n "$(CONTAINER)" || { echo "neither docker nor podman found on PATH — install one, or run make CONTAINER=<engine>"; exit 1; }
 	@command -v $(CONTAINER) >/dev/null 2>&1 || { echo "CONTAINER is set to '$(CONTAINER)', which is not on PATH"; exit 1; }
 
-.PHONY: docker-image docker-run docker-run-dev check-engine
+.PHONY: test coverage coverage-html docker-image docker-run docker-run-dev check-engine

@@ -37,8 +37,13 @@ c-beam API: https://c-beam.cbrp3.c-base.org/api (from crew network only)
 
 5. **Run tests**
    ```bash
-   pytest
+   pytest                        # from the repository root
+   MQTT_ENABLED=False pytest     # away from the c-base network
    ```
+
+   From `c-beamd/`, `make test` does the same with `MQTT_ENABLED=False` already
+   set, `make coverage` adds a line and branch coverage report, and
+   `make coverage-html` writes a browsable one to `htmlcov/`.
 
 6. **Start development server**
    ```bash

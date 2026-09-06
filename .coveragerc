@@ -1,0 +1,30 @@
+# coverage settings for `make coverage` (see c-beamd/Makefile).
+#
+# the headline percentage is dominated by module-level code — imports, def
+# lines, decorators — which runs merely because the suite imports
+# cbeamd.views. what matters is how much of the function bodies runs, so
+# keep an eye on the per-file numbers rather than the total.
+
+[run]
+branch = True
+source = cbeamd
+omit =
+    */migrations/*
+    */test_*.py
+    */tests.py
+    */wsgi.py
+    */asgi.py
+    */manage.py
+    */doc/*
+    */node_modules/*
+
+[report]
+show_missing = True
+skip_covered = True
+exclude_also =
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    raise NotImplementedError
+
+[html]
+directory = htmlcov

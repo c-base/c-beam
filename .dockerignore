@@ -24,6 +24,10 @@ c-beamd/Makefile.local
 **/*.sl3
 c-beamd/logs
 c-beamd/static_collected
+htmlcov
+.coverage
+.coverage.*
+coverage.xml
 **/*.log
 
 # python and node cruft

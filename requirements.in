@@ -17,6 +17,7 @@ python-decouple
 python-json-logger
 pytest
 pytest-django
+pytest-cov
 # json-rpc
 psycopg2-binary
 pyfcm

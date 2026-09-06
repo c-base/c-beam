@@ -32,6 +32,8 @@ cffi==2.0.0
     # via cryptography
 charset-normalizer==3.4.7
     # via requests
+coverage[toml]==7.16.0
+    # via pytest-cov
 cryptography==48.0.0
     # via google-auth
 django==5.2.14
@@ -108,7 +110,9 @@ packaging==26.2
 paho-mqtt==1.6.1
     # via -r requirements.in
 pluggy==1.6.0
-    # via pytest
+    # via
+    #   pytest
+    #   pytest-cov
 propcache==0.5.2
     # via
     #   aiohttp
@@ -134,7 +138,10 @@ pygments==2.20.0
 pytest==9.0.3
     # via
     #   -r requirements.in
+    #   pytest-cov
     #   pytest-django
+pytest-cov==7.1.0
+    # via -r requirements.in
 pytest-django==4.12.0
     # via -r requirements.in
 python-dateutil==2.9.0.post0
