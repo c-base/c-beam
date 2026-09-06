@@ -57,7 +57,39 @@ Copy `.env.example` to `.env` and configure:
 
 ## Running with Docker
 
-`docker run -v "$PWD":/opt/c-beamd --name c-beamd -p 8000:8000 -t c-beamd`
+Build from the repository root:
+
+```bash
+cd c-beamd && make docker-image     # or: docker build . -t c-beamd
+```
+
+The image ships the application at `/opt/c-beamd` and runs it as it is, so
+there are two ways to start it.
+
+**Self-contained** — nothing from the host but the environment. No `.env` and no
+`local_settings.py` are baked into the image (see `.dockerignore`), and
+`SECRET_KEY` has no default, so the env file has to be passed in:
+
+```bash
+make docker-run
+# or: docker run --env-file .env --name c-beamd -p 4254:8000 -t c-beamd
+```
+
+**Live source** — a bind mount at the same path shadows the copy in the image,
+so the working tree runs instead and edits need no rebuild. This is the mode to
+develop in, and the one that picks up a local `cbeamd/local_settings.py`:
+
+```bash
+make docker-run-dev
+# or: docker run -v "$PWD":/opt/c-beamd --name c-beamd -p 4254:8000 -t c-beamd
+```
+
+Both serve on <http://localhost:4254>.
+
+The database follows `DATABASE_NAME`. Under `docker-run` it defaults into the
+container's writable layer and dies with the container; to keep it, point
+`DATABASE_NAME` at `/data/c-beam.sqlite` and add `-v c-beamd-data:/data`.
+Postgres needs no volume, just the `DATABASE_*` variables.
 
 ## JSON RPC
 

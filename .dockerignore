@@ -1,0 +1,46 @@
+# the build context is the repo root (`docker build ..` from c-beamd/).
+# everything listed here stays out of the image — most importantly the
+# secrets and the local database, which `COPY c-beamd/ /opt/c-beamd/`
+# would otherwise bake into a layer for anyone who pulls the image.
+#
+# note: docker matches these against the full path from the context root,
+# not per directory like .gitignore — so anything meant to match at any
+# depth needs a leading **/.
+
+.git
+.gitignore
+.dockerignore
+
+# secrets and machine-local overrides
+.env
+.env.*
+c-beamd/cbeamd/local_settings.py
+c-beamd/cbeamd/local_settings.py.*
+
+# local databases and runtime output
+**/*.sqlite
+**/*.sqlite3
+**/*.sl3
+c-beamd/logs
+c-beamd/static_collected
+**/*.log
+
+# python and node cruft
+**/__pycache__
+**/*.py[cod]
+c-beamd/venv
+c-beamd/cbeamd/node_modules
+c-beamd/cbeamd/assets/bundles
+c-beamd/cbeamd/webpack-stats.json
+
+# docs build output and pre-split reference copy
+c-beamd/cbeamd/doc/_build
+c-beamd/cbeamd/views_original.py.bak
+
+# editor / os cruft
+**/*.swp
+**/*.swo
+**/*~
+.vscode
+.idea
+**/.DS_Store
