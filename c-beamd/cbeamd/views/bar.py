@@ -12,7 +12,6 @@ from django.utils import timezone
 from ..json_rpc_client import jsonrpc_method
 
 from ..models import Status
-from ..tools.LEDStripe import *
 
 from .helpers import c_leuse_c_out, logger
 from .helpers import get_prices, publish, userlist
@@ -31,7 +30,6 @@ def barschnur(request, pizza, sushi, inder):
     if pizza == 1 and sushi == 1 and inder == 0:
         # publish("c_out/play", "inder")
         publish("c_out/announce", "eine inder-bestellung wartet an der bar")
-
 
 
 @jsonrpc_method("trafotron")

@@ -10,7 +10,6 @@ from django.shortcuts import render
 from ..json_rpc_client import jsonrpc_method
 
 from ..models import User
-from ..tools.LEDStripe import *
 
 from .helpers import cout, getuser, monitord, publish
 

@@ -14,7 +14,6 @@ from django.utils import timezone
 from ..json_rpc_client import jsonrpc_method
 
 from ..models import User
-from ..tools.LEDStripe import *
 
 from . import helpers
 from .helpers import hysterese, logger, monitord

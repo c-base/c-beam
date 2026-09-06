@@ -10,7 +10,6 @@ from django.http import HttpResponse
 from django.utils import timezone
 
 from ..models import User
-from ..tools.LEDStripe import *
 
 from .helpers import logger
 

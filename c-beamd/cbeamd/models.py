@@ -113,7 +113,7 @@ class User(models.Model):
 
 class LTE(models.Model):
     day = models.CharField(max_length=2)
-    username = username = models.CharField(max_length=200)
+    username = models.CharField(max_length=200)
     eta = models.CharField(max_length=200)
 
     def __str__(self):

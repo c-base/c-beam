@@ -21,7 +21,6 @@ from ..json_rpc_client import JSONRPCClient, jsonrpc_method
 
 from ..models import User, UserStatsEntry
 from ..tools.handTranslate import HandTranslate
-from ..tools.LEDStripe import *
 
 logger = logging.getLogger(__name__)
 hysterese = 15

@@ -14,7 +14,6 @@ from django.utils import timezone
 from ..json_rpc_client import jsonrpc_method
 
 from ..models import Mission
-from ..tools.LEDStripe import *
 from ..tools.MyHTMLParser import MyHTMLParser
 
 from . import helpers
@@ -68,7 +67,6 @@ def artefact_list(request):
     """
     returns a list of available artefacts
     """
-    global artefact_base_url
     artefactlist = {}
     if True:  # artefactcache_time + timedelta(hours=1) < timezone.now():
         parser = MyHTMLParser()
@@ -89,12 +87,11 @@ def artefact_list(request):
 
 
 @jsonrpc_method('artefact_base_url')
-def artefact_base_url(request):
+def get_artefact_base_url(request):
     """
     returns the base URL for artefacts
     """
-    global artefact_base_url
-    return [artefact_base_url]
+    return [helpers.artefact_base_url]
 
 
 def artefact_list_web(request):

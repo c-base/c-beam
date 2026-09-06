@@ -1,11 +1,10 @@
-from django.urls import include, re_path
+from django.urls import include, path, re_path
 from .models import User
 from .models import Mission
 from . import views  # you must import the views that need connected
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
-from django.urls import include, path
 from rest_framework import routers
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
@@ -102,7 +101,7 @@ urlpatterns = [
     re_path(r'^bar/leergut$', views.bar_leergut, name='bar_leergut'),
     re_path(r'^bar/calc$', views.bar_calc, name='bar_Calc'),
     re_path(r'^bar/abrechnung$', views.bar_abrechnung, name='bar_abrechnung'),
-    re_path(r'^control/ampel/(?P<location>.+)/(?P<color>.+)/(?P<state>\d)/$', views.ampel, name='ampel'),
+    re_path(r'^control/ampel/(?P<location>.+)/(?P<color>.+)/(?P<state>\d)/$', views.ampel_web, name='ampel'),
     re_path(r'^mpd/(?P<host>.+)/volume/$', views.mpd_volume, name='mpd_volume'),
     re_path(r'^mpd/(?P<host>.+)/mpd_listplaylists/$', views.mpd_listplaylists, name='mpd_listplaylists'),
     re_path(r'^mpd/(?P<host>.+)/status/$', views.mpd_status, name='mpd_status'),

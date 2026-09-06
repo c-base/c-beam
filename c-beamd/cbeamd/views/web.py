@@ -13,7 +13,6 @@ from ..json_rpc_client import jsonrpc_method
 
 from ..forms import UserForm
 from ..models import ActivityLog, User
-from ..tools.LEDStripe import *
 
 from .helpers import logger
 from .helpers import getuser
@@ -66,7 +65,7 @@ def user_eta(request):
 
 @login_required
 def user_all(request):
-    user_list_online = User.objects.all().order_by('username')
+    user_list = User.objects.all().order_by('username')
     return render(request, 'cbeamd/user_list.django', {'user_list': user_list, 'status': 'all'})
 
 

@@ -9,7 +9,6 @@ from django.utils import timezone
 from ..json_rpc_client import jsonrpc_method
 
 from ..models import User
-from ..tools.LEDStripe import *
 
 from .audio import reminder
 from .helpers import getuser, userlist
@@ -25,7 +24,7 @@ def get_user_by_id(request, id):
 
 
 @jsonrpc_method('get_user_by_name')
-def get_user_by_id(request, username):
+def get_user_by_name(request, username):
     """
     get information about a user using his nickname
     """
@@ -78,7 +77,6 @@ def set_autologout(request, user, autologout):
 
 
 def ceitloch():
-    now = int(timezone.now().strftime("%Y%m%d%H%M%S"))
     cl = {}
     for user in User.objects.filter(status="online"):
         td = timezone.now() - user.logintime

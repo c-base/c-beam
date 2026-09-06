@@ -15,7 +15,6 @@ from django.utils import timezone
 from ics import Calendar
 from ..json_rpc_client import jsonrpc_method
 
-from ..tools.LEDStripe import *
 
 from . import helpers
 from .helpers import publish

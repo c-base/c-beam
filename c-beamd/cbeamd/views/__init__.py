@@ -5,7 +5,7 @@ Re-exports every public name so that `from . import views` / `views.<name>`
 in urls.py and the JSON-RPC registry keep working unchanged.
 """
 
-from .helpers import (AddPadding, StripPadding, achievements, artefact_base_url, artefactcache,
+from .helpers import (AddPadding, StripPadding, artefact_base_url, artefactcache,
     artefactcache_time, c_out_volume, cerebrum_state, create_random_password,
     default_stripe_offset, default_stripe_pattern, default_stripe_speed, eta_timeout,
     event_details, eventcache, eventcache_time, eventdetailcache, get_prices, get_stats,
@@ -16,7 +16,8 @@ from .helpers import (AddPadding, StripPadding, achievements, artefact_base_url,
 from .auth import (extend, force_login, force_logout, login, login_web, login_with_id,
     login_wlan, logout, logout_web, stealth_login, stealth_logout, tagevent, unknown_tag,
     welcometts)
-from .user import (ceitloch, get_autologout, get_user_by_id, getnickspell, getwlanlogin,
+from .user import (ceitloch, get_autologout, get_user_by_id, get_user_by_name, getnickspell,
+    getwlanlogin,
     set_autologout, setnickspell, setwlanlogin, who_result)
 from .eta import (achievements, activities, arrivals, available, cleanup, eta, etalist,
     extract_eta, newetas, seteta, subarrive, subeta, unsubarrive, unsubeta, who)
@@ -29,8 +30,8 @@ from .missions import (add_mission, edit_mission, fcm_update, gcm_register, gcm_
     gcm_send_mission, gcm_send_test, gcm_update, is_mission_editor, mission_assign,
     mission_assign_web, mission_cancel, mission_cancel_web, mission_complete,
     mission_complete_web, mission_detail, mission_list, missions)
-from .hardware import (app_data, artefact_base_url, artefact_list, artefact_list_web, bluewall,
-    darkwall, hwstorage, hwstorage_web, list_articles, smile)
+from .hardware import (app_data, artefact_list, artefact_list_web, bluewall, darkwall,
+    get_artefact_base_url, hwstorage, hwstorage_web, smile)
 from .stripe import (notbeleuchtung, rainbow, set_stripe_buffer, set_stripe_default,
     set_stripe_offset, set_stripe_pattern, set_stripe_pattern_web, set_stripe_speed,
     set_stripe_speed_web, stripe_view)
@@ -43,7 +44,7 @@ from .bar import (bar_abrechnung, bar_calc, bar_leergut, bar_preise, barschnur, 
 from .preferences import (c_out_volume_json, c_out_volume_set, c_out_volume_web,
     get_stealthmode, isWifiLoginEnabled, set_push_boarding, set_push_eta,
     set_push_missions, set_stats_enabled, set_stealthmode, set_wlan_login)
-from .display import (ampel, ampelblink, barbutton, bvg, cbeamviewer, ceitlochclocc,
+from .display import (ampel, ampel_web, ampelblink, barbutton, bvg, cbeamviewer, ceitlochclocc,
     cerebrumNotify, dash, ddate, donut, fakelevels, fnord, hand_commands, hand_help,
     hand_translate, he1display, issues, lte, mechdisplay, nerdctrl, reddit, sensors,
     setdigitalmeter, toggle_burningman, weather, welcome)

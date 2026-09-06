@@ -11,7 +11,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from ..json_rpc_client import get_jsonrpc_method, method_requires_authentication
 
-from ..tools.LEDStripe import *
 
 from .helpers import logger
 

@@ -19,7 +19,6 @@ from ..json_rpc_client import jsonrpc_method
 
 from ..models import LTE, ActivityLog
 from ..tools.ddate import DDate
-from ..tools.LEDStripe import *
 
 from .helpers import ampelrpc, cerebrum_state, hand, logger, monitord, nerdctrl_cout
 from .bar import get_barstatus
@@ -281,7 +280,7 @@ def hand_translate(request, command):
 
 
 @login_required
-def ampel(request, location, color, state):
+def ampel_web(request, location, color, state):
     payload = '{"%s": %d}' % (color, int(state))
     # payload = '{"red": 1, "yellow": 1, "green": 1}'
     # payload = '{"red": 1}'

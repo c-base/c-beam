@@ -13,7 +13,6 @@ from rest_framework.decorators import action
 
 from ..models import User
 from ..serializers import UserSerializer
-from ..tools.LEDStripe import *
 
 from .bar import get_barstatus
 from .events import event_list

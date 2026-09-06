@@ -12,7 +12,6 @@ from django.utils import timezone
 from ..json_rpc_client import jsonrpc_method
 
 from ..models import Mission, User
-from ..tools.LEDStripe import *
 
 from . import helpers
 from .helpers import eta_timeout

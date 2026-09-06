@@ -10,8 +10,6 @@ from django.http import HttpResponse
 from ..json_rpc_client import ajax
 from mpd import MPDClient as RealMPDClient
 
-from ..tools.LEDStripe import *
-
 
 def mpd_volume(request, host):
     with MPDClient(host) as client:

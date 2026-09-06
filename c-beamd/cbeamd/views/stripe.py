@@ -12,7 +12,6 @@ from ..json_rpc_client import jsonrpc_method
 
 from ..forms import StripeForm
 from ..models import User
-from ..tools.LEDStripe import *
 
 from . import helpers
 from .helpers import cerebrum

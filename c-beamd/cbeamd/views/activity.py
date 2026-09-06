@@ -14,7 +14,6 @@ from ..json_rpc_client import jsonrpc_method
 
 from ..forms import ActivityLogCommentForm, LogActivityForm
 from ..models import Activity, ActivityLog, ActivityLogComment
-from ..tools.LEDStripe import *
 
 from . import helpers
 from .helpers import getuser

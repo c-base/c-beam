@@ -13,7 +13,6 @@ from pyfcm import FCMNotification
 
 from ..forms import MissionForm
 from ..models import Activity, ActivityLog, Mission, Subscription, User
-from ..tools.LEDStripe import *
 
 from .helpers import logger, mission_assigned, mission_completed, mission_open
 from .helpers import getuser, publish
