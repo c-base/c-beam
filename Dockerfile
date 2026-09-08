@@ -1,4 +1,4 @@
-FROM python:3.14
+FROM python:3.13
 
 # the image ships the application at /opt/c-beamd, which is also where the
 # repo's c-beamd/ directory gets bind-mounted. a mount shadows the baked-in

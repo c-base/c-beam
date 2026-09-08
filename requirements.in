@@ -1,15 +1,9 @@
-Django==5.2.*
+Django==6.1.*
 autopep8
-bvg-grabber
-djangoajax
-django-appconf
 django-auth-ldap
 django-bootstrap3
-# django-json-rpc  # Removed - incompatible with Django 5.2
-django-rest-framework
+djangorestframework
 drf-spectacular
-django-tagging
-django-webpack
 django-webpack-loader
 gunicorn
 ics
@@ -18,11 +12,9 @@ python-json-logger
 pytest
 pytest-django
 pytest-cov
-# json-rpc
 psycopg2-binary
 pyfcm
 python-ldap
 paho-mqtt<2
-HTMLParser
 feedparser
 python-mpd2

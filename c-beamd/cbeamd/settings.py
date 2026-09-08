@@ -169,7 +169,7 @@ LOGGING = {
         },
         'json': {
             'format': '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}',
-            'class': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+            'class': 'pythonjsonlogger.json.JsonFormatter',
         },
     },
     'handlers': {
