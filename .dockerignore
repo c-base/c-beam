@@ -35,8 +35,11 @@ coverage.xml
 **/*.py[cod]
 c-beamd/venv
 c-beamd/cbeamd/node_modules
-c-beamd/cbeamd/assets/bundles
-c-beamd/cbeamd/webpack-stats.json
+
+# assets/bundles and webpack-stats.json are build output, but they are also
+# runtime requirements — the templates that use render_bundle raise a 500
+# without them — so they belong in the image. build them before the image with
+# `npm run build` in c-beamd/cbeamd. node_modules stays out.
 
 # docs build output and pre-split reference copy
 c-beamd/cbeamd/doc/_build
