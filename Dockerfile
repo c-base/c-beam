@@ -23,6 +23,11 @@ RUN pip install --upgrade -r /requirements.txt
 # image, laid out exactly as the bind mount lays it out
 COPY c-beamd/ /opt/c-beamd/
 
+# the logging config puts three RotatingFileHandlers in BASE_DIR/logs, and
+# .dockerignore keeps the host's logs/ out of the build context — so the
+# directory has to be created here or django fails to configure logging
+RUN mkdir -p /opt/c-beamd/logs
+
 # manage.py and preise.csv sit here and are reached by relative path
 WORKDIR /opt/c-beamd
 
