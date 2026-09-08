@@ -625,3 +625,229 @@ class TestJSONRPCIntegration(TestCase):
         self.assertEqual(result['user'], 'testuser')
         self.assertEqual(result['status'], 'online')
         self.assertEqual(result['tags'], ['alpha', 'beta'])
+
+
+class TestJSONRPCProtocol(TestCase):
+    """the parts of the JSON-RPC 2.0 wire protocol django-json-rpc used to cover."""
+
+    def setUp(self):
+        self.client = Client()
+        self._registry_backup = dict(_jsonrpc_method_registry)
+        self.addCleanup(_restore_registry, self._registry_backup)
+        _jsonrpc_method_registry.clear()
+
+        @jsonrpc_method('echo')
+        def echo(request, message):
+            return message
+
+        @jsonrpc_method('boom')
+        def boom(request):
+            raise TypeError("raised inside the handler")
+
+    def rpc(self, payload):
+        return self.client.post('/rpc/', data=json.dumps(payload), content_type='application/json')
+
+    def test_batch_is_answered_in_order(self):
+        response = self.rpc([
+            {'jsonrpc': '2.0', 'method': 'echo', 'params': ['a'], 'id': 1},
+            {'jsonrpc': '2.0', 'method': 'missing', 'params': [], 'id': 2},
+            {'jsonrpc': '2.0', 'method': 'echo', 'params': {'message': 'c'}, 'id': 3},
+        ])
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([r['id'] for r in data], [1, 2, 3])
+        self.assertEqual(data[0]['result'], 'a')
+        self.assertEqual(data[1]['error']['code'], -32601)
+        self.assertEqual(data[2]['result'], 'c')
+
+    def test_empty_batch_is_invalid_request(self):
+        response = self.rpc([])
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['error']['code'], -32600)
+
+    def test_non_object_body_is_invalid_request(self):
+        response = self.rpc("echo")
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertEqual(data['error']['code'], -32600)
+        self.assertIsNone(data['id'])
+
+    def test_notification_gets_no_response(self):
+        response = self.rpc({'jsonrpc': '2.0', 'method': 'echo', 'params': ['x']})
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.content, b'')
+
+    def test_notifications_are_left_out_of_a_batch(self):
+        response = self.rpc([
+            {'jsonrpc': '2.0', 'method': 'echo', 'params': ['quiet']},
+            {'jsonrpc': '2.0', 'method': 'echo', 'params': ['loud'], 'id': 9},
+        ])
+        self.assertEqual([r['id'] for r in response.json()], [9])
+
+    def test_batch_of_only_notifications_is_empty_204(self):
+        response = self.rpc([{'jsonrpc': '2.0', 'method': 'echo', 'params': ['quiet']}])
+        self.assertEqual(response.status_code, 204)
+
+    def test_null_params_means_no_params(self):
+        @jsonrpc_method('noargs')
+        def noargs(request):
+            return 'ok'
+        response = self.rpc({'jsonrpc': '2.0', 'method': 'noargs', 'params': None, 'id': 1})
+        self.assertEqual(response.json()['result'], 'ok')
+
+    def test_wrong_arity_is_invalid_params(self):
+        response = self.rpc({'jsonrpc': '2.0', 'method': 'echo', 'params': [1, 2, 3], 'id': 1})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['error']['code'], -32602)
+
+    def test_unknown_keyword_is_invalid_params(self):
+        response = self.rpc({'jsonrpc': '2.0', 'method': 'echo', 'params': {'nope': 1}, 'id': 1})
+        self.assertEqual(response.json()['error']['code'], -32602)
+
+    def test_type_error_inside_handler_is_internal_error(self):
+        response = self.rpc({'jsonrpc': '2.0', 'method': 'boom', 'params': [], 'id': 1})
+        data = response.json()
+        self.assertEqual(data['error']['code'], -32603)
+        self.assertIn('raised inside the handler', data['error']['data'])
+
+    def test_missing_or_non_string_method_is_invalid_request(self):
+        for payload in ({'jsonrpc': '2.0', 'params': [], 'id': 1},
+                        {'jsonrpc': '2.0', 'method': 42, 'params': [], 'id': 1}):
+            response = self.rpc(payload)
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.json()['error']['code'], -32600)
+
+    def test_tuple_result_becomes_list(self):
+        @jsonrpc_method('pair')
+        def pair(request):
+            return (1, 2)
+        response = self.rpc({'jsonrpc': '2.0', 'method': 'pair', 'params': [], 'id': 1})
+        self.assertEqual(response.json()['result'], [1, 2])
+
+
+class TestJSONRPCAuthentication(TestCase):
+    """authenticated=True accepts a django session or credentials in the params."""
+
+    def setUp(self):
+        from django.contrib.auth.models import User as AuthUser
+        self.client = Client()
+        self._registry_backup = dict(_jsonrpc_method_registry)
+        self.addCleanup(_restore_registry, self._registry_backup)
+        _jsonrpc_method_registry.clear()
+        self.auth_user = AuthUser.objects.create_user('crew', password='secret')
+
+        @jsonrpc_method('whoami', authenticated=True)
+        def whoami(request, greeting='hi'):
+            return f"{greeting} {request.user.username}"
+
+    def rpc(self, payload):
+        return self.client.post('/rpc/', data=json.dumps(payload), content_type='application/json')
+
+    def test_refused_without_session_or_credentials(self):
+        response = self.rpc({'jsonrpc': '2.0', 'method': 'whoami', 'params': [], 'id': 1})
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['error']['code'], -32000)
+
+    def test_refused_with_wrong_credentials(self):
+        response = self.rpc({'jsonrpc': '2.0', 'method': 'whoami', 'params': ['crew', 'wrong'], 'id': 1})
+        self.assertEqual(response.status_code, 401)
+
+    def test_session_is_accepted(self):
+        self.client.force_login(self.auth_user)
+        response = self.rpc({'jsonrpc': '2.0', 'method': 'whoami', 'params': [], 'id': 1})
+        self.assertEqual(response.json()['result'], 'hi crew')
+
+    def test_positional_credentials_are_consumed_before_the_call(self):
+        response = self.rpc({'jsonrpc': '2.0', 'method': 'whoami', 'params': ['crew', 'secret', 'hallo'], 'id': 1})
+        self.assertEqual(response.json()['result'], 'hallo crew')
+
+    def test_keyword_credentials_are_consumed_before_the_call(self):
+        response = self.rpc({'jsonrpc': '2.0', 'method': 'whoami',
+                             'params': {'username': 'crew', 'password': 'secret', 'greeting': 'moin'}, 'id': 1})
+        self.assertEqual(response.json()['result'], 'moin crew')
+
+
+class TestAjaxDecorator(TestCase):
+    """the django_ajax response envelope the mpd javascript depends on."""
+
+    def test_return_value_is_wrapped_in_envelope(self):
+        from django.test import RequestFactory
+        from cbeamd.json_rpc_client import ajax
+
+        @ajax
+        def view(request):
+            return {'volume': 42}
+
+        data = json.loads(view(RequestFactory().get('/')).content)
+        self.assertEqual(data, {'status': 200, 'statusText': 'OK', 'content': {'volume': 42}})
+
+    def test_exception_becomes_500_envelope_not_html(self):
+        from django.test import RequestFactory
+        from cbeamd.json_rpc_client import ajax
+
+        @ajax
+        def view(request):
+            raise OSError("mpd host unreachable")
+
+        response = view(RequestFactory().get('/'))
+        self.assertEqual(response.status_code, 500)
+        data = json.loads(response.content)
+        self.assertEqual(data['status'], 500)
+        self.assertIn('unreachable', data['content'])
+
+    def test_http_response_is_passed_through_as_content(self):
+        from django.http import HttpResponse
+        from django.test import RequestFactory
+        from cbeamd.json_rpc_client import ajax
+
+        @ajax
+        def view(request):
+            return HttpResponse('<b>hi</b>', status=201)
+
+        response = view(RequestFactory().get('/'))
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(json.loads(response.content)['content'], '<b>hi</b>')
+
+
+class TestJSONRPCClientErrors(TestCase):
+    """a json-rpc error body wins over the http status it arrived with."""
+
+    def _client_with_response(self, status, body, ok=None):
+        from unittest import mock
+        import requests as _requests
+        client = JSONRPCClient('http://example/rpc/')
+        response = mock.Mock()
+        response.status_code = status
+        response.ok = ok if ok is not None else status < 400
+        if isinstance(body, str):
+            response.json.side_effect = ValueError("not json")
+            response.text = body
+        else:
+            response.json.return_value = body
+        response.raise_for_status.side_effect = (
+            _requests.HTTPError(f"{status} error") if not response.ok else None
+        )
+        return client, response
+
+    def test_error_body_on_404_is_a_jsonrpc_error(self):
+        from unittest import mock
+        client, response = self._client_with_response(
+            404, {'jsonrpc': '2.0', 'error': {'code': -32601, 'message': 'Method not found'}, 'id': 1})
+        with mock.patch('cbeamd.json_rpc_client.requests.post', return_value=response):
+            with self.assertRaises(JSONRPCError) as ctx:
+                client.anything()
+        self.assertEqual(ctx.exception.code, -32601)
+
+    def test_html_body_on_500_is_an_http_error(self):
+        from unittest import mock
+        import requests as _requests
+        client, response = self._client_with_response(500, '<html>boom</html>')
+        with mock.patch('cbeamd.json_rpc_client.requests.post', return_value=response):
+            with self.assertRaises(_requests.HTTPError):
+                client.anything()
+
+    def test_result_is_unwrapped(self):
+        from unittest import mock
+        client, response = self._client_with_response(200, {'jsonrpc': '2.0', 'result': 'aye', 'id': 1})
+        with mock.patch('cbeamd.json_rpc_client.requests.post', return_value=response):
+            self.assertEqual(client.smile(), 'aye')

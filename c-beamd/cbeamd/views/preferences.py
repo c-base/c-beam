@@ -13,15 +13,9 @@ from django.shortcuts import render
 from django.utils import timezone
 from ..json_rpc_client import jsonrpc_method
 
-from ..models import User
 
 from . import helpers
 from .helpers import getuser
-
-
-@jsonrpc_method('isWifiLoginEnabled()')
-def isWifiLoginEnabled(request, users):
-    return {user.username: user.wlanlogin for user in User.objects.filter(username__in=users)}
 
 
 @jsonrpc_method('set_wlan_login')

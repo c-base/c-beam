@@ -30,16 +30,6 @@ def smile(request):
     return "aye"
 
 
-@jsonrpc_method('bluewall()')  # , authenticated=True, validate=True)
-def bluewall(request):
-    return "culd not available"
-
-
-@jsonrpc_method('darkwall()')  # , authenticated=True, validate=True)
-def darkwall(request):
-    return "culd not available"
-
-
 # @jsonrpc_method('hwstorage(Boolean)', authenticated=True, validate=True)
 @jsonrpc_method('hwstorage')
 def hwstorage(request):

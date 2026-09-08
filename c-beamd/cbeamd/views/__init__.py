@@ -30,7 +30,7 @@ from .missions import (add_mission, edit_mission, fcm_update, gcm_register, gcm_
     gcm_send_mission, gcm_send_test, gcm_update, is_mission_editor, mission_assign,
     mission_assign_web, mission_cancel, mission_cancel_web, mission_complete,
     mission_complete_web, mission_detail, mission_list, missions)
-from .hardware import (app_data, artefact_list, artefact_list_web, bluewall, darkwall,
+from .hardware import (app_data, artefact_list, artefact_list_web,
     get_artefact_base_url, hwstorage, hwstorage_web, smile)
 from .stripe import (notbeleuchtung, rainbow, set_stripe_buffer, set_stripe_default,
     set_stripe_offset, set_stripe_pattern, set_stripe_pattern_web, set_stripe_speed,
@@ -42,7 +42,7 @@ from .bar import (bar_abrechnung, bar_calc, bar_leergut, bar_preise, barschnur, 
     get_barstatus, mechblast_json, notify_bar_closing, notify_bar_opening,
     trafotron)
 from .preferences import (c_out_volume_json, c_out_volume_set, c_out_volume_web,
-    get_stealthmode, isWifiLoginEnabled, set_push_boarding, set_push_eta,
+    get_stealthmode, set_push_boarding, set_push_eta,
     set_push_missions, set_stats_enabled, set_stealthmode, set_wlan_login)
 from .display import (ampel, ampel_web, ampelblink, barbutton, bvg, cbeamviewer, ceitlochclocc,
     cerebrumNotify, dash, ddate, donut, fakelevels, fnord, hand_commands, hand_help,

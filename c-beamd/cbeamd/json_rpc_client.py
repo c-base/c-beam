@@ -7,9 +7,11 @@ import json
 import logging
 import uuid
 from functools import wraps
+from http import HTTPStatus
 from typing import Any, Callable, Dict, Optional
 
 import requests
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse
 
 logger = logging.getLogger(__name__)
@@ -91,16 +93,24 @@ class JSONRPCClient:
                 headers=headers,
                 timeout=self.timeout,
             )
-            response.raise_for_status()
         except requests.RequestException as e:
             logger.error(f"JSON-RPC request failed: {e}")
             raise
 
+        # a json-rpc error body is the more useful failure even when it comes
+        # with an http error status — django-json-rpc servers answer a
+        # method-not-found with a 404, for example. only fall back to the http
+        # status when there is no json-rpc envelope to report.
         try:
             result_data = response.json()
-        except json.JSONDecodeError as e:
+        except ValueError as e:
+            if not response.ok:
+                response.raise_for_status()
             logger.error(f"Failed to parse JSON-RPC response: {e}\nResponse: {response.text}")
             raise
+        if not isinstance(result_data, dict):
+            response.raise_for_status()
+            raise JSONRPCError(-32603, f"unexpected JSON-RPC response: {result_data!r}")
 
         # Check for JSON-RPC error
         if 'error' in result_data and result_data['error'] is not None:
@@ -157,12 +167,7 @@ def jsonrpc_method(method_name: str, authenticated: bool = False, **kwargs):
         # what get_jsonrpc_method() hands back.
         func.jsonrpc_authenticated = bool(authenticated)
         _jsonrpc_method_registry[method_name] = func
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
-
-        return wrapper
+        return func
 
     return decorator
 
@@ -197,13 +202,34 @@ def get_jsonrpc_methods() -> Dict[str, Callable]:
 
 def ajax(func):
     """
-    Decorator that automatically converts return values to JSON responses.
-    Replaces the deprecated django_ajax.decorators.ajax decorator.
+    Decorator that wraps a view's return value in the response envelope the
+    removed django_ajax package produced:
+
+        {"status": 200, "statusText": "OK", "content": <return value>}
+
+    the javascript consuming these views (assets/js/mpdwidget.jsx) reads the
+    payload from `content`, so the envelope is part of the contract. an
+    HttpResponse is passed through with its body as the content, and an
+    exception becomes a 500 envelope instead of an html error page — both as
+    django_ajax did. what it does not reproduce is the X-Requested-With gate.
     """
     @wraps(func)
     def _wrapper(request, *args, **kwargs):
-        result = func(request, *args, **kwargs)
-        if isinstance(result, HttpResponse):
-            return result
-        return HttpResponse(json.dumps(result), content_type="application/json")
+        try:
+            result = func(request, *args, **kwargs)
+        except Exception as e:
+            logger.exception("error in ajax view %s", func.__name__)
+            status, content = 500, str(e)
+        else:
+            if isinstance(result, HttpResponse):
+                status = result.status_code
+                content = result.content.decode('utf-8') if isinstance(result.content, bytes) else result.content
+            else:
+                status, content = 200, result
+        try:
+            status_text = HTTPStatus(status).phrase.upper()
+        except ValueError:
+            status_text = 'UNKNOWN STATUS CODE'
+        envelope = {'status': status, 'statusText': status_text, 'content': content}
+        return HttpResponse(json.dumps(envelope, cls=DjangoJSONEncoder), content_type="application/json", status=status)
     return _wrapper
