@@ -1,8 +1,8 @@
-var JQuery = require('jquery');
-var React = require('react');
+const React = require('react');
+const PropTypes = require('prop-types');
 
-var BootstrapPanel = React.createClass({
-  render: function() {
+class BootstrapPanel extends React.Component {
+  render() {
     return (
       <div className="panel panel-default">
         <div className="panel-heading">
@@ -14,7 +14,12 @@ var BootstrapPanel = React.createClass({
       </div>
     );
   }
-})
+}
+
+BootstrapPanel.propTypes = {
+  title: PropTypes.node,
+  body: PropTypes.node,
+};
 
 module.exports = {
       panel: BootstrapPanel,

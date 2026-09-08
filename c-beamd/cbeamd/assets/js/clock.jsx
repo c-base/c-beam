@@ -1,6 +1,4 @@
-const JQuery = require('jquery');
 const React = require('react');
-const ReactDOM = require('react-dom');
 
 function formatDate(d) {
   var dd = d.getDate()
@@ -15,40 +13,42 @@ function formatDate(d) {
   return yy+'-'+mm+'-'+dd+'T'+hh+':'+min
 }
 
-var ClockWidget = React.createClass({
-  componentDidMount: function() {
-    this.startUpdating();
-  },
+class ClockWidget extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {data: {time: "time is being created..."}};
+    this._timer = null;
+    this.update = this.update.bind(this);
+  }
 
-  componentWillUnmount: function() {
+  componentDidMount() {
+    this.startUpdating();
+  }
+
+  componentWillUnmount() {
     if (this._timer) {
       clearInterval(this._timer);
       this._timer = null;
     }
-  },
-  getInitialState: function() {
-    return {data: {time: "time is being created..."}};
-  },
-  startUpdating: function() {
-    var self = this;
-    if (!self.isMounted()) { return; } // abandon
-    self.update(); // do it once and then start it up ...
-    self._timer = setInterval(self.update, 10000); //this.props.pollInterval);
-  },
+  }
 
-  update: function() {
+  startUpdating() {
+    this.update(); // do it once and then start it up ...
+    this._timer = setInterval(this.update, 10000); //this.props.pollInterval);
+  }
+
+  update() {
     //this.setState({data: {time: new Date().toLocaleString().slice(0, -3)}});
     this.setState({data: {time: formatDate(new Date())}});
-  },
+  }
 
-  render: function() {
+  render() {
     return  (
       <div>
         <div className="clock-display">{this.state.data.time}</div>
       </div>
     )
   }
-
-});
+}
 
 module.exports = ClockWidget;
