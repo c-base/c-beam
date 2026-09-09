@@ -88,7 +88,13 @@
               </ul>
             </li>
             <li><a href="/profile">c-profile</a></li>
-            <li><a href="/logout">c-logout</a></li>
+            {# django 5 dropped GET on LogoutView, so the navbar posts; styled as a plain nav link #}
+            <li>
+              <form action="{% url 'logout' %}" method="post" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link navbar-btn" style="padding:15px;line-height:20px;color:inherit">c-logout</button>
+              </form>
+            </li>
             {% else %}
             <li><a href="/login">c-login</a></li>
             {% endif %}
