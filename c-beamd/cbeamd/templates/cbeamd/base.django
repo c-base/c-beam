@@ -7,7 +7,8 @@
     <style type="text/css">
       body {
         padding-top: 60px;
-        background: url("/static/c-base-bootstrap/img/bg.jpg") fixed;
+        background: #000 url("/static/c-base-bootstrap/img/bg.jpg") center center / cover no-repeat fixed;
+        min-height: 100vh;
       }
     </style>
     <title>{% block title %}c-beam{% endblock %}</title>
@@ -88,12 +89,11 @@
               </ul>
             </li>
             <li><a href="/profile">c-profile</a></li>
-            {# django 5 dropped GET on LogoutView, so the navbar posts; styled as a plain nav link #}
+            {# django 5 dropped GET on LogoutView: the entry stays a normal nav link so it #}
+            {# looks like its neighbours, and submits the hidden post form next to it #}
             <li>
-              <form action="{% url 'logout' %}" method="post" style="display:inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-link navbar-btn" style="padding:15px;line-height:20px;color:inherit">c-logout</button>
-              </form>
+              <a href="{% url 'logout' %}" onclick="document.getElementById('logout-form').submit(); return false;">c-logout</a>
+              <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:none">{% csrf_token %}</form>
             </li>
             {% else %}
             <li><a href="/login">c-login</a></li>
@@ -110,6 +110,7 @@
     </div>
     <div class="container">
       {% block content %}Empty Page{% endblock %}
+      {% block footer %}
       <p><hr></p>
       <footer class="row">
         <div class="col-md-12" style="text-align:center">
@@ -117,6 +118,7 @@
           <br>
         </div>
       </footer>
+      {% endblock footer %}
   
       </div> <!-- container -->
 

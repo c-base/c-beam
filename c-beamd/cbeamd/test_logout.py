@@ -12,8 +12,10 @@ class TestLogout(TestCase):
 
     def test_navbar_offers_logout_as_a_post_form(self):
         response = self.client.get('/login/')  # any page rendering base.django
-        self.assertContains(response, 'action="/logout/" method="post"')
-        self.assertContains(response, 'c-logout')
+        self.assertContains(response, 'id="logout-form" action="/logout/" method="post"')
+        # the visible entry is a plain nav link like its neighbours, not a button
+        self.assertContains(response, 'onclick="document.getElementById(\'logout-form\').submit(); return false;">c-logout</a>')
+        self.assertNotContains(response, 'c-logout</button>')
 
     def test_get_logout_is_refused(self):
         self.assertEqual(self.client.get('/logout/').status_code, 405)
