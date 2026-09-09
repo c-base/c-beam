@@ -53,14 +53,18 @@ class ApiAuthenticationTest(TestCase):
         "/api/v1/matelight/",
     ]
 
+    # 401, not 403: bearer authentication is the first drf auth class, so an
+    # anonymous request is answered with a `WWW-Authenticate: Bearer` challenge
     def test_anonymous_access_is_refused(self):
         for url in self.endpoints:
             with self.subTest(url=url):
-                self.assertEqual(self.client.get(url).status_code, 403)
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 401)
+                self.assertIn("Bearer", response["WWW-Authenticate"])
 
     def test_anonymous_write_is_refused(self):
         response = self.client.post("/api/v1/users/", {"username": "intruder"})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
         self.assertFalse(User.objects.filter(username="intruder").exists())
 
 

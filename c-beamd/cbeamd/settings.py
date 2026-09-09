@@ -127,12 +127,37 @@ INSTALLED_APPS = (
 
 
 REST_FRAMEWORK = {
+    # bearer first, so that an unauthenticated request is answered 401 with a
+    # Bearer challenge instead of session auth's 403
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'cbeamd.oauth.OAuth2BearerAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
     'DEFAULT_VERSION': 'v1',
     'ALLOWED_VERSIONS': ['v1'],
     'VERSION_PARAM': 'version',
 }
+
+# oauth2 resource server — see cbeamd/oauth.py. the c-base identity provider
+# (django-oauth-toolkit) issues the tokens; c-beam validates them. a blank
+# issuer disables bearer authentication.
+OAUTH_ISSUER = config('OAUTH_ISSUER', default='')
+OAUTH_JWKS_URL = config('OAUTH_JWKS_URL', default='')          # default: <issuer>/.well-known/jwks.json
+OAUTH_AUDIENCE = config('OAUTH_AUDIENCE', default='')          # optional, enforced when set
+OAUTH_REQUIRED_SCOPE = config('OAUTH_REQUIRED_SCOPE', default='')
+OAUTH_USERNAME_CLAIM = config('OAUTH_USERNAME_CLAIM', default='preferred_username')
+# rfc 7662 fallback for opaque tokens; needs c-beam's own client credentials at the idp
+OAUTH_INTROSPECTION_URL = config('OAUTH_INTROSPECTION_URL', default='')
+OAUTH_CLIENT_ID = config('OAUTH_CLIENT_ID', default='')
+OAUTH_CLIENT_SECRET = config('OAUTH_CLIENT_SECRET', default='')
+# browser login (views/oauth_login.py): authorization code + pkce as the same
+# confidential client. endpoints default to the django-oauth-toolkit layout.
+OAUTH_AUTHORIZATION_URL = config('OAUTH_AUTHORIZATION_URL', default='')   # <issuer>/authorize/
+OAUTH_TOKEN_URL = config('OAUTH_TOKEN_URL', default='')                   # <issuer>/token/
+OAUTH_LOGIN_SCOPE = config('OAUTH_LOGIN_SCOPE', default='openid')
+OAUTH_REDIRECT_URI = config('OAUTH_REDIRECT_URI', default='')             # default: this host + /oauth/callback/
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'c-beam API',
@@ -150,6 +175,8 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
+# the password form is the login page for local accounts; when an idp is
+# configured it carries a button for the oauth login on top (views/oauth_login.py)
 LOGIN_URL = reverse_lazy('login')
 LOGOUT_URL = reverse_lazy('logout')
 LOGIN_REDIRECT_URL = reverse_lazy('index')

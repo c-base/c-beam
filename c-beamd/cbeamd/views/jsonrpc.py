@@ -14,6 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from ..json_rpc_client import get_jsonrpc_method, method_requires_authentication
+from ..oauth import InvalidToken, authenticate_bearer
 from .helpers import logger
 
 # the two leading positional params an authenticated method accepts instead of
@@ -32,11 +33,20 @@ def _authenticate(request, params):
     """
     resolve the user for a method declared with authenticated=True.
 
-    a logged-in django session wins. otherwise the credentials are taken from
-    the params — the first two positional ones, or the `username`/`password`
-    keys — and stripped before the call, as django-json-rpc did. returns the
-    params to call with, or None if the caller could not be authenticated.
+    an `Authorization: Bearer` token from the c-base idp is checked first
+    (cbeamd.oauth) and, when present, decides on its own — a bad token is
+    refused even if a session exists. next a logged-in django session wins.
+    otherwise the credentials are taken from the params — the first two
+    positional ones, or the `username`/`password` keys — and stripped before
+    the call, as django-json-rpc did. returns the params to call with, or
+    None if the caller could not be authenticated; raises InvalidToken for a
+    bearer token that does not hold up.
     """
+    bearer_user = authenticate_bearer(request)
+    if bearer_user is not None:
+        request.user = bearer_user
+        return params
+
     rpc_user = getattr(request, 'user', None)
     if rpc_user is not None and rpc_user.is_authenticated:
         return params
@@ -91,7 +101,11 @@ def _dispatch_one(request, data):
         return reply(_error(-32601, 'Method not found', request_id, version=version))
 
     if method_requires_authentication(handler):
-        params = _authenticate(request, params)
+        try:
+            params = _authenticate(request, params)
+        except InvalidToken as e:
+            logger.warning("json-rpc call to %s with invalid bearer token: %s", method, e)
+            return reply(_error(-32000, 'Authentication required', request_id, str(e), version))
         if params is None:
             logger.warning("unauthenticated json-rpc call to protected method %s", method)
             # -32000 is in the implementation-defined server error range

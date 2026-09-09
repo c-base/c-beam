@@ -4,6 +4,16 @@
 
 {% block content %}
 
+{% if oauth_enabled %}
+<div class="col-md-3">
+    <a class="btn btn-primary btn-block" href="{% url 'oauth_login' %}?next={{ redirect_to|urlencode }}">
+        mit c-base-account anmelden
+    </a>
+    <p class="text-muted" style="margin-top: 1em">oder mit lokalem passwort:</p>
+</div>
+<div class="clearfix"></div>
+{% endif %}
+
 <form action="/login/?next={{redirect_to}}" method="post" class="formi col-md-3">
     {% csrf_token %}
     {% bootstrap_form form %}

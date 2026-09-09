@@ -111,4 +111,28 @@ Postgres needs no volume, just the `DATABASE_*` variables.
 - Commands:
   - who()
   - login(username)
+
+### authenticating as a crew member (android app, own clients)
+
+c-beam accepts oauth2 bearer tokens issued by the c-base identity provider on
+both the json-rpc endpoint and the rest api:
+
+    Authorization: Bearer <access token>
+
+log in at the identity provider (`https://c-base.org/oauth/`) with
+authorization code + pkce, then send the access token with every request. the
+idp currently issues opaque access tokens; c-beam checks those through the
+idp's introspection endpoint and takes the crew nickname from the `username`
+it reports. jwt access tokens are validated locally against the idp's jwks
+instead — that is the form the mqtt broker needs, should the idp switch.
+json-rpc methods marked as authenticated answer error `-32000` (http 401) with
+the reason in `error.data` when the token is missing or refused; the rest api
+answers 401 with a `WWW-Authenticate: Bearer` challenge.
+
+the web ui can log in through the same identity provider: `/login/` shows the
+password form for local accounts plus a "mit c-base-account anmelden" button
+for crew members.
+
+operators configure this through the `OAUTH_*` entries in `.env.example`.
+
   - ...

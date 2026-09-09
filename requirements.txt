@@ -31,7 +31,9 @@ charset-normalizer==3.5.1
 coverage==7.16.0
     # via pytest-cov
 cryptography==50.0.1
-    # via google-auth
+    # via
+    #   -r requirements.in
+    #   google-auth
 django==6.1.1
     # via
     #   -r requirements.in
@@ -111,6 +113,8 @@ pyfcm==2.1.1
     # via -r requirements.in
 pygments==2.21.0
     # via pytest
+pyjwt==2.13.0
+    # via -r requirements.in
 pytest==9.1.1
     # via
     #   -r requirements.in
