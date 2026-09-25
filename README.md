@@ -77,7 +77,7 @@ there are two ways to start it.
 
 ```bash
 make docker-run
-# or: docker run --env-file .env --name c-beamd -p 4254:8000 -t c-beamd
+# or: docker run --env-file .env --name c-beamd -p 4254:8000 -it c-beamd
 ```
 
 **Live source** — a bind mount at the same path shadows the copy in the image,
@@ -86,7 +86,7 @@ develop in, and the one that picks up a local `cbeamd/local_settings.py`:
 
 ```bash
 make docker-run-dev
-# or: docker run -v "$PWD":/opt/c-beamd --name c-beamd -p 4254:8000 -t c-beamd
+# or: docker run -v "$PWD":/opt/c-beamd --name c-beamd -p 4254:8000 -it c-beamd
 ```
 
 Both serve on <http://localhost:4254>.

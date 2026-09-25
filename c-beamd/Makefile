@@ -10,6 +10,11 @@ env_file := $(current_dir)/../.env
 # on an SELinux host, rootless podman needs a relabelled bind mount for
 # docker-run-dev; add :z to the -v argument there if the container cannot
 # read the source.
+#
+# the run targets attach with -it, not just -t. with a tty but no stdin the
+# terminal is in raw mode, so ctrl-c neither becomes a SIGINT for the client
+# nor reaches the container as ^C — the only way out is `stop` from another
+# shell. with stdin attached the ^C travels through the pty to gunicorn.
 CONTAINER ?= $(shell for c in docker podman; do command -v $$c >/dev/null 2>&1 && { echo $$c; break; }; done)
 
 image ?= c-beamd
@@ -49,10 +54,10 @@ docker-image: check-engine
 
 docker-run: check-engine
 	@test -f "$(env_file)" || { echo "no .env at $(env_file) — cp .env.example .env and set SECRET_KEY"; exit 1; }
-	$(CONTAINER) rm -f $(name); $(CONTAINER) run --env-file "$(env_file)" --name $(name) -p $(port):8000 -t $(image)
+	$(CONTAINER) rm -f $(name); $(CONTAINER) run --env-file "$(env_file)" --name $(name) -p $(port):8000 -it $(image)
 
 docker-run-dev: check-engine
-	$(CONTAINER) rm -f $(name); $(CONTAINER) run -v "$(current_dir)":/opt/c-beamd --name $(name) -p $(port):8000 -t $(image)
+	$(CONTAINER) rm -f $(name); $(CONTAINER) run -v "$(current_dir)":/opt/c-beamd --name $(name) -p $(port):8000 -it $(image)
 
 check-engine:
 	@test -n "$(CONTAINER)" || { echo "neither docker nor podman found on PATH — install one, or run make CONTAINER=<engine>"; exit 1; }
