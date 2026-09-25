@@ -14,5 +14,9 @@ python manage.py shell -c "from django.conf import settings; from pprint import 
 # echo "from cbeamd.models import Mission; m = Mission(); m.short_description = 'foo'; m.save()" | python /opt/c-beamd/manage.py shell
 # 
 # python /opt/c-beamd/c-beamd/manage.py runserver 0.0.0.0:4254
-gunicorn -w 10 --bind=0.0.0.0:4284 --log-level=warning cbeamd.wsgi:application --worker-class gthread --threads 4
+# exec so gunicorn replaces this shell as PID 1. without it bash is PID 1 and,
+# lacking signal handlers, drops the SIGINT/SIGTERM the container runtime sends
+# on ctrl-c or `stop` -- the container then hangs until the runtime SIGKILLs it.
+# port 8000 is what the Dockerfile EXPOSEs and the Makefile maps to.
+exec gunicorn -w 10 --bind=0.0.0.0:4284 --log-level=warning cbeamd.wsgi:application --worker-class gthread --threads 4
 
