@@ -182,6 +182,16 @@ LOGOUT_URL = reverse_lazy('logout')
 LOGIN_REDIRECT_URL = reverse_lazy('index')
 
 # Logging Configuration
+# the file handlers below open their files when logging is configured, i.e. on
+# every process start, and RotatingFileHandler does not create directories. the
+# default logs/ dir is gitignored and .dockerignored, so it is missing in a fresh
+# clone or bind mount — create it here rather than fail the boot of every worker.
+LOG_FILE = config('LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam.log'))
+ERROR_LOG_FILE = config('ERROR_LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam-error.log'))
+SECURITY_LOG_FILE = config('SECURITY_LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam-security.log'))
+for _log_file in (LOG_FILE, ERROR_LOG_FILE, SECURITY_LOG_FILE):
+    os.makedirs(os.path.dirname(_log_file), exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -206,14 +216,14 @@ LOGGING = {
         },
         'file': {
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': config('LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam.log')),
+            'filename': LOG_FILE,
             'maxBytes': 1024 * 1024 * 10,  # 10MB
             'backupCount': 5,
             'formatter': 'verbose',
         },
         'error_file': {
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': config('ERROR_LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam-error.log')),
+            'filename': ERROR_LOG_FILE,
             'maxBytes': 1024 * 1024 * 10,  # 10MB
             'backupCount': 5,
             'level': 'ERROR',
@@ -221,7 +231,7 @@ LOGGING = {
         },
         'security_file': {
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': config('SECURITY_LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam-security.log')),
+            'filename': SECURITY_LOG_FILE,
             'maxBytes': 1024 * 1024 * 10,  # 10MB
             'backupCount': 5,
             'level': 'WARNING',
