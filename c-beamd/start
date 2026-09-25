@@ -1,24 +1,18 @@
 #! /bin/bash
 
-cd /opt/c-beamd/cbeamd
+cd /opt/c-beamd/c-beamd
 
-python /opt/c-beamd/manage.py makemigrations
-python /opt/c-beamd/manage.py migrate
-python /opt/c-beamd/manage.py collectstatic
+# python /opt/c-beamd/manage.py makemigrations
+# python /opt/c-beamd/manage.py migrate
+python /opt/c-beamd/manage.py collectstatic --noinput
 
-# bootstrap superuser.
-# credentials come from the environment; if DJANGO_SUPERUSER_PASSWORD is unset we
-# skip this entirely rather than baking a known password into the image.
-if [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
-    DJANGO_SUPERUSER_USERNAME="${DJANGO_SUPERUSER_NAME:-admin}" \
-    DJANGO_SUPERUSER_EMAIL="${DJANGO_SUPERUSER_EMAIL:-admin@example.com}" \
-    python /opt/c-beamd/manage.py createsuperuser --noinput || \
-        echo "superuser already exists, leaving it alone"
-else
-    echo "DJANGO_SUPERUSER_PASSWORD not set - skipping superuser creation"
-fi
+python manage.py shell -c "from django.conf import settings; from pprint import pprint; pprint({k: getattr(settings, k) for k in dir(settings) if k.isupper()})"
 
-echo "from cbeamd.models import Status; s = Status(); s.save()" | python /opt/c-beamd/manage.py shell
-echo "from cbeamd.models import Mission; m = Mission(); m.short_description = 'foo'; m.save()" | python /opt/c-beamd/manage.py shell
+# echo "from django.contrib.auth.models import User; User.objects.filter(email='admin@example.com').delete(); User.objects.create_superuser('admin', 'admin@example.com', 'fooderbar23')" | python /opt/c-beamd/manage.py shell
+# echo "from django.contrib.auth.models import User; user = User.objects.get(username='admin'); user.set_password('foobar23'); user.save()" | python /opt/c-beamd/manage.py shell
+# echo "from cbeamd.models import Status; s = Status(); s.save()" | python /opt/c-beamd/manage.py shell
+# echo "from cbeamd.models import Mission; m = Mission(); m.short_description = 'foo'; m.save()" | python /opt/c-beamd/manage.py shell
+# 
+# python /opt/c-beamd/c-beamd/manage.py runserver 0.0.0.0:4254
+gunicorn -w 10 --bind=0.0.0.0:4284 --log-level=warning cbeamd.wsgi:application --worker-class gthread --threads 4
 
-python /opt/c-beamd/manage.py runserver 0.0.0.0:8000
