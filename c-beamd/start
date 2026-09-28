@@ -18,5 +18,5 @@ python manage.py shell -c "from django.conf import settings; from pprint import 
 # lacking signal handlers, drops the SIGINT/SIGTERM the container runtime sends
 # on ctrl-c or `stop` -- the container then hangs until the runtime SIGKILLs it.
 # port 8000 is what the Dockerfile EXPOSEs and the Makefile maps to.
-exec gunicorn -w 10 --bind=0.0.0.0:4284 --log-level=warning cbeamd.wsgi:application --worker-class gthread --threads 4
+exec gunicorn -w 10 --bind=0.0.0.0:4254 --log-level=warning cbeamd.wsgi:application --worker-class gthread --threads 4
 

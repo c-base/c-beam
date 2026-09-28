@@ -37,7 +37,10 @@ def event_list(request):
     """
     get todays events with details
     """
-    update_event_cache()
+    try:
+        update_event_cache()
+    except:
+        pass
     return helpers.eventdetailcache
 
 

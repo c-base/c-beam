@@ -1,0 +1,12 @@
+services:
+  cbeam:
+    image: cbeamd:refactor
+    build: .
+    network_mode: "host"
+    env_file: .env
+    ports:
+      - 4254:4254
+    volumes:
+      - /home/c-beam/c-beam-refactor/c-beamd:/opt/c-beamd
+      - /home/c-beam/fcm.json:/opt/c-beamd/fcm.json
+

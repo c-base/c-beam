@@ -33,5 +33,5 @@ WORKDIR /opt/c-beamd
 
 ENV PYTHONUNBUFFERED=1
 
-EXPOSE 8000
+EXPOSE 4254
 ENTRYPOINT ["/opt/c-beamd/start"]

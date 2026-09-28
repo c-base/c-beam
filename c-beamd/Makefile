@@ -17,9 +17,9 @@ env_file := $(current_dir)/../.env
 # shell. with stdin attached the ^C travels through the pty to gunicorn.
 CONTAINER ?= $(shell for c in docker podman; do command -v $$c >/dev/null 2>&1 && { echo $$c; break; }; done)
 
-image ?= c-beamd
+image ?= c-beamd:refactor
 name ?= c-beamd
-port ?= 4254
+port ?= 4284
 
 # optional, untracked: a place to pin CONTAINER/port/image for this machine
 -include $(current_dir)/Makefile.local
@@ -49,18 +49,18 @@ coverage-html:
 	cd $(repo_root) && MQTT_ENABLED=$(MQTT_ENABLED) pytest --cov --cov-report=html
 	@echo "open $(repo_root)/htmlcov/index.html"
 
-docker-image: check-engine
-	$(CONTAINER) build .. -t $(image)
+image: check-engine
+	$(CONTAINER) build --network=host .. -t $(image)
 
-docker-run: check-engine
+run: check-engine
 	@test -f "$(env_file)" || { echo "no .env at $(env_file) — cp .env.example .env and set SECRET_KEY"; exit 1; }
-	$(CONTAINER) rm -f $(name); $(CONTAINER) run --env-file "$(env_file)" --name $(name) -p $(port):8000 -it $(image)
+	$(CONTAINER) rm -f $(name); $(CONTAINER) run --network=host --env-file "$(env_file)" --name $(name) -p $(port):9000 -it $(image)
 
-docker-run-dev: check-engine
-	$(CONTAINER) rm -f $(name); $(CONTAINER) run -v "$(current_dir)":/opt/c-beamd --name $(name) -p $(port):8000 -it $(image)
+run-dev: check-engine
+	$(CONTAINER) rm -f $(name); $(CONTAINER) run -v "$(current_dir)":/opt/c-beamd --name $(name) -p $(port):9000 -it $(image)
 
 check-engine:
 	@test -n "$(CONTAINER)" || { echo "neither docker nor podman found on PATH — install one, or run make CONTAINER=<engine>"; exit 1; }
 	@command -v $(CONTAINER) >/dev/null 2>&1 || { echo "CONTAINER is set to '$(CONTAINER)', which is not on PATH"; exit 1; }
 
-.PHONY: test coverage coverage-html docker-image docker-run docker-run-dev check-engine
+.PHONY: test coverage coverage-html image run run-dev check-engine

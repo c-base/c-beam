@@ -14,12 +14,13 @@
   },
   "private": true,
   "devDependencies": {
-    "@babel/core": "^8.0.1",
-    "@babel/preset-env": "^8.0.2",
-    "@babel/preset-react": "^8.0.1",
+    "@babel/core": "^7",
+    "@babel/preset-env": "^7",
+    "@babel/preset-react": "^7",
     "babel-loader": "^10.1.1",
     "webpack": "^5.110.3",
     "webpack-bundle-tracker": "^3.2.4",
     "webpack-cli": "^7.2.3"
-  }
+  },
+  "packageManager": "yarn@4.18.0"
 }
