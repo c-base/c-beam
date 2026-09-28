@@ -10,6 +10,14 @@
         background: #000 url("/static/c-base-bootstrap/img/bg.jpg") center center / cover no-repeat fixed;
         min-height: 100vh;
       }
+      /* centre logo and name on the same line as the menu entries; the logo
+         is taller than the text line and may overflow into the padding */
+      .navbar-brand {
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+      }
+      .navbar-brand img { margin-right: 6px; }
     </style>
     <title>{% block title %}c-beam{% endblock %}</title>
 
@@ -46,7 +54,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand center" href="/"><nowrap><img style="margin-top: -8px;" src="/static/ic_launcher.png"> c-beam</nowrap></a>
+          <a class="navbar-brand" href="/"><img src="/static/ic_launcher.png" alt=""> c-beam</a>
         </div>
         <div id="navbar-main" class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
