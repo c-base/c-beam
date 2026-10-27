@@ -5,6 +5,7 @@ Split out of the original views.py; function bodies are unchanged.
 """
 
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
@@ -16,6 +17,14 @@ from ..models import Activity, ActivityLog, Mission, Subscription, User
 
 from .helpers import logger, mission_assigned, mission_completed, mission_open
 from .helpers import getuser, publish
+
+
+def _push_service():
+    """
+    an FCMNotification for the configured service account. pyfcm opens the
+    file lazily, so this performs no i/o and the path is only checked on send.
+    """
+    return FCMNotification(settings.FCM_SERVICE_ACCOUNT_FILE, settings.FCM_PROJECT_ID)
 
 
 @jsonrpc_method('add_mission')
@@ -237,7 +246,7 @@ def fcm_update(request, user, regid):
 def gcm_send(request, title, text):
     logger.error("gcm_Send called: %s - %s", title, text)
     logger.critical("gcm_Send called: %s - %s", title, text)
-    push_service = FCMNotification("/tmp/foo", "c-beam")
+    push_service = _push_service()
     if title == "now boarding":
         users = User.objects.filter(push_boarding=True)
     elif title == "ETA":
@@ -266,7 +275,7 @@ def gcm_send(request, title, text):
 
 
 def gcm_send_mission(request, title, text):
-    push_service = FCMNotification("/tmp/foo", "c-beam")
+    push_service = _push_service()
     users = User.objects.filter(stats_enabled=True, push_missions=True)
     now = timezone.localtime(timezone.now())
     timestamp = "%d:%d" % (now.hour, now.minute)
@@ -280,7 +289,7 @@ def gcm_send_mission(request, title, text):
 
 @jsonrpc_method('gcm_send_test')
 def gcm_send_test(request, title, text, username):
-    push_service = FCMNotification("/tmp/foo", "c-beam")
+    push_service = _push_service()
     u = getuser(username)
     now = timezone.localtime(timezone.now())
     timestamp = "%d:%d" % (now.hour, now.minute)

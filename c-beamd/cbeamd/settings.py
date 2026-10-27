@@ -192,6 +192,16 @@ SECURITY_LOG_FILE = config('SECURITY_LOG_FILE', default=os.path.join(BASE_DIR, '
 for _log_file in (LOG_FILE, ERROR_LOG_FILE, SECURITY_LOG_FILE):
     os.makedirs(os.path.dirname(_log_file), exist_ok=True)
 
+# Firebase Cloud Messaging (push notifications via pyfcm, cbeamd/views/missions.py)
+# the service account json is read lazily by pyfcm on the first send, so a
+# wrong path only surfaces as "The service account file does not exist" at
+# that point. the default matches the bind mount in podman-compose.yml, which
+# puts the file at /opt/c-beamd/fcm.json.
+# an empty value in .env falls back to the default as well
+FCM_SERVICE_ACCOUNT_FILE = config('FCM_SERVICE_ACCOUNT_FILE', default='') or os.path.join(BASE_DIR, 'fcm.json')
+# must equal the `project_id` field of that json
+FCM_PROJECT_ID = config('FCM_PROJECT_ID', default='') or 'c-beam'
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

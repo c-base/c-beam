@@ -77,7 +77,7 @@ there are two ways to start it.
 
 ```bash
 make docker-run
-# or: docker run --env-file .env --name c-beamd -p 4254:8000 -it c-beamd
+# or: docker run --env-file .env --name c-beamd -p 4254:4254 -it c-beamd
 ```
 
 **Live source** — a bind mount at the same path shadows the copy in the image,
@@ -86,7 +86,7 @@ develop in, and the one that picks up a local `cbeamd/local_settings.py`:
 
 ```bash
 make docker-run-dev
-# or: docker run -v "$PWD":/opt/c-beamd --name c-beamd -p 4254:8000 -it c-beamd
+# or: docker run -v "$PWD":/opt/c-beamd --name c-beamd -p 4254:4254 -it c-beamd
 ```
 
 Both serve on <http://localhost:4254>.
@@ -102,6 +102,16 @@ The database follows `DATABASE_NAME`. Under `docker-run` it defaults into the
 container's writable layer and dies with the container; to keep it, point
 `DATABASE_NAME` at `/data/c-beam.sqlite` and add `-v c-beamd-data:/data`.
 Postgres needs no volume, just the `DATABASE_*` variables.
+
+## Push notifications (FCM)
+
+the android app gets its pushes through firebase cloud messaging (pyfcm). the
+service account json is looked up at `FCM_SERVICE_ACCOUNT_FILE`, which defaults
+to `<BASE_DIR>/fcm.json` — `/opt/c-beamd/fcm.json` inside the container, where
+`podman-compose.yml` mounts it. `FCM_PROJECT_ID` has to match the `project_id`
+inside that file. pyfcm only opens the file on the first send, so a wrong path
+shows up as "The service account file does not exist or is not a regular file"
+when calling e.g. `gcm_send_test`, not at startup.
 
 ## JSON RPC
 

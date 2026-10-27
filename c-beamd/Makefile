@@ -19,7 +19,7 @@ CONTAINER ?= $(shell for c in docker podman; do command -v $$c >/dev/null 2>&1 &
 
 image ?= c-beamd:refactor
 name ?= c-beamd
-port ?= 4284
+port ?= 4254
 
 # optional, untracked: a place to pin CONTAINER/port/image for this machine
 -include $(current_dir)/Makefile.local
