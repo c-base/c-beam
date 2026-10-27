@@ -103,6 +103,18 @@ container's writable layer and dies with the container; to keep it, point
 `DATABASE_NAME` at `/data/c-beam.sqlite` and add `-v c-beamd-data:/data`.
 Postgres needs no volume, just the `DATABASE_*` variables.
 
+## Airlock LEDs (c_leuse)
+
+the led stripe in the airlock is driven by `c_leuse_leds.py` from
+<https://github.com/c-base/c_leuse>, which subscribes to the mqtt broker and
+passes the payload of `c_leuse/led_pattern` (`C_LEUSE_LED_TOPIC`) to the
+arduino firmware. the payload is a pattern name: `off`, `rainbow`,
+`notbeleuchtung`, `scanning`, `success` or `failure`; the firmware shows
+rainbow for anything it does not know. `set_stripe_pattern` accepts those
+names as well as the numeric ids of the old cerebrum api (0 off, 1 rainbow,
+2 success, 4 failure, 10 notbeleuchtung, others rainbow). speed, offset and
+buffer no longer exist on this hardware; the json-rpc methods remain as no-ops.
+
 ## Push notifications (FCM)
 
 the android app gets its pushes through firebase cloud messaging (pyfcm). the

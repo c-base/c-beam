@@ -1,108 +1,141 @@
 """
-LED stripe control.
+LED stripe control in the airlock (c_leuse).
 
-Split out of the original views.py; function bodies are unchanged.
+the leds moved from the cerebrum json-rpc service to an arduino behind
+c_leuse_leds.py (github.com/c-base/c_leuse), which subscribes to the c-base
+mqtt broker and hands the payload of `c_leuse/led_pattern` straight to the
+firmware's setPattern(char*). the firmware knows these names:
+
+    off, notbeleuchtung, scanning, success, failure
+
+and shows rainbow for anything else. there is no speed, offset or buffer any
+more; the json-rpc methods for those are kept so old clients get an answer
+instead of a "method not found", but they do nothing.
 """
-
-import random
 
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from ..json_rpc_client import jsonrpc_method
 
+import cbeamdcfg as cfg
 from ..forms import StripeForm
 from ..models import User
 
 from . import helpers
-from .helpers import cerebrum
+from .helpers import logger, publish
+
+# names the firmware understands. anything else falls through to rainbow on
+# the arduino, so rainbow is listed here only for the ui and the mapping below.
+PATTERNS = ('rainbow', 'off', 'notbeleuchtung', 'scanning', 'success', 'failure')
+
+# the numeric pattern ids of the old cerebrum api, as used by the android app
+# and the old web ui. colours have no counterpart on the new stripe; green and
+# red are mapped to the closest thing it has, everything else becomes rainbow.
+LEGACY_PATTERNS = {
+    0: 'off',
+    1: 'rainbow',
+    2: 'success',        # grün
+    4: 'failure',        # rot
+    6: 'rainbow',        # "default"
+    10: 'notbeleuchtung',
+}
+
+# legacy ids, kept for helpers.default_stripe_pattern which other modules read
+LEGACY_RAINBOW = 1
+LEGACY_NOTBELEUCHTUNG = 10
+
+NOT_SUPPORTED = "not supported by the c_leuse leds, pattern only"
+
+
+def pattern_name(pattern):
+    """
+    normalise a pattern given as name or legacy numeric id to a firmware name.
+    """
+    if isinstance(pattern, str) and not pattern.lstrip('-').isdigit():
+        name = pattern.strip().lower()
+        if name not in PATTERNS:
+            logger.warning("unknown led pattern %r, the stripe will show rainbow", pattern)
+        return name
+    pattern_id = int(pattern)
+    name = LEGACY_PATTERNS.get(pattern_id)
+    if name is None:
+        logger.warning("legacy led pattern id %d has no equivalent, using rainbow", pattern_id)
+        name = 'rainbow'
+    return name
+
+
+def send_pattern(pattern):
+    """
+    publish a pattern to the airlock stripe. retained, so c_leuse_leds picks
+    the current pattern up again when it reconnects or restarts.
+    """
+    name = pattern_name(pattern)
+    publish(cfg.c_leuse_led_topic, name, retain=True)
+    return name
+
 
 #################################################################
-# cerebrum leds methods
+# c_leuse led methods
 #################################################################
 
 @jsonrpc_method('set_stripe_pattern')
 def set_stripe_pattern(request, pattern_id):
     """
-    set the airlock led stripe pattern to pattern_id
+    set the airlock led stripe pattern. takes a pattern name (off, rainbow,
+    notbeleuchtung, scanning, success, failure) or one of the old numeric ids.
     """
-    pattern_id = int(pattern_id)
-    # if pattern_id == 0:
-    # return cerebrum.partymode()
-    # if pattern_id == 4:
-    # return cerebrum.flimmer()
-    if pattern_id == 7:
-        return cerebrum.statics()
-    if pattern_id == 3:
-        patterns = cerebrum.get_patterns()
-        return cerebrum.set_pattern(random.choice(patterns))
-    # if pattern_id < 20:
-    result = cerebrum.set_pattern(pattern_id)
-    # if pattern_id == 20:
-    # result = cerebrum.flimmer()
-    # if pattern_id == 21:
-    # result = cerebrum.senso()
-    # if pattern_id == 22:
-    # result = cerebrum.blink()
-    # if pattern_id == 23:
-    # result = cerebrum.partymode()
-    # if result['result'] == "aye":
-    # result['result'] = "pattern has been set"
-    # else:
-    # result['result'] = "failed to set pattern"
-    return result
+    return send_pattern(pattern_id)
 
 
 def set_stripe_pattern_web(request, pattern_id):
-    return render(request, 'cbeamd/c_leuse.django', {'result': 'Pattern wurde gesetzt'})
+    name = send_pattern(pattern_id)
+    return render(request, 'cbeamd/c_leuse.django', {'result': 'Pattern %s wurde gesetzt' % name})
 
 
 @jsonrpc_method('set_stripe_speed')
 def set_stripe_speed(request, speed):
     """
-    set the airlock led stripe speed
+    no-op: the c_leuse leds have no speed setting
     """
-    speed = int(speed)
-    return cerebrum.set_speed(speed)
+    logger.info("set_stripe_speed(%s) ignored: %s", speed, NOT_SUPPORTED)
+    return NOT_SUPPORTED
 
 
 def set_stripe_speed_web(request, speed):
-    cerebrum.set_speed(int(speed))
-    return render(request, 'cbeamd/c_leuse.django', {'result': 'Geschwindigkeit wurde gesetzt'})
+    return render(request, 'cbeamd/c_leuse.django', {'result': 'Geschwindigkeit wird von den neuen LEDs nicht unterstuetzt'})
 
 
 @jsonrpc_method('set_stripe_offset')
 def set_stripe_offset(request, offset):
     """
-    set the airlock led stripe pattern offset
+    no-op: the c_leuse leds have no offset setting
     """
-    offset = int(offset)
-    return cerebrum.set_offset(offset)
+    logger.info("set_stripe_offset(%s) ignored: %s", offset, NOT_SUPPORTED)
+    return NOT_SUPPORTED
 
 
 @jsonrpc_method('set_stripe_buffer')
 def set_stripe_buffer(request, buffer):
     """
-    set the airlock led stripe pattern buffer
+    no-op: the c_leuse leds cannot take a raw buffer
     """
-    # buffer = [255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,255,0,0,255,0,0,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0]*32+[0,0,0,0,0,0,0,0,0,0,0,0]
-    return cerebrum.set_buffer(buffer)
+    logger.info("set_stripe_buffer ignored: %s", NOT_SUPPORTED)
+    return NOT_SUPPORTED
 
 
 @jsonrpc_method('set_stripe_default')
 def set_stripe_default(request):
     """
-    set the airlock led stripe pattern to the default pattern
+    set the airlock led stripe to the default pattern: rainbow while someone
+    is on board, notbeleuchtung when the station is empty
     """
-
-    if len(User.objects.filter(status="online")) > 0:
-        helpers.default_stripe_pattern = 1
+    if User.objects.filter(status="online").exists():
+        helpers.default_stripe_pattern = LEGACY_RAINBOW
         helpers.default_stripe_speed = 3
     else:
-        helpers.default_stripe_pattern = 10
+        helpers.default_stripe_pattern = LEGACY_NOTBELEUCHTUNG
         helpers.default_stripe_speed = 1
-    cerebrum.set_pattern(helpers.default_stripe_pattern)
-    cerebrum.set_speed(helpers.default_stripe_speed)
-    # cerebrum.set_offset(default_stripe_offset)
+    send_pattern(helpers.default_stripe_pattern)
     return "aye"
 
 
@@ -111,11 +144,9 @@ def notbeleuchtung(request):
     """
     set the airlock led stripe pattern to emergency lights
     """
-    helpers.default_stripe_pattern = 10
+    helpers.default_stripe_pattern = LEGACY_NOTBELEUCHTUNG
     helpers.default_stripe_speed = 0
-    cerebrum.set_pattern(10)
-    cerebrum.set_speed(1)
-    # TODO: send MQTT message for new c-leuse LEDs
+    return send_pattern('notbeleuchtung')
 
 
 @jsonrpc_method('rainbow')
@@ -123,10 +154,9 @@ def rainbow(request):
     """
     set the airlock led stripe pattern to rainbow
     """
-    helpers.default_stripe_pattern = 1
+    helpers.default_stripe_pattern = LEGACY_RAINBOW
     helpers.default_stripe_speed = 3
-    cerebrum.set_pattern(helpers.default_stripe_pattern)
-    cerebrum.set_speed(helpers.default_stripe_speed)
+    return send_pattern('rainbow')
 
 
 @csrf_exempt

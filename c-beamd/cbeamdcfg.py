@@ -33,6 +33,10 @@ mqtt_server = config('MQTT_SERVER', default='c-beam.cbrp3.c-base.org')
 mqtt_server_tls = config('MQTT_SERVER_TLS', default=False, cast=bool)
 mqtt_server_cert = config('MQTT_SERVER_CERT', default='/etc/ssl/certs/c-beam-mqtt.crt')
 
+# the airlock led stripe listens on the broker (c_leuse_leds.py in
+# github.com/c-base/c_leuse subscribes to c_leuse/+ and only acts on this one)
+c_leuse_led_topic = config('C_LEUSE_LED_TOPIC', default='c_leuse/led_pattern')
+
 # json-rpc endpoints of the collaborating c-base services. these were previously
 # hardcoded ServiceProxy() calls, commented out, which left every call site
 # raising NameError. set a url to an empty string to disable that client.
