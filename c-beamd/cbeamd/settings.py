@@ -250,12 +250,12 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console', 'file'],
-        'level': config('LOG_LEVEL', default='INFO'),
+        'level': config('LOG_LEVEL', default='WARNING'),
     },
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': config('DJANGO_LOG_LEVEL', default='INFO'),
+            'level': config('DJANGO_LOG_LEVEL', default='WARNING'),
             'propagate': False,
         },
         'django.request': {
@@ -270,7 +270,7 @@ LOGGING = {
         },
         'cbeamd': {
             'handlers': ['console', 'file'],
-            'level': config('APP_LOG_LEVEL', default='DEBUG'),
+            'level': config('APP_LOG_LEVEL', default='WARNING'),
             'propagate': False,
         },
     },
