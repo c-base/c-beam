@@ -1,22 +1,24 @@
-Django
+Django==6.1.*
 autopep8
-bvg-grabber
-djangoajax
-django-appconf
 django-auth-ldap
 django-bootstrap3
-django-json-rpc
-django-rest-framework
-django-tagging
-django-webpack
+djangorestframework
+drf-spectacular
 django-webpack-loader
 gunicorn
-ics
-# json-rpc
+icalendar
+recurring-ical-events
+python-decouple
+python-json-logger
+pytest
+pytest-django
+pytest-cov
 psycopg2-binary
 pyfcm
 python-ldap
 paho-mqtt<2
-HTMLParser
 feedparser
 python-mpd2
+# oauth2 bearer tokens: jwt validation against the idp's jwks
+PyJWT
+cryptography

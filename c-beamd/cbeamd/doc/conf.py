@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # c-beam documentation build configuration file, created by
 # sphinx-quickstart on Sat Feb 15 02:55:41 2014.

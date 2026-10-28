@@ -1,18 +1,16 @@
 import os
 
 from django.urls import reverse_lazy
-
-import django
-from django.utils.encoding import smart_str
-django.utils.encoding.smart_text = smart_str
+from decouple import config
 
 # Django settings for cbeamd project.
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-print(BASE_DIR)
 
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
+
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
 ADMINS = (
     ('smile', 'smile@c-base.org'),
@@ -20,10 +18,15 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
+# Database configuration
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'c-beam.sqlite',
+        'ENGINE': config('DATABASE_ENGINE', default='django.db.backends.sqlite3'),
+        'NAME': config('DATABASE_NAME', default=os.path.join(BASE_DIR, 'c-beam.sqlite')),
+        'USER': config('DATABASE_USER', default=''),
+        'PASSWORD': config('DATABASE_PASSWORD', default=''),
+        'HOST': config('DATABASE_HOST', default=''),
+        'PORT': config('DATABASE_PORT', default=''),
     },
 }
 
@@ -75,8 +78,6 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "cbeamd/assets"),
 ]
 
-print(STATICFILES_DIRS)
-
 # List of finder classes that know how to find static files in
 # various locations.
 STATICFILES_FINDERS = (
@@ -86,11 +87,14 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'vua+c7%ipz5yua!v9t_)i^plx9e^523e%9l-g6v&amp;bqaxx2d-4!'
+SECRET_KEY = config('SECRET_KEY')
 
 # List of callables that know how to import templates from various sources.
 
 MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'cbeamd.middleware.RequestLoggingMiddleware',
+    'cbeamd.middleware.SecurityLoggingMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -112,8 +116,9 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'cbeamd',
-    'jsonrpc',
+    # 'jsonrpc',  # Temporarily disabled for testing
     'rest_framework',
+    'drf_spectacular',
     'bootstrap3',
     'django.contrib.admin',
     'webpack_loader',
@@ -121,50 +126,152 @@ INSTALLED_APPS = (
 )
 
 
+REST_FRAMEWORK = {
+    # bearer first, so that an unauthenticated request is answered 401 with a
+    # Bearer challenge instead of session auth's 403
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'cbeamd.oauth.OAuth2BearerAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
+    'DEFAULT_VERSION': 'v1',
+    'ALLOWED_VERSIONS': ['v1'],
+    'VERSION_PARAM': 'version',
+}
+
+# oauth2 resource server — see cbeamd/oauth.py. the c-base identity provider
+# (django-oauth-toolkit) issues the tokens; c-beam validates them. a blank
+# issuer disables bearer authentication.
+OAUTH_ISSUER = config('OAUTH_ISSUER', default='')
+OAUTH_JWKS_URL = config('OAUTH_JWKS_URL', default='')          # default: <issuer>/.well-known/jwks.json
+OAUTH_AUDIENCE = config('OAUTH_AUDIENCE', default='')          # optional, enforced when set
+OAUTH_REQUIRED_SCOPE = config('OAUTH_REQUIRED_SCOPE', default='')
+OAUTH_USERNAME_CLAIM = config('OAUTH_USERNAME_CLAIM', default='preferred_username')
+# rfc 7662 fallback for opaque tokens; needs c-beam's own client credentials at the idp
+OAUTH_INTROSPECTION_URL = config('OAUTH_INTROSPECTION_URL', default='')
+OAUTH_CLIENT_ID = config('OAUTH_CLIENT_ID', default='')
+OAUTH_CLIENT_SECRET = config('OAUTH_CLIENT_SECRET', default='')
+# browser login (views/oauth_login.py): authorization code + pkce as the same
+# confidential client. endpoints default to the django-oauth-toolkit layout.
+OAUTH_AUTHORIZATION_URL = config('OAUTH_AUTHORIZATION_URL', default='')   # <issuer>/authorize/
+OAUTH_TOKEN_URL = config('OAUTH_TOKEN_URL', default='')                   # <issuer>/token/
+OAUTH_LOGIN_SCOPE = config('OAUTH_LOGIN_SCOPE', default='openid')
+OAUTH_REDIRECT_URI = config('OAUTH_REDIRECT_URI', default='')             # default: this host + /oauth/callback/
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'c-beam API',
+    'DESCRIPTION': 'API for c-beam space station management system',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+}
+
+
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
+# the password form is the login page for local accounts; when an idp is
+# configured it carries a button for the oauth login on top (views/oauth_login.py)
 LOGIN_URL = reverse_lazy('login')
 LOGOUT_URL = reverse_lazy('logout')
 LOGIN_REDIRECT_URL = reverse_lazy('index')
 
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error when DEBUG=False.
-# See http://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
-#LOGGING = {
-    #'version': 1,
-    #'disable_existing_loggers': False,
-    #'handlers': {
-        #'file': {
-            #'level': 'DEBUG',
-            #'class': 'logging.FileHandler',
-            #'filename': '/home/c-beam/c-beam-debug.log',
-        #},
-    #},
-    #'loggers': {
-        #'django.request': {
-            #'handlers': ['file'],
-            #'level': 'DEBUG',
-            #'propagate': True,
-        #},
-    #},
-#}
+# Logging Configuration
+# the file handlers below open their files when logging is configured, i.e. on
+# every process start, and RotatingFileHandler does not create directories. the
+# default logs/ dir is gitignored and .dockerignored, so it is missing in a fresh
+# clone or bind mount — create it here rather than fail the boot of every worker.
+LOG_FILE = config('LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam.log'))
+ERROR_LOG_FILE = config('ERROR_LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam-error.log'))
+SECURITY_LOG_FILE = config('SECURITY_LOG_FILE', default=os.path.join(BASE_DIR, 'logs', 'c-beam-security.log'))
+for _log_file in (LOG_FILE, ERROR_LOG_FILE, SECURITY_LOG_FILE):
+    os.makedirs(os.path.dirname(_log_file), exist_ok=True)
+
+# Firebase Cloud Messaging (push notifications via pyfcm, cbeamd/views/missions.py)
+# the service account json is read lazily by pyfcm on the first send, so a
+# wrong path only surfaces as "The service account file does not exist" at
+# that point. the default matches the bind mount in podman-compose.yml, which
+# puts the file at /opt/c-beamd/fcm.json.
+# an empty value in .env falls back to the default as well
+FCM_SERVICE_ACCOUNT_FILE = config('FCM_SERVICE_ACCOUNT_FILE', default='') or os.path.join(BASE_DIR, 'fcm.json')
+# must equal the `project_id` field of that json
+FCM_PROJECT_ID = config('FCM_PROJECT_ID', default='') or 'c-beam'
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+        'json': {
+            'format': '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}',
+            'class': 'pythonjsonlogger.json.JsonFormatter',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'simple',
         },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_FILE,
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'error_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': ERROR_LOG_FILE,
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 5,
+            'level': 'ERROR',
+            'formatter': 'verbose',
+        },
+        'security_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': SECURITY_LOG_FILE,
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 5,
+            'level': 'WARNING',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': config('LOG_LEVEL', default='INFO'),
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'WARNING'),
+            'handlers': ['console', 'file'],
+            'level': config('DJANGO_LOG_LEVEL', default='INFO'),
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['error_file'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['security_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'cbeamd': {
+            'handlers': ['console', 'file'],
+            'level': config('APP_LOG_LEVEL', default='DEBUG'),
+            'propagate': False,
         },
     },
 }
@@ -174,7 +281,21 @@ TTSGREETING = "Hallo %s, willkommen an bord"
 
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
-CSRF_TRUSTED_ORIGINS = ['https://c-beam.cbrp3.c-base.org']
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://c-beam.cbrp3.c-base.org', cast=lambda v: [s.strip() for s in v.split(',')])
+
+# Security settings
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=0, cast=int)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=False, cast=bool)
+SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=False, cast=bool)
+
+# cookies: default off so plain-http local development keeps working.
+# set both to True in .env wherever c-beam is served over https.
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+SESSION_COOKIE_HTTPONLY = True
 
 # webpack Configuration #######################################################
 
@@ -214,5 +335,3 @@ try:
 except ImportError as e:
     print('Unable to load local_settings.py:', e)
 
-import logging
-logging.getLogger(__name__).critical("FOO")

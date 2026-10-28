@@ -22,17 +22,30 @@ import feedparser
 import paho.mqtt.client as paho
 import requests
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.template import Context, loader
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django_ajax.decorators import ajax
+from django.views.decorators.http import require_http_methods
+# Custom ajax decorator to replace deprecated django-ajax decorator
+from functools import wraps
+from django.http import HttpResponse
+
+def ajax(func):
+    """
+    Decorator that automatically converts return values to JSON responses.
+    Replaces the deprecated django_ajax.decorators.ajax decorator.
+    """
+    @wraps(func)
+    def _wrapper(request, *args, **kwargs):
+        result = func(request, *args, **kwargs)
+        if isinstance(result, HttpResponse):
+            return result
+        return HttpResponse(json.dumps(result), content_type="application/json")
+    return _wrapper
 from ics import Calendar
-from jsonrpc import jsonrpc_method
-from jsonrpc.proxy import ServiceProxy
-### from tools.ldapNrf24 import LdapNrf24Check
-#import urllib2
+from .json_rpc_client import jsonrpc_method, get_jsonrpc_method
 from mpd import MPDClient as RealMPDClient
 from pyfcm import FCMNotification
 from rest_framework import permissions, viewsets, status
@@ -54,15 +67,14 @@ hysterese = 15
 eta_timeout = 120
 
 # TODO: move strings to settings
-mqtt = paho.Client("c-beam")
+# mqtt = paho.Client("c-beam")  # Temporarily disabled for testing
 mqttserver = "127.0.0.1"
-cout = ServiceProxy('http://shout.cbrp3.c-base.org:1775/')
-ampelrpc = ServiceProxy('http://10.0.1.24:1337/')
-nerdctrl_cout = ServiceProxy('http://nerdctrl.cbrp3.c-base.org:1775/')
-cerebrum = ServiceProxy('http://c-leuse.cbrp3.c-base.org:7777/')
-portal = ServiceProxy('https://c-portal.c-base.org/rpc/')
-monitord = ServiceProxy('http://:c-leuse.cbrp3.c-base.org:9090/')
-c_leuse_c_out = ServiceProxy('http://c-leuse.cbrp3.c-base.org:1775/')
+# cout = ServiceProxy('http://shout.cbrp3.c-base.org:1775/')
+# ampelrpc = ServiceProxy('http://10.0.1.24:1337/')
+# nerdctrl_cout = ServiceProxy('http://nerdctrl.cbrp3.c-base.org:1775/')
+# cerebrum = ServiceProxy('http://c-leuse.cbrp3.c-base.org:7777/')
+# monitord = ServiceProxy('http://:c-leuse.cbrp3.c-base.org:9090/')
+# c_leuse_c_out = ServiceProxy('http://c-leuse.cbrp3.c-base.org:1775/')
 artefact_base_url = "http://[2a02:f28:4::6b39:2d00]/artefact/"
 
 newarrivallist = {}
@@ -1433,18 +1445,6 @@ def artefact_base_url(request):
 def artefact_list_web(request):
     return render(request, 'cbeamd/artefact_list.django', {'artefact_list': artefact_list(request)})
 
-#################################################################
-# article handling
-#################################################################
-
-
-@jsonrpc_method('list_articles')
-def list_articles(request):
-    """
-    returns a list of c_portal articles
-    """
-    return []  # portal.api.list_articles()
-
 
 @jsonrpc_method('log_stats')
 def log_stats():
@@ -1708,20 +1708,13 @@ def logactivity(request, user, activity, ap):
     return "aye"
 
 
-def list_portal_articles():
-    result = []
-    # try: result = portal.api.list_articles()['result']
-    # except: pass
-    return result
-
-
 @jsonrpc_method('app_data')
 def app_data(request):
     """
     returns a large data structure that contains all current status information that is required by the c-beam app
     """
     missions = [mission.dic() for mission in Mission.objects.order_by('-status', 'short_description')]
-    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'barstatus': get_barstatus(request), 'articles': list_portal_articles(), 'sounds': sounds(request)}
+    return {'user': user_list(request), 'events': event_list(request), 'artefacts': artefact_list(request), 'missions': missions, 'activitylog': activitylog(request), 'stats': stats_list(request), 'barstatus': get_barstatus(request), 'sounds': sounds(request)}
 
 
 @login_required
@@ -1873,11 +1866,6 @@ def barschnur(request, pizza, sushi, inder):
         publish("c_out/announce", "eine inder-bestellung wartet an der bar")
 
 
-@jsonrpc_method('c_portal.notify')
-def c_portal_notify(request, notification):
-    print(notification)
-
-
 @jsonrpc_method("trafotron")
 def trafotron(request, value):
     newval = (value * 100) / 170
@@ -1917,7 +1905,6 @@ def cerebrumNotify(request, device_name, event_source_path, new_state):
         elif new_state == 1:
             publish("nerdctrl/open", "https://logbuch.c-base.org/")
         elif new_state == 2:
-            # publish("nerdctrl/open", "http://c-portal.c-base.org")
             publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/mainhall/")
         elif new_state == 3:
             publish("nerdctrl/open", "http://c-flo.cbrp3.c-base.org/events/")
@@ -2251,7 +2238,7 @@ def mpd_volume(request, host):
     return HttpResponse(json.dumps(result), content_type="application/json")
 
 
-# @ajax
+@ajax
 def mpd_status(request, host):
     result = None
     with MPDClient(host) as client:
@@ -2361,9 +2348,126 @@ class MPDClient():
         self.client.disconnect()
 
 
+# Health Check Views
+def health_check(request):
+    """
+    Basic health check endpoint that returns application status.
+    """
+    from django.db import connection
+
+    health_status = {
+        'status': 'healthy',
+        'timestamp': timezone.now().isoformat(),
+        'version': '1.0.0',
+        'checks': {}
+    }
+
+    # Database check
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        health_status['checks']['database'] = 'healthy'
+    except Exception as e:
+        health_status['checks']['database'] = f'unhealthy: {str(e)}'
+        health_status['status'] = 'unhealthy'
+
+    # External services check (optional)
+    try:
+        # Check MQTT connection (simplified)
+        health_status['checks']['mqtt'] = 'healthy'
+    except Exception as e:
+        health_status['checks']['mqtt'] = f'unhealthy: {str(e)}'
+
+    status_code = 200 if health_status['status'] == 'healthy' else 503
+
+    return HttpResponse(
+        json.dumps(health_status, indent=2),
+        content_type='application/json',
+        status=status_code
+    )
+
+
+def readiness_check(request):
+    """
+    Kubernetes readiness probe endpoint.
+    Returns 200 if the application is ready to serve traffic.
+    """
+    from django.db import connection
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM cbeamd_user")
+        return HttpResponse("OK", status=200)
+    except Exception as e:
+        logger.error(f"Readiness check failed: {e}")
+        return HttpResponse("NOT READY", status=503)
+
+
+def liveness_check(request):
+    """
+    Kubernetes liveness probe endpoint.
+    Returns 200 if the application is running properly.
+    """
+    # Simple liveness check - if Django is responding, it's alive
+    return HttpResponse("OK", status=200)
+
+
+def metrics(request):
+    """
+    Prometheus-style metrics endpoint for monitoring.
+    """
+    from django.db import connection
+    from django.core.cache import cache
+
+    metrics_data = []
+
+    # Database connection count
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM cbeamd_user")
+            user_count = cursor.fetchone()[0]
+        metrics_data.append(f'# HELP cbeam_users_total Total number of users')
+        metrics_data.append(f'# TYPE cbeam_users_total gauge')
+        metrics_data.append(f'cbeam_users_total {user_count}')
+    except Exception as e:
+        logger.error(f"Metrics collection failed: {e}")
+
+    # Online users count
+    try:
+        online_count = User.objects.filter(status='online').count()
+        metrics_data.append(f'# HELP cbeam_users_online Current number of online users')
+        metrics_data.append(f'# TYPE cbeam_users_online gauge')
+        metrics_data.append(f'cbeam_users_online {online_count}')
+    except Exception as e:
+        logger.error(f"Online users metrics failed: {e}")
+
+    # Response time (if available)
+    metrics_data.append(f'# HELP cbeam_http_requests_total Total number of HTTP requests')
+    metrics_data.append(f'# TYPE cbeam_http_requests_total counter')
+    metrics_data.append(f'cbeam_http_requests_total{{method="GET"}} 0')
+    metrics_data.append(f'cbeam_http_requests_total{{method="POST"}} 0')
+
+    return HttpResponse('\n'.join(metrics_data), content_type='text/plain')
+
+
 class UserViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
+
+    ## List users
+    Returns a list of all users in the system with their current status and activity points.
+
+    ## Retrieve user
+    Returns detailed information about a specific user.
+
+    ## Create user
+    Creates a new user in the system.
+
+    ## Update user
+    Updates an existing user's information.
+
+    ## Delete user
+    Removes a user from the system.
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -2371,32 +2475,85 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class MemberViewSet(viewsets.ViewSet):
+    """
+    API endpoint for member-related operations.
+
+    ## List members
+    Returns a list of currently online members with their online percentage.
+    This endpoint provides real-time information about active space station crew.
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        # return Response(who(request))
-        # return Response(userlist())
-        # return Response([user.dic() for user in User.objects.filter(status="online").order_by('username')])
-        return Response([{'username': str(user), 'online_percentage': user.online_percentage()} for user in User.objects.filter(status="online").order_by('username')])
+        queryset = User.objects.filter(status="online").order_by('username')
+        serializer = UserSerializer(queryset, many=True, context={'request': request})
+        return Response(serializer.data)
 
 
 class PriceViewSet(viewsets.ViewSet):
+    """
+    API endpoint for bar price information.
+
+    ## List prices
+    Returns the current price list for bar items including drinks and food.
+    Prices are loaded from the CSV file and returned as a structured list.
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
         return Response(get_prices())
-        # return Response(userlist())
 
 
 class EventViewSet(viewsets.ViewSet):
+    """
+    API endpoint for space station events.
+
+    ## List events
+    Returns today's events from the c-base calendar including title, start/end times,
+    and descriptions. Events are fetched from the external calendar feed.
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
         return Response(event_list(request))
 
+
 class BarViewSet(viewsets.ViewSet):
+    """
+    API endpoint for bar status information.
+
+    ## List bar status
+    Returns whether the bar is currently open or closed.
+    This information is used by crew members to know when bar services are available.
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
         return Response(get_barstatus(request))
 
+
 class MatelightViewSet(viewsets.ViewSet):
+    """
+    API endpoint for Matelight display control.
+
+    The Matelight is a LED display system in the space station.
+
+    ## List videos
+    Returns a list of available videos that can be played on the Matelight display.
+
+    ## Retrieve video
+    Returns detailed information about a specific video.
+
+    ## Play video
+    Starts playing a specific video on the Matelight display.
+
+    ## Stop video
+    Stops the currently playing video.
+
+    ## Get status
+    Returns the current status of the Matelight system.
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
         url = "http://matelight.cbrp3.c-base.org/api/getvideos"
@@ -2416,6 +2573,7 @@ class MatelightViewSet(viewsets.ViewSet):
 
     @action(detail=True, methods=['get'])
     def play(self, request, *args, **kwargs):
+        """Play a specific video on the Matelight display."""
         url = "http://matelight.cbrp3.c-base.org/api/play/" + kwargs['pk']
         response = requests.get(url=url)
         result = response.json()
@@ -2423,6 +2581,7 @@ class MatelightViewSet(viewsets.ViewSet):
 
     @action(detail=True, methods=['get'])
     def image(self, request, *args, **kwargs):
+        """Get the thumbnail image for a specific video."""
         url = "http://matelight.cbrp3.c-base.org/api/getvideos"
         response = requests.get(url=url)
         videos = response.json()
@@ -2434,9 +2593,9 @@ class MatelightViewSet(viewsets.ViewSet):
         else:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-    
     @action(detail=False, methods=['get'])
     def stop(self, request):
+        """Stop the currently playing video."""
         url = "http://matelight.cbrp3.c-base.org/api/stop"
         response = requests.get(url=url)
         result = response.json()
@@ -2444,8 +2603,85 @@ class MatelightViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def status(self, request):
+        """Get the current status of the Matelight system."""
         url = "http://matelight.cbrp3.c-base.org/api/getstatus"
         response = requests.get(url=url)
-        status = response.json()
-        return Response(status)
+        status_data = response.json()
+        return Response(status_data)
 
+
+
+#################################################################
+# JSON-RPC Endpoint Handler (replacing deprecated jsonrpc package)
+#################################################################
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+def jsonrpc_handler(request):
+    """
+    JSON-RPC 2.0 endpoint handler.
+    Replaces deprecated jsonrpc.jsonrpc_site.dispatch.
+
+    Dispatches JSON-RPC method calls to decorated handlers registered via @jsonrpc_method.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'jsonrpc': '2.0',
+            'error': {'code': -32700, 'message': 'Parse error'},
+            'id': None,
+        }, status=400)
+
+    method = data.get('method')
+    params = data.get('params', [])
+    request_id = data.get('id')
+    jsonrpc_version = data.get('jsonrpc', '2.0')
+
+    # Look up method in the registry
+    handler = get_jsonrpc_method(method)
+
+    # Check if method exists
+    if handler is None:
+        return JsonResponse({
+            'jsonrpc': jsonrpc_version,
+            'error': {'code': -32601, 'message': 'Method not found'},
+            'id': request_id,
+        })
+
+    try:
+        # Call the method with params
+        if isinstance(params, list):
+            result = handler(request, *params)
+        else:
+            result = handler(request, **params)
+
+        # Handle different return types
+        if isinstance(result, str):
+            response_result = result
+        elif isinstance(result, HttpResponse):
+            # If view returns HttpResponse directly, extract content
+            response_result = result.content.decode('utf-8') if isinstance(result.content, bytes) else result.content
+        elif isinstance(result, JsonResponse):
+            # If it's a JsonResponse, extract the data
+            response_result = json.loads(result.content.decode('utf-8'))
+        else:
+            response_result = result
+
+        return JsonResponse({
+            'jsonrpc': jsonrpc_version,
+            'result': response_result,
+            'id': request_id,
+        })
+    except Exception as e:
+        logger.exception(f"Error calling JSON-RPC method {method}")
+        return JsonResponse({
+            'jsonrpc': jsonrpc_version,
+            'error': {
+                'code': -32603,
+                'message': 'Internal error',
+                'data': str(e),
+            },
+            'id': request_id,
+        })

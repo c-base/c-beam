@@ -1,14 +1,20 @@
-var JQuery = require('jquery');
-//window.jQuery = $;
-//window.$ = $;
+const React = require('react');
+const ReactDOM = require('react-dom/client');
 
-var React = require('react');
-var ReactDOM = require('react-dom');
+const BarStatus = require('./barstatus');
+const ClockWidget = require('./clock');
+const MpdWidget = require('./mpdwidget');
 
-var BarStatus = require('./barstatus');
-var ClockWidget = require('./clock');
-var MpdWidget = require('./mpdwidget');
+// react 18 replaced ReactDOM.render with createRoot; a missing container is no
+// longer silently ignored, so each mount point is checked first — the two
+// widgets live on different pages.
+function mount(elementId, element) {
+  const container = document.getElementById(elementId);
+  if (container) {
+    ReactDOM.createRoot(container).render(element);
+  }
+}
 
-//ReactDOM.render(<BarStatus />, document.getElementById('mpd'));
-ReactDOM.render(<ClockWidget updateInterval={1000} />, document.getElementById('clock'));
-ReactDOM.render(<MpdWidget pollInterval={1000} host={window.mpdHostname} />, document.getElementById('mpd'));
+//mount('mpd', <BarStatus />);
+mount('clock', <ClockWidget updateInterval={1000} />);
+mount('mpd', <MpdWidget pollInterval={1000} host={window.mpdHostname} />);

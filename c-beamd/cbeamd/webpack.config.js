@@ -1,39 +1,38 @@
 var path = require("path");
-var webpack = require('webpack');
 var BundleTracker = require('webpack-bundle-tracker');
-
 
 module.exports = {
   context: __dirname,
+  mode: 'production',
   entry: {
     index: './assets/js/index',
   },
   output: {
-      path: path.resolve('./assets/bundles/'),
-      filename: "[name]-[hash].js",
+      path: path.resolve(__dirname, './assets/bundles/'),
+      filename: "[name]-[contenthash].js",
+      // django-webpack-loader builds the url from BUNDLE_DIR_NAME when the
+      // stats file carries no usable publicPath, which keeps STATIC_URL in
+      // django's hands rather than hardcoding it here.
+      publicPath: '',
   },
 
   externals: {
     // require("jquery") is external and available
     //  on the global var jQuery
-    //"react": "React",
-    //"react-dom": "ReactDOM",
     "jquery": "jQuery",
-    //"marked": "Marked",
   },
+
   plugins: [
-    new BundleTracker({filename: './webpack-stats.json'}),
+    new BundleTracker({path: __dirname, filename: 'webpack-stats.json'}),
   ],
 
   module: {
-    loaders: [
-      // we pass the output from babel loader to react-hot loader
-      { test: /\.(es6|jsx?)$/, exclude: /node_modules/, loaders: ['babel'], },
+    rules: [
+      { test: /\.(jsx?)$/, exclude: /node_modules/, use: 'babel-loader' },
     ],
   },
 
   resolve: {
-    modulesDirectories: ['node_modules', 'bower_components'],
-    extensions: ['', '.js', '.jsx', '.es6', '.styl']
+    extensions: ['.js', '.jsx']
   },
 }

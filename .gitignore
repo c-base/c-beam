@@ -19,3 +19,31 @@ c-beamd/c-beam-debug.log
 c-beamd/cbeamd/local_settings.py.prod
 c-beamd/cbeamd/local_settings.py.old
 c-beamd/cbeamd/yarn-error.log
+c-beamd/logs/
+c-beamd/static_collected/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# editor / os cruft
+*.swp
+*.swo
+*~
+
+# local databases (the default DATABASE_NAME is c-beamd/c-beam.sqlite)
+*.sqlite
+*.sqlite3
+
+# local settings override - imported last by settings.py, must never be shared
+c-beamd/cbeamd/local_settings.py
+
+# local, untracked make config (container engine, port, image name)
+Makefile.local
+
+# coverage output
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml

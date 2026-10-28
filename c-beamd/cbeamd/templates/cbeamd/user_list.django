@@ -31,6 +31,7 @@
         {% empty %}
           <a class="btn btn-block btn-lg btn-default btn-block"><b>Niemand angemeldet.</b></a>
         {% endfor %}
+      {% if user_list_eta %}
       <h1 align="center">ETA</h1>
       <div class="panel-group" id="eta_accordion">
         {% for user in user_list_eta %}
@@ -54,11 +55,9 @@
               </div>
             </div>
           </div>
-        {% empty %}
-          <a class="btn btn-block btn-lg btn-default"><b>momentan ist kein ETA eingetragen.</b></a>
         {% endfor %}
-
       </div>
+      {% endif %}
 <!--</div>-->
     </div> 
   </div>

@@ -1,14 +1,12 @@
-# from django.conf.urls import patterns, include, url
-from django.urls import include, re_path
+from django.urls import include, path, re_path
 from .models import User
 from .models import Mission
-from jsonrpc import jsonrpc_site
 from . import views  # you must import the views that need connected
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
-from django.urls import include, path
 from rest_framework import routers
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
@@ -42,8 +40,10 @@ urlpatterns = [
     re_path(r'^mechblast_json$', views.mechblast_json, name='mechblast_json'),
 
     re_path(r'^admin/', admin.site.urls),
-    # re_path(r'^rpc/browse/', jsonrpc.views.browse, name='jsonrpc_browser'),
-    re_path(r'^rpc/', jsonrpc_site.dispatch, name="jsonrpc_mountpoint"),
+    # the json-rpc surface is open by design and relies on the crew-network
+    # boundary; individual methods can be tightened with
+    # @jsonrpc_method(..., authenticated=True), which the dispatcher enforces.
+    re_path(r'^rpc/$', views.jsonrpc_handler, name='jsonrpc_mountpoint'),
     # re_path(r'^user/(?P<user_id>\d+)/$', views.user),
     # re_path(r'^user/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail', dict(user_dict, template_name='user_detail.django'), user_dict),
     re_path(r'^user/online$', views.user_list_web, name='user_list_web'),
@@ -55,7 +55,10 @@ urlpatterns = [
     # re_path(r'^user/(?P<user>\d+)/login$', views.login_with_id, name='login_with_id'),
     # re_path(r'^login$', views.auth_login, name='auth_login'),
     # re_path(r'^logout$', views.auth_logout, name='auth_logout'),
-    re_path(r'^login/$', auth_views.LoginView.as_view(template_name="cbeamd/login.django"), name='login'),
+    re_path(r'^login/$', views.PasswordLoginView.as_view(), name='login'),
+    # browser login through the c-base identity provider (authorization code + pkce)
+    re_path(r'^oauth/login/$', views.oauth_login, name='oauth_login'),
+    re_path(r'^oauth/callback/$', views.oauth_callback, name='oauth_callback'),
     re_path(r'^logout/$', auth_views.LogoutView.as_view(template_name="cbeamd/logout.django"), name='logout'),
     re_path(r'^logactivity$', views.logactivity_web, name='logactivity_web'),
     # re_path(r'^missions/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail, dict(mission_dict, template_name='mission_detail.django'), mission_dict),
@@ -67,9 +70,9 @@ urlpatterns = [
     re_path(r'^artefacts$', views.artefact_list_web, name='artefact_list_web'),
     re_path(r'^events$', views.event_list_web, name='event_list_web'),
     # re_path(r'^stripe/$', views.stripe_view'),
-    re_path(r'^control/set_stripe_pattern/(?P<pattern_id>\d+)/$', views.set_stripe_pattern_web, name='set_stripe_pattern'),
+    re_path(r'^control/set_stripe_pattern/(?P<pattern_id>[\w-]+)/$', views.set_stripe_pattern_web, name='set_stripe_pattern'),
     re_path(r'^control/set_stripe_speed/(?P<speed>\d+)/$', views.set_stripe_speed_web, name='set_stripe_speed'),
-    re_path(r'^c_leuse/set_stripe_pattern/(?P<pattern_id>\d+)/$', views.set_stripe_pattern_web, name='set_stripe_pattern_web'),
+    re_path(r'^c_leuse/set_stripe_pattern/(?P<pattern_id>[\w-]+)/$', views.set_stripe_pattern_web, name='set_stripe_pattern_web'),
     re_path(r'^c_leuse/set_stripe_speed/(?P<speed>\d+)/$', views.set_stripe_speed_web, name='set_stripe_speed_web'),
     re_path(r'^control$', views.control, name='control'),
     re_path(r'^c_leuse$', views.c_leuse, name='c_leuse'),
@@ -101,11 +104,20 @@ urlpatterns = [
     re_path(r'^bar/leergut$', views.bar_leergut, name='bar_leergut'),
     re_path(r'^bar/calc$', views.bar_calc, name='bar_Calc'),
     re_path(r'^bar/abrechnung$', views.bar_abrechnung, name='bar_abrechnung'),
-    re_path(r'^control/ampel/(?P<location>.+)/(?P<color>.+)/(?P<state>\d)/$', views.ampel, name='ampel'),
+    re_path(r'^control/ampel/(?P<location>.+)/(?P<color>.+)/(?P<state>\d)/$', views.ampel_web, name='ampel'),
     re_path(r'^mpd/(?P<host>.+)/volume/$', views.mpd_volume, name='mpd_volume'),
     re_path(r'^mpd/(?P<host>.+)/mpd_listplaylists/$', views.mpd_listplaylists, name='mpd_listplaylists'),
     re_path(r'^mpd/(?P<host>.+)/status/$', views.mpd_status, name='mpd_status'),
     re_path(r'^mpd/(?P<host>.+)/command/(?P<command>\w+)/$', views.mpd_command, name='mpd_command'),
-    path('api/', include(router.urls)),
+    # Health check and monitoring endpoints
+    path('health/', views.health_check, name='health_check'),
+    path('readiness/', views.readiness_check, name='readiness_check'),
+    path('liveness/', views.liveness_check, name='liveness_check'),
+    path('metrics/', views.metrics, name='metrics'),
+    # API versioning and documentation
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('api/v1/', include(router.urls)),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
