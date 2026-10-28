@@ -13,7 +13,8 @@ from ..json_rpc_client import jsonrpc_method
 
 from ..models import Status
 
-from .helpers import c_leuse_c_out, logger
+from .helpers import logger
+# from .helpers import c_leuse_c_out
 from .helpers import get_prices, publish, userlist
 
 
@@ -38,10 +39,12 @@ def trafotron(request, value):
     # print("trafotron: " + str(newval))
     # logger.error("trafotron: " + str(newval))
     # os.system("amixer -c 0 set Master %d%%" % newval)
-    try:
-        logger.debug(c_leuse_c_out.setvolume(newval))
-    except Exception as e:
-        logger.error(e)
+    # the c_out service on c-leuse.cbrp3.c-base.org:1775 is currently down,
+    # so the volume is not forwarded for now
+    # try:
+    #     logger.debug(c_leuse_c_out.setvolume(newval))
+    # except Exception as e:
+    #     logger.error(e)
 
 
 @jsonrpc_method("barstatus")
