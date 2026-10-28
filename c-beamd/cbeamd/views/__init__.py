@@ -26,10 +26,11 @@ from .audio import (announce, c_out, c_out_play_web, c_out_web, getvolume, monme
     r2d2, remind, reminder, setvolume, sounds, tts, voices)
 from .web import (c_buttons, c_leuse, control, index, index2, profile_edit, stats, stats_list,
     user, user_all, user_eta, user_list, user_list_web, user_offline, user_online)
-from .missions import (add_mission, edit_mission, fcm_update, gcm_register, gcm_send,
-    gcm_send_mission, gcm_send_test, gcm_update, is_mission_editor, mission_assign,
+from .missions import (add_mission, edit_mission, is_mission_editor, mission_assign,
     mission_assign_web, mission_cancel, mission_cancel_web, mission_complete,
     mission_complete_web, mission_detail, mission_list, missions)
+from .push import (fcm_update, gcm_register, gcm_send, gcm_send_mission, gcm_send_test,
+    gcm_update)
 from .hardware import (app_data, artefact_list, artefact_list_web,
     get_artefact_base_url, hwstorage, hwstorage_web, smile)
 from .stripe import (notbeleuchtung, rainbow, set_stripe_buffer, set_stripe_default,

@@ -17,7 +17,7 @@ from . import helpers
 from .helpers import eta_timeout
 from .audio import tts
 from .helpers import getuser, getuser_eta, log_stats, publish, userlist
-from .missions import gcm_send
+from .push import gcm_send
 from .stripe import set_stripe_default
 from .user import getnickspell, who_result
 

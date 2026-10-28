@@ -20,7 +20,7 @@ from .helpers import hysterese, logger, monitord
 from .activity import logactivity
 from .audio import monmessage, tts
 from .helpers import getuser, is_logged_in, log_stats, publish, reply
-from .missions import gcm_send
+from .push import gcm_send
 from .user import getnickspell, who_result
 
 def login_with_id(request, user):
