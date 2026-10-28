@@ -1,12 +1,11 @@
 #! /bin/bash
 
-cd /opt/c-beamd/c-beamd
+# manage.py and cbeamd/ live here, and a relative DATABASE_NAME resolves here
+cd /opt/c-beamd
 
 # python /opt/c-beamd/manage.py makemigrations
 # python /opt/c-beamd/manage.py migrate
 python /opt/c-beamd/manage.py collectstatic --noinput
-
-python manage.py shell -c "from django.conf import settings; from pprint import pprint; pprint({k: getattr(settings, k) for k in dir(settings) if k.isupper()})"
 
 # echo "from django.contrib.auth.models import User; User.objects.filter(email='admin@example.com').delete(); User.objects.create_superuser('admin', 'admin@example.com', 'fooderbar23')" | python /opt/c-beamd/manage.py shell
 # echo "from django.contrib.auth.models import User; user = User.objects.get(username='admin'); user.set_password('foobar23'); user.save()" | python /opt/c-beamd/manage.py shell
@@ -17,6 +16,6 @@ python manage.py shell -c "from django.conf import settings; from pprint import 
 # exec so gunicorn replaces this shell as PID 1. without it bash is PID 1 and,
 # lacking signal handlers, drops the SIGINT/SIGTERM the container runtime sends
 # on ctrl-c or `stop` -- the container then hangs until the runtime SIGKILLs it.
-# port 8000 is what the Dockerfile EXPOSEs and the Makefile maps to.
+# port 4254 is what the Dockerfile EXPOSEs and podman-compose.yml / the Makefile map.
 exec gunicorn -w 10 --bind=0.0.0.0:4254 --log-level=warning cbeamd.wsgi:application --worker-class gthread --threads 4
 
