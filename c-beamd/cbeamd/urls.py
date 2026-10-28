@@ -55,8 +55,7 @@ urlpatterns = [
     # re_path(r'^user/(?P<user>\d+)/login$', views.login_with_id, name='login_with_id'),
     # re_path(r'^login$', views.auth_login, name='auth_login'),
     # re_path(r'^logout$', views.auth_logout, name='auth_logout'),
-    re_path(r'^login/$', auth_views.LoginView.as_view(template_name="cbeamd/login.django",
-                                                       extra_context={'oauth_enabled': bool(settings.OAUTH_ISSUER)}), name='login'),
+    re_path(r'^login/$', views.PasswordLoginView.as_view(), name='login'),
     # browser login through the c-base identity provider (authorization code + pkce)
     re_path(r'^oauth/login/$', views.oauth_login, name='oauth_login'),
     re_path(r'^oauth/callback/$', views.oauth_callback, name='oauth_callback'),

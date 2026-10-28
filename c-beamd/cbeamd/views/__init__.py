@@ -55,4 +55,4 @@ from .health import (health_check, liveness_check, metrics, readiness_check)
 from .api import (BarViewSet, EventViewSet, MatelightViewSet, MemberViewSet, PriceViewSet,
     UserViewSet)
 from .jsonrpc import (jsonrpc_handler)
-from .oauth_login import (oauth_callback, oauth_login)
+from .oauth_login import (PasswordLoginView, oauth_callback, oauth_login)

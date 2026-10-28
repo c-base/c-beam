@@ -15,6 +15,7 @@ import secrets
 from urllib.parse import urlencode
 
 from django.contrib.auth import login as django_login
+from django.contrib.auth.views import LoginView
 from django.http import HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -24,6 +25,21 @@ from .. import oauth
 from .helpers import logger
 
 SESSION_KEY = 'oauth_login'
+
+
+class PasswordLoginView(LoginView):
+    """
+    the password form at /login/, with the idp button shown whenever
+    OAUTH_ISSUER is set. the flag is read per request, not when the urlconf
+    is imported, so a settings change (or override_settings in a test) is
+    picked up.
+    """
+    template_name = 'cbeamd/login.django'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['oauth_enabled'] = oauth.enabled()
+        return context
 
 
 def _redirect_uri(request):
