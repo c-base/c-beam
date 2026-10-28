@@ -11,6 +11,7 @@ from ..json_rpc_client import jsonrpc_method
 
 from ..models import User
 
+# cout is None while COUT_URL is blank (shout is down, see cbeamdcfg.py)
 from .helpers import cout, getuser, monitord, publish
 
 
@@ -44,6 +45,8 @@ def r2d2(request, text):
     """
     perform text-to-r2d2 over c_out with voice saying text
     """
+    if cout is None:
+        return "aye"
     return cout.r2d2(text)
 
 
@@ -69,6 +72,8 @@ def setvolume(request, volume):
     """
     set c_out volume to volume
     """
+    if cout is None:
+        return "aye"
     return cout.setvolume(volume)
 
 
@@ -77,6 +82,8 @@ def getvolume(request, volume):
     """
     get the current c_out volume
     """
+    if cout is None:
+        return 0
     return cout.getvolume(volume)
 
 
@@ -85,6 +92,8 @@ def voices(request):
     """
     get a list of available voices for text-to-speech
     """
+    if cout is None:
+        return []
     return cout.voices()
 
 
@@ -94,6 +103,8 @@ def sounds(request):
     returns a list of sounds available to play via c_out
     """
     result = []
+    if cout is None:
+        return result
     try:
         result = sorted(cout.sounds())
     except Exception:
@@ -106,6 +117,8 @@ def c_out(request):
     """
     plays a random sound via c_out
     """
+    if cout is None:
+        return "aye"
     return cout.c_out()
 
 
@@ -116,6 +129,8 @@ def announce(request, text):
     """
     result = "aye"
     publish("c_out/announce", str(text))
+    if cout is None:
+        return result
     try:
         result = cout.announce(text)
     except Exception:

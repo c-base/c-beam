@@ -41,7 +41,11 @@ c_leuse_led_topic = config('C_LEUSE_LED_TOPIC', default='c_leuse/led_pattern')
 # hardcoded ServiceProxy() calls, commented out, which left every call site
 # raising NameError. set a url to an empty string to disable that client.
 service_timeout = config('SERVICE_TIMEOUT', default=5, cast=int)
-cout_url = config('COUT_URL', default='http://shout.cbrp3.c-base.org:1775/')
+# shout (the c_out/tts host) is down and is going to be rebuilt. until then the
+# client is disabled by defaulting the url to an empty string. to re-enable it
+# either set COUT_URL in .env or restore the default:
+#   cout_url = config('COUT_URL', default='http://shout.cbrp3.c-base.org:1775/')
+cout_url = config('COUT_URL', default='')
 cerebrum_url = config('CEREBRUM_URL', default='http://c-leuse.cbrp3.c-base.org:7777/')
 monitord_url = config('MONITORD_URL', default='http://c-leuse.cbrp3.c-base.org:9090/')
 nerdctrl_cout_url = config('NERDCTRL_COUT_URL', default='http://nerdctrl.cbrp3.c-base.org:1775/')
