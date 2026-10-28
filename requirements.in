@@ -6,7 +6,8 @@ djangorestframework
 drf-spectacular
 django-webpack-loader
 gunicorn
-ics
+icalendar
+recurring-ical-events
 python-decouple
 python-json-logger
 pytest

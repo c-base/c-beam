@@ -10,14 +10,11 @@ aiohttp==3.14.3
     # via pyfcm
 aiosignal==1.4.0
     # via aiohttp
-arrow==1.4.0
-    # via ics
 asgiref==3.12.1
     # via django
 attrs==26.1.0
     # via
     #   aiohttp
-    #   ics
     #   jsonschema
     #   referencing
 autopep8==2.3.2
@@ -28,6 +25,8 @@ cffi==2.1.1
     # via cryptography
 charset-normalizer==3.5.1
     # via requests
+click==8.5.0
+    # via x-wr-timezone
 coverage==7.16.0
     # via pytest-cov
 cryptography==50.0.1
@@ -65,8 +64,11 @@ google-auth==2.57.1
     # via pyfcm
 gunicorn==26.2.0
     # via -r requirements.in
-ics==0.7.3
-    # via -r requirements.in
+icalendar==7.3.0
+    # via
+    #   -r requirements.in
+    #   recurring-ical-events
+    #   x-wr-timezone
 idna==3.19
     # via
     #   requests
@@ -126,8 +128,8 @@ pytest-django==4.14.0
     # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via
-    #   arrow
-    #   ics
+    #   icalendar
+    #   recurring-ical-events
 python-decouple==3.8
     # via -r requirements.in
 python-json-logger==4.2.0
@@ -140,6 +142,8 @@ python-mpd2==3.1.1
     # via -r requirements.in
 pyyaml==6.0.3
     # via drf-spectacular
+recurring-ical-events==3.8.2
+    # via -r requirements.in
 referencing==0.37.0
     # via
     #   jsonschema
@@ -151,20 +155,21 @@ rpds-py==2026.6.3
     #   jsonschema
     #   referencing
 six==1.17.0
-    # via
-    #   ics
-    #   python-dateutil
+    # via python-dateutil
 sqlparse==0.6.0
     # via django
-tatsu==5.15.1
-    # via ics
 tzdata==2026.3
-    # via arrow
+    # via
+    #   icalendar
+    #   recurring-ical-events
+    #   x-wr-timezone
 uritemplate==4.2.0
     # via drf-spectacular
 urllib3==2.7.0
     # via
     #   pyfcm
     #   requests
+x-wr-timezone==2.0.1
+    # via recurring-ical-events
 yarl==1.24.5
     # via aiohttp
