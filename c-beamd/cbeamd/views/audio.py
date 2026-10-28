@@ -11,7 +11,7 @@ from ..json_rpc_client import jsonrpc_method
 
 from ..models import User
 
-# cout is None while COUT_URL is blank (shout is down, see cbeamdcfg.py)
+# cout is None when COUT_URL is blank (client disabled, see cbeamdcfg.py)
 from .helpers import cout, getuser, monitord, publish
 
 
