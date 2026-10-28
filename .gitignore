@@ -40,7 +40,7 @@ c-beamd/static_collected/
 c-beamd/cbeamd/local_settings.py
 
 # local, untracked make config (container engine, port, image name)
-c-beamd/Makefile.local
+Makefile.local
 
 # coverage output
 htmlcov/

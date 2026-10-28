@@ -41,7 +41,7 @@ c-beam API: https://c-beam.cbrp3.c-base.org/api (from crew network only)
    MQTT_ENABLED=False pytest     # away from the c-base network
    ```
 
-   From `c-beamd/`, `make test` does the same with `MQTT_ENABLED=False` already
+   From the repository root, `make test` does the same with `MQTT_ENABLED=False` already
    set, `make coverage` adds a line and branch coverage report, and
    `make coverage-html` writes a browsable one to `htmlcov/`.
 
@@ -60,12 +60,42 @@ Copy `.env.example` to `.env` and configure:
 - `DATABASE_*`: Database configuration (use PostgreSQL in production)
 - `CSRF_TRUSTED_ORIGINS`: Trusted origins for CSRF protection
 
+## Running with podman-compose
+
+`podman-compose.yml` runs the image with `c-beamd/` bind-mounted over the copy
+inside it and the `.env` from the repository root. The make targets wrap it
+and work from the repository root; they use `podman-compose` when installed
+and fall back to the `docker compose` / `podman compose` plugin (override with
+`COMPOSE=...`):
+
+```bash
+make build        # (re)build the image — needed after a change to requirements.txt
+make up           # start in the background
+make logs         # follow gunicorn's output
+make restart      # after source edits
+make down
+```
+
+`make up` does not run migrations (`c-beamd/start` only collects static
+files), so after pulling new migrations:
+
+```bash
+make migrate
+make shell                          # manage.py shell
+make manage cmd="showmigrations"    # any other manage.py command
+```
+
+These run inside the running container, with `/opt/c-beamd` as working
+directory, which is where a relative `DATABASE_NAME` such as `c-beam.sqlite`
+resolves. While the stack is down, e.g. to migrate before the first `make up`,
+add `mode=run` to start a one-off container instead: `make migrate mode=run`.
+
 ## Running with Docker
 
 Build from the repository root:
 
 ```bash
-cd c-beamd && make docker-image     # or: docker build . -t c-beamd
+make image     # or: docker build . -t c-beamd
 ```
 
 The image ships the application at `/opt/c-beamd` and runs it as it is, so
@@ -76,7 +106,7 @@ there are two ways to start it.
 `SECRET_KEY` has no default, so the env file has to be passed in:
 
 ```bash
-make docker-run
+make run
 # or: docker run --env-file .env --name c-beamd -p 4254:4254 -it c-beamd
 ```
 
@@ -85,7 +115,7 @@ so the working tree runs instead and edits need no rebuild. This is the mode to
 develop in, and the one that picks up a local `cbeamd/local_settings.py`:
 
 ```bash
-make docker-run-dev
+make run-dev
 # or: docker run -v "$PWD":/opt/c-beamd --name c-beamd -p 4254:4254 -it c-beamd
 ```
 
@@ -93,12 +123,12 @@ Both serve on <http://localhost:4254>.
 
 The make targets work with either engine: they call whichever of `docker` and
 `podman` is on `PATH`, docker first. Force one with `make CONTAINER=podman
-docker-run`, or pin it for this machine in an untracked `c-beamd/Makefile.local`
+run`, or pin it for this machine in an untracked `Makefile.local`
 (`CONTAINER := podman`), which can also override `image`, `name` and `port`. On
 an SELinux host, rootless podman may need `:z` appended to the bind mount in
-`docker-run-dev`.
+`run-dev`.
 
-The database follows `DATABASE_NAME`. Under `docker-run` it defaults into the
+The database follows `DATABASE_NAME`. Under `run` it defaults into the
 container's writable layer and dies with the container; to keep it, point
 `DATABASE_NAME` at `/data/c-beam.sqlite` and add `-v c-beamd-data:/data`.
 Postgres needs no volume, just the `DATABASE_*` variables.

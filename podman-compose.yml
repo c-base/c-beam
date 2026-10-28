@@ -7,6 +7,8 @@ services:
     ports:
       - 4254:4254
     volumes:
-      - /home/c-beam/c-beam-refactor/c-beamd:/opt/c-beamd
+      # the checkout's django project over the copy in the image, so edits
+      # need no rebuild (relative to this file, i.e. to the repository root)
+      - ./c-beamd:/opt/c-beamd
       - /home/c-beam/fcm.json:/opt/c-beamd/fcm.json
 
