@@ -178,30 +178,34 @@ Grundentscheidungen:
 
 ## 8. Spracheingabe (Hold-to-talk)
 
-- [ ] `POST /assistant/transcribe`: WAV als multipart an `{ai}/audio/transcriptions` mit
+- [x] `POST /assistant/transcribe`: WAV als multipart an `{ai}/audio/transcriptions` mit
       `model` und dem Schreibhilfe-`prompt` aus Abschnitt 4 durchreichen; Timeouts
       5/30 s; 429 → "KI-server ausgelastet"; leer → "nichts verstanden". Obergrenze für
       die Dateigröße (20 s bei 16 kHz mono 16 Bit sind rund 640 KB).
-- [ ] Browser: `getUserMedia` (16 kHz, mono), Aufnahme über `AudioWorklet` in PCM,
+- [x] Browser: `getUserMedia` (16 kHz, mono), Aufnahme über `AudioWorklet` in PCM,
       WAV-Encoder mit 44-Byte-RIFF-Header in JavaScript. Die Browser-eigene
       `SpeechRecognition` wird nicht benutzt, weil sie Audio an einen Cloud-Dienst schickt.
-- [ ] Mikrofonknopf mit `pointerdown` / `pointerup` / `pointercancel`: unter 0,5 s
+- [x] Mikrofonknopf mit `pointerdown` / `pointerup` / `pointercancel`: unter 0,5 s
       verwerfen ("zum sprechen halten"), hartes Limit 20 s, danach automatisch senden.
-- [ ] Aufnahmezustand: roter Balken "● aufnahme läuft 0:07 / 0:20" mit Pegelmeter aus
+- [x] Aufnahmezustand: roter Balken "● aufnahme läuft 0:07 / 0:20" mit Pegelmeter aus
       100-ms-Blöcken.
-- [ ] Transkript als Zeile `<user>@c-beam> <text>` ins Terminal, dann `ask` mit
+- [x] Transkript als Zeile `<user>@c-beam> <text>` ins Terminal, dann `ask` mit
       `voice: true` (Prompt-Variante mit Spracherkennungs-Sätzen).
-- [ ] Knopf nur zeigen, wenn `navigator.mediaDevices.getUserMedia` verfügbar ist
+- [x] Knopf nur zeigen, wenn `navigator.mediaDevices.getUserMedia` verfügbar ist
       (HTTPS oder localhost); sonst Hinweis.
-- [ ] Auf Handy und Desktop ausprobieren (Touch, Maus, Berechtigungsdialog).
+- [ ] Auf Handy und Desktop ausprobieren (Touch, Maus, Berechtigungsdialog). Stand
+      2026-10-29: der Endpunkt ist mit einer espeak-ng-Aufnahme gegen das echte Whisper
+      geprüft ("Wer ist gerade in der C-base an Bord?" kam wörtlich zurück); die
+      Aufnahme im Browser (`assistant-worklet.js`, WAV-Encoder) ist nur syntaxgeprüft.
 
 ## 9. Abschluss
 
-- [ ] `README.md`: Abschnitt zum Assistenten mit Konfiguration und Hinweis, dass die
+- [x] `README.md`: Abschnitt zum Assistenten mit Konfiguration und Hinweis, dass die
       KI-Dienste nur aus dem Crew-Netz erreichbar sind.
-- [ ] `AI-ASSISTANT.md`: Hinweis auf die Web-Version und Abweichungen (lokales
-      Vorlesen, nur `announce` über c_out).
-- [ ] `make test` grün, Commit.
+- [x] `AI-ASSISTANT.md`: Abschnitt 15 mit der Web-Version und den Abweichungen (lokales
+      Vorlesen, `announce` und `play_sound` über c_out, Sound als freier String,
+      Prompt-Absatz ohne Wissensquelle).
+- [x] `make test` grün, Commit (292 Tests am 2026-10-29).
 
 ## 10. Später, nicht für die erste Version
 

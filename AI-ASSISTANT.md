@@ -476,3 +476,25 @@ Validierung, Konversationsregeln, Wissensformate. Was anders gelöst werden muss
 - **Crew-Netz-Beschränkung**: Die App zeigt den Knopf nur im Crew-WLAN. Im Web ist die
   Frage, ob die Server die Funktionen auch von außen anbieten sollen; die Randbedingung
   des Projekts war bisher, dass Audio die Station nicht verlässt.
+
+## 15. Die Web-Version
+
+Seit 2026-10-29 gibt es dieselben Funktionen in der Web-Oberfläche von c-beam unter
+`/assistant` ("c-beam fragen"), Code in `c-beamd/cbeamd/assistant/` und
+`c-beamd/cbeamd/views/assistant.py`, Stand und offene Punkte in `ASSISTANT-TODO.md`.
+Übernommen sind Requests, Prompt, Werkzeugliste, Validierung, Konversationsregeln und
+Wissensformate. Abweichungen:
+
+- Die Sprachausgabe läuft im Browser (`speechSynthesis`, nur deutsche Offline-Stimmen).
+  Über c_out gehen nur `announce` und `play_sound`; `say` gibt es im Web nicht.
+- `play_sound` bekommt den Sound als freien String, nicht als `enum`: Mit der Liste von
+  156 Dateinamen als `enum` rief gemma4:e4b gar keine Werkzeuge mehr auf (fünf von acht
+  Stationsfragen frei erfunden). Der Name wird vor der Bestätigung gegen die Liste
+  aufgelöst ("laser" → `laserraycannon.mp3`). Das dürfte die App genauso treffen, sobald
+  die Soundliste lang ist.
+- Ohne Wissensquelle ersetzt ein Absatz den Wissensabsatz im Prompt (Fragen über die
+  Station aus Wissen und Legende beantworten, sonst "die Station weiß dazu nichts");
+  ohne ihn antwortete das Modell auf "wieviele ringe hat die c-base" mit "ich kann das
+  nicht tun".
+- Die Konversation liegt in der Django-Session, der Nutzer kommt aus dem Login, der
+  Qdrant-Key bleibt auf dem Server. Sandy Strands ist nicht angebunden.

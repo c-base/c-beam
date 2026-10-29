@@ -42,7 +42,9 @@
     font-family: Andale Mono, monospace;
   }
   #assistant-record.active { display: block; }
-  #assistant-level { display: inline-block; height: 8px; background: #fff; vertical-align: middle; }
+  #assistant-record.cancel { background: #555; }
+  #assistant-level { display: inline-block; height: 8px; width: 0; max-width: 200px; background: #fff; vertical-align: middle; }
+  #assistant-mic.recording { background: #8b0000; color: #fff; border-color: #8b0000; }
 </style>
 {% endblock head %}
 
@@ -54,6 +56,8 @@
       <div id="assistant" class="terminal"
            data-ask-url="{% url 'assistant_ask' %}"
            data-confirm-url="{% url 'assistant_confirm' %}"
+           data-transcribe-url="{% url 'assistant_transcribe' %}"
+           data-worklet-url="{% static 'assistant-worklet.js' %}"
            data-username="{{ username }}"
            data-configured="{{ configured|yesno:'1,0' }}"><div><span class="prompt">{{ username }}@c-beam&gt;</span> hallo {{ username }}. frag mich etwas, oder sag mir, was ich tun soll.</div>{% if not configured %}<div class="line-error">fehler: KI-server nicht konfiguriert</div>{% endif %}<div id="assistant-line"><span class="prompt">{{ username }}@c-beam&gt;</span><input id="assistant-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="_" {% if not configured %}disabled{% endif %}></div></div>
 
@@ -61,7 +65,8 @@
 
       <div id="assistant-controls">
         <label><input type="checkbox" id="assistant-speak"> antworten vorlesen</label>
-        <button type="button" class="btn btn-default btn-sm" id="assistant-mic" style="display:none">&#127908; halten zum sprechen</button>
+        <button type="button" class="btn btn-default btn-sm" id="assistant-mic" style="display:none; touch-action: none; user-select: none; -webkit-user-select: none;">&#127908; halten zum sprechen</button>
+        <span id="assistant-mic-note" style="display:none">mikrofon: nur über https oder localhost</span>
       </div>
     </div>
   </div>

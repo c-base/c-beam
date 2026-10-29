@@ -16,6 +16,10 @@ from django.shortcuts import render
 from django.views.decorators.http import require_POST
 
 from ..assistant import chat, engine
+from ..assistant.chat import AssistantError
+
+# 20 s at 16 kHz mono 16 bit are 640 kB; anything far beyond that is not a recording
+MAX_UPLOAD = 2 * 1024 * 1024
 
 
 @login_required
@@ -70,3 +74,20 @@ def assistant_confirm(request, body):
     if not isinstance(call_id, str):
         return _reply(engine.Reply.error("ungu:ltige anfrage"), status=400)
     return _reply(engine.confirm(request, call_id, bool(body.get('accept'))))
+
+
+@require_POST
+def assistant_transcribe(request):
+    """multipart field "file" (wav) → {"text": "…"} or {"error": "…"}."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'text': None, 'error': 'nicht eingeloggt'}, status=403)
+    upload = request.FILES.get('file')
+    if upload is None:
+        return JsonResponse({'text': None, 'error': 'keine aufnahme'}, status=400)
+    if upload.size > MAX_UPLOAD:
+        return JsonResponse({'text': None, 'error': 'aufnahme zu groß'}, status=400)
+    try:
+        text = chat.transcribe(upload.read(), upload.name or 'speech.wav')
+    except AssistantError as e:
+        return JsonResponse({'text': None, 'error': str(e)})
+    return JsonResponse({'text': text, 'error': None})

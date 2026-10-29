@@ -310,3 +310,45 @@ def test_follow_up_sees_the_history(client, complete):
     messages = complete.call_args.args[0]
     assert [m['role'] for m in messages] == ['system', 'user', 'assistant', 'user']
     assert messages[-1] == {'role': 'user', 'content': 'und in fuß?'}
+
+
+# transcription ---------------------------------------------------------------------
+
+from django.core.files.uploadedfile import SimpleUploadedFile  # noqa: E402
+
+
+def upload(client, data=b'RIFF....', name='speech.wav'):
+    return client.post('/assistant/transcribe', {'file': SimpleUploadedFile(name, data, content_type='audio/wav')})
+
+
+def test_transcribe_hands_the_wav_to_whisper(client):
+    with mock.patch('cbeamd.views.assistant.chat.transcribe', return_value='ist die bar offen?') as transcribe:
+        response = upload(client, b'RIFF....')
+    assert response.status_code == 200
+    assert response.json() == {'text': 'ist die bar offen?', 'error': None}
+    transcribe.assert_called_once_with(b'RIFF....', 'speech.wav')
+
+
+def test_transcribe_reports_whisper_errors_as_text(client):
+    with mock.patch('cbeamd.views.assistant.chat.transcribe', side_effect=AssistantError('nichts verstanden')):
+        response = upload(client)
+    assert response.status_code == 200
+    assert response.json() == {'text': None, 'error': 'nichts verstanden'}
+
+
+def test_transcribe_refuses_anonymous_missing_and_huge_uploads(db, client):
+    assert Client().post('/assistant/transcribe', {}).status_code == 403
+    assert client.post('/assistant/transcribe', {}).status_code == 400
+    assert client.get('/assistant/transcribe').status_code == 405
+    with mock.patch('cbeamd.views.assistant.chat.transcribe') as transcribe:
+        response = upload(client, b'x' * (2 * 1024 * 1024 + 1))
+    assert response.status_code == 400
+    assert response.json()['error'] == 'aufnahme zu groß'
+    transcribe.assert_not_called()
+
+
+def test_page_offers_the_microphone_hooks(client):
+    content = client.get('/assistant').content.decode()
+    assert 'data-transcribe-url="/assistant/transcribe"' in content
+    assert 'assistant-worklet.js' in content
+    assert 'id="assistant-mic"' in content

@@ -29,6 +29,13 @@ MAX_TOKENS = 400
 MAX_RETRY_AFTER = 5
 
 BUSY = "KI-server ausgelastet"
+NOTHING_HEARD = "nichts verstanden"
+# whisper's prompt is not an instruction but a spelling aid: it pulls the
+# recognition towards these words. without it "c-base" came out as "Seabase"
+# or "Siebe" and "Crew-WLAN" as "QWLAN"
+WHISPER_PROMPT = ("c-base, c-beam, Crew-WLAN, c-lab, Matelight, Club-Mate, Bordcomputer, Artefakt, "
+                  "Mission, Durchsage, Raumstation.")
+WHISPER_READ_TIMEOUT = 30
 NOT_UNDERSTOOD = "nicht verstanden"
 UNREADABLE = "KI-server: unlesbare antwort"
 
@@ -203,3 +210,23 @@ def complete(messages, tools, model=None):
     if not content:
         raise AssistantError("leere antwort vom KI-server")
     return ModelReply(text=content)
+
+
+def transcribe(wav, filename='speech.wav'):
+    """
+    the text whisper hears in wav (bytes, 16 kHz mono 16 bit); empty speech
+    is AssistantError("nichts verstanden").
+    """
+    data = post(
+        'audio/transcriptions',
+        data={'model': cfg.ai_whisper_model, 'prompt': WHISPER_PROMPT},
+        files={'file': (filename, wav, 'audio/wav')},
+        read_timeout=WHISPER_READ_TIMEOUT)
+    try:
+        text = data['text']
+    except (KeyError, TypeError):
+        raise AssistantError(UNREADABLE)
+    text = ' '.join(str(text or '').split())
+    if not text:
+        raise AssistantError(NOTHING_HEARD)
+    return text

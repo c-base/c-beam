@@ -275,3 +275,35 @@ def test_tool_call_message_records_the_call_in_chat_format():
         'tool_calls': [{'id': 'call_1', 'type': 'function',
                         'function': {'name': 'station_knowledge', 'arguments': '{"query": "wlan"}'}}],
     }
+
+
+# whisper ----------------------------------------------------------------------
+
+def test_transcribe_sends_the_wav_with_the_spelling_prompt(post, monkeypatch):
+    monkeypatch.setattr(cfg, 'ai_whisper_model', 'whisper-test')
+    post.return_value = FakeResponse(body={'text': '  Ist die  Bar offen? '})
+    assert chat.transcribe(b'RIFF....', 'speech.wav') == 'Ist die Bar offen?'
+    args, kwargs = post.call_args
+    assert args[0] == 'http://ai.test/v1/audio/transcriptions'
+    assert kwargs['data'] == {'model': 'whisper-test', 'prompt': chat.WHISPER_PROMPT}
+    assert kwargs['files'] == {'file': ('speech.wav', b'RIFF....', 'audio/wav')}
+    assert kwargs['json'] is None
+    assert kwargs['timeout'] == (5, chat.WHISPER_READ_TIMEOUT)
+
+
+def test_transcribe_empty_result_is_nothing_heard(post):
+    post.return_value = FakeResponse(body={'text': '   '})
+    with pytest.raises(AssistantError, match='nichts verstanden'):
+        chat.transcribe(b'wav')
+    post.return_value = FakeResponse(body={'text': None})
+    with pytest.raises(AssistantError, match='nichts verstanden'):
+        chat.transcribe(b'wav')
+
+
+def test_transcribe_unreadable_and_busy(post, sleep):
+    post.return_value = FakeResponse(body={'result': 'x'})
+    with pytest.raises(AssistantError, match='unlesbare antwort'):
+        chat.transcribe(b'wav')
+    post.return_value = FakeResponse(429)
+    with pytest.raises(AssistantError, match='ausgelastet'):
+        chat.transcribe(b'wav')
