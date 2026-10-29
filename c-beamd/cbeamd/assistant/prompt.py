@@ -60,6 +60,17 @@ KNOWLEDGE = (
     "enthält, etwa: „dazu weiß die station nichts. die datenrettungssonde siri enthält "
     "diese information leider auch nicht.“ {spelling}")
 
+# without a knowledge base the model has nowhere to look station questions
+# up, and the 4B model then treats them as actions it cannot perform ("ich
+# kann das nicht tun" to "wieviele ringe hat die c-base"). this paragraph
+# takes the place of the knowledge one: answer from what it knows and the
+# legend, admit the rest.
+NO_KNOWLEDGE = (
+    "Fragen über die c-base selbst (ihre Geschichte, Legende, Räume, Aufbau, Begriffe) "
+    "beantwortest du aus deinem Wissen und der Legende; weißt du es nicht, sage, dass die "
+    "Station dazu nichts weiß, und verweise auf die Datenrettungssonde „Siri“, die diese "
+    "Information leider auch nicht enthält. Sage dazu nie, dass du das nicht tun kannst. ")
+
 SPELLING_VOICE = (
     "Die Spracherkennung schreibt c-base oft als „Seabase“, „Sea Base“, „C Base“ oder "
     "„die Base“ und c-beam als „Seabeam“; gemeint ist immer die c-base beziehungsweise "
@@ -78,14 +89,15 @@ def format_now(when=None):
 
 def build(username, knowledge=False, voice=False, now=None):
     """
-    the system prompt for one round. knowledge adds the paragraph that forces
-    station_knowledge lookups (only when the tool is offered), voice picks the
-    wording for transcribed speech.
+    the system prompt for one round. knowledge picks the paragraph that forces
+    station_knowledge lookups (only when the tool is offered) over the one for
+    answering station questions without it; voice picks the wording for
+    transcribed speech.
     """
     if knowledge:
         paragraph = KNOWLEDGE.format(spelling=SPELLING_VOICE if voice else SPELLING_TYPED)
     else:
-        paragraph = ''
+        paragraph = NO_KNOWLEDGE
     return PROMPT.format(
         input=INPUT_VOICE if voice else INPUT_TYPED,
         knowledge=paragraph,

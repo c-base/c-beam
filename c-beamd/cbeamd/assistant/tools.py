@@ -15,10 +15,10 @@ methods call, so nothing goes over the network except announce and play_sound
 the browser, never over c_out.
 """
 
-import dataclasses
 import logging
+import re
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Callable, Optional
 
 import cbeamdcfg as cfg
@@ -94,6 +94,9 @@ class Tool:
     run: Callable
     describe: Callable
     parameters: dict = field(default_factory=dict)
+    # optional: turns validated arguments into what the tool runs with, e.g. a
+    # sound's name into its file name; raises AssistantError when that fails
+    resolve: Optional[Callable] = None
 
     def definition(self):
         """the tool in the openai function-calling format."""
@@ -231,6 +234,33 @@ def play_sound(request, args):
     return DONE
 
 
+def _stem(name):
+    return re.sub(r'\.[a-z0-9]+$', '', name.lower().strip())
+
+
+def match_sound(wanted, names):
+    """
+    the file in names that wanted means: the exact name, else the same name
+    without extension, else the first file whose name contains it. None when
+    nothing fits.
+    """
+    wanted_stem = _stem(wanted)
+    for fits in (lambda n: n.lower() == wanted.lower().strip(),
+                 lambda n: _stem(n) == wanted_stem,
+                 lambda n: wanted_stem and wanted_stem in _stem(n)):
+        hits = sorted(n for n in names if fits(n))
+        if hits:
+            return hits[0]
+    return None
+
+
+def resolve_sound(args):
+    found = match_sound(args['sound'], sound_names())
+    if not found:
+        raise AssistantError('sound %s nicht gefunden' % quoted(args['sound']))
+    return {'sound': found}
+
+
 # the tools ----------------------------------------------------------------------
 
 WHO_IS_ON_BOARD = Tool(
@@ -283,11 +313,17 @@ ANNOUNCE = Tool(
     announce, lambda a: "durchsage: " + quoted(a['text']),
     {'text': Param("Der Text der Durchsage", required=True, max_length=200)})
 
+# the sound's name is a free string on purpose: offered as an enum of the 156
+# file names, the model stopped calling any tool at all (checked 2026-10-29
+# against gemma4:e4b: five of eight station questions were answered from thin
+# air). the name is matched against shout's list before the confirmation.
 PLAY_SOUND = Tool(
     'play_sound', CONFIRM,
     "Einen Sound über die Lautsprecher der Station abspielen",
     play_sound, lambda a: "sound: " + a['sound'],
-    {'sound': Param("Dateiname des Sounds", required=True)})
+    {'sound': Param("Name oder Stichwort des Sounds, zum Beispiel laserraycannon oder siri",
+                    required=True, max_length=100)},
+    resolve=resolve_sound)
 
 
 _sounds_cache = (0.0, [])
@@ -312,22 +348,20 @@ def sound_names():
 def available(username=None):
     """
     the tools the model gets to see right now. station_knowledge needs a
-    knowledge source, play_sound a sound list; username only shapes the
+    configured knowledge base (RAG_URL and RAG_KEY), play_sound a sound list; username only shapes the
     description of login ("einloggen als smile").
     """
     tools = [WHO_IS_ON_BOARD, BAR_STATUS, EVENTS_TODAY, MISSIONS, ARTEFACTS]
-    if cfg.rag_key:
+    if knowledge.configured():
         tools.append(STATION_KNOWLEDGE)
     if username:
-        tools.append(dataclasses.replace(LOGIN, describe=lambda a: "einloggen als " + username))
+        tools.append(replace(LOGIN, describe=lambda a: "einloggen als " + username))
     else:
         tools.append(LOGIN)
     tools.append(LOGOUT)
     tools.append(ANNOUNCE)
-    names = sound_names()
-    if names:
-        tools.append(dataclasses.replace(PLAY_SOUND, parameters={
-            'sound': Param("Dateiname des Sounds", required=True, enum=names)}))
+    if sound_names():
+        tools.append(PLAY_SOUND)
     return tools
 
 
@@ -343,5 +377,8 @@ def prepare(tools, call: ToolCall):
     """an Action for the model's proposal, or AssistantError("nicht verstanden")."""
     for tool in tools:
         if tool.name == call.name:
-            return Action(tool, tool.validate(call.arguments), call.id)
+            arguments = tool.validate(call.arguments)
+            if tool.resolve:
+                arguments = tool.resolve(arguments)
+            return Action(tool, arguments, call.id)
     raise AssistantError(NOT_UNDERSTOOD)

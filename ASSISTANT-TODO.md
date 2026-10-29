@@ -15,6 +15,10 @@ Grundentscheidungen:
 - Keine Celery- oder Channels-Infrastruktur: synchrone Views, Konversation in der Session.
   Der gthread-Worker von gunicorn verträgt die langen Requests.
 - Erste Version als eigene Seite `/assistant`; ein Panel auf allen Seiten kommt später.
+- Lokaler Test: Dev-Server mit `MQTT_ENABLED=False DEBUG=True` und Nutzer in der
+  SQLite-DB; KI-Server und shout sind von außerhalb des Containers erreichbar. Der
+  Dev-Lauf publiziert nichts per MQTT, `announce` erreicht shout aber direkt, deshalb
+  Durchsagen beim Testen verwerfen.
 
 ## 0. Vorbereitung
 
@@ -22,7 +26,8 @@ Grundentscheidungen:
 - [ ] Prüfen, dass der c-beam-Container `https://ai.cbrp3.c-base.org/ollama/v1` und
       `http://lazee-nerdserv.cbrp3.c-base.org:8123` erreicht (Compose läuft mit
       `network_mode: host`, sollte also gehen).
-- [ ] Qdrant-`api-key` besorgen und in die `.env` eintragen (nicht ins Repo).
+- [x] Qdrant-`api-key` besorgen und in die `.env` eintragen (nicht ins Repo). Suche gegen
+      die echte Collection geprüft am 2026-10-29 (768 Dimensionen, unbenannter Vektor).
 
 ## 1. Konfiguration und Modellclient
 
@@ -66,13 +71,14 @@ Grundentscheidungen:
       `request.user.username`, Ergebnis "ausgeführt".
 - [x] `announce` (CONFIRM, `text` max. 200): `announce(request, text)` aus `audio.py`,
       erst nach Bestätigung, Ergebnis "ausgeführt".
-- [x] `play_sound` (CONFIRM, `sound` als `enum`): Liste je Anfrage aus `sounds(request)`
-      (shout läuft wieder und antwortet auf `sounds`, geprüft am 2026-10-29), Ausführung
-      über `play(request, sound)`. Ist die Liste leer, wird das Werkzeug nicht angeboten.
-      Nutzerbeschreibung `sound: name`.
+- [x] `play_sound` (CONFIRM, `sound` als freier String, **nicht** als `enum`): Mit der
+      Liste von 156 Dateinamen als `enum` rief gemma4:e4b gar keine Werkzeuge mehr auf
+      (fünf von acht Stationsfragen frei erfunden, geprüft am 2026-10-29). Der Name wird
+      vor der Bestätigung gegen `sounds(request)` aufgelöst: exakt, ohne Endung, sonst
+      Teilstring („laser“ → `laserraycannon.mp3`). Kein Treffer: "sound „x“ nicht
+      gefunden". Liste eine Minute gecacht; leer heißt Werkzeug nicht angeboten.
 - [x] `station_knowledge` (QUERY, `query` 1 bis 200 Zeichen) nur in die Werkzeugliste
-      aufnehmen, wenn `RAG_KEY` gesetzt ist. `knowledge.py` ist bis Block 5 ein
-      Platzhalter, der "wissensdatenbank noch nicht angebunden" meldet.
+      aufnehmen, wenn `RAG_URL` und `RAG_KEY` gesetzt sind (`knowledge.configured()`).
 - [x] Tests je Werkzeug mit Datenbank-Fixtures, inklusive Validierung und Kürzung.
 
 ## 3. Systemprompt und Konversation
@@ -83,6 +89,10 @@ Grundentscheidungen:
       nicht im Verlauf gespeichert.
 - [x] Zwei Varianten: mit Spracherkennungs-Sätzen (Eingabe per Mikrofon) und ohne
       (Eingabe per Tastatur).
+- [x] Ohne Wissensquelle ersetzt ein Absatz den Wissensabsatz: Fragen über die Station
+      aus Wissen und Legende beantworten, sonst "die Station weiß dazu nichts". Ohne ihn
+      antwortete das Modell auf "wieviele ringe hat die c-base" mit "ich kann das nicht
+      tun" (geprüft am 2026-10-29).
 - [x] `conversation.py`: Verlauf in `request.session` als Liste von Chat-Nachrichten.
       Höchstens 24 Nachrichten, ältere fallen so weg, dass der Verlauf mit einer
       `user`-Nachricht beginnt und nie zwischen `tool_calls` und `tool` geschnitten wird.
@@ -98,53 +108,58 @@ Grundentscheidungen:
 
 ## 4. Views und Seite
 
-- [ ] `POST /assistant/ask` (JSON `{text, voice: bool}`, `login_required`, CSRF):
+- [x] `POST /assistant/ask` (JSON `{text, voice: bool}`, `login_required`, CSRF):
       höchstens drei Runden (Frage, Werkzeugergebnis, Antwort); in der dritten Runde wird
       ein Werkzeugergebnis direkt als Antwort gezeigt. Antwort als JSON mit
       `lines` (Terminalzeilen), `answer`, `speak` (Text zum Vorlesen) und bei CONFIRM
       `confirm: {id, description}`.
-- [ ] `POST /assistant/confirm` (JSON `{id, accept}`): ausführen oder ablehnen, Ergebnis
+- [x] `POST /assistant/confirm` (JSON `{id, accept}`): ausführen oder ablehnen, Ergebnis
       in den Verlauf, Antwort wie oben.
-- [ ] `GET /assistant`: Seite rendern, nur eingeloggt.
-- [ ] Fehlertexte wie in der App: "fehler: KI-server ausgelastet", Timeout, "nicht
+- [x] `GET /assistant`: Seite rendern, nur eingeloggt. Template steht mit Terminal-Kasten,
+      Eingabezeile, Vorlese-Schalter und Mikrofonknopf (versteckt); `static/assistant.js`
+      ist bis Block 6 ein Platzhalter. Ablaufsteuerung in `assistant/engine.py`.
+- [x] Fehlertexte wie in der App: "fehler: KI-server ausgelastet", Timeout, "nicht
       verstanden"; in allen Fehlerfällen Rollback.
-- [ ] URLs in `cbeamd/urls.py`, Menüeintrag in `base.django` (zum Beispiel unter c-info
+- [x] URLs in `cbeamd/urls.py`, Menüeintrag in `base.django` (zum Beispiel unter c-info
       als "c-beam fragen").
-- [ ] View-Tests über den Django-Testclient mit gemocktem Modell.
+- [x] View-Tests über den Django-Testclient mit gemocktem Modell.
 
 ## 5. Wissensdatenbank (Qdrant)
 
-- [ ] `knowledge.py`: Collection-Layout einmal lesen (`GET /collections/{name}`,
+- [x] `knowledge.py`: Collection-Layout einmal lesen (`GET /collections/{name}`,
       Header `api-key`), Vektorgröße und bei benannten Vektoren den Namen für `using`
       merken (Prozess-Cache).
-- [ ] Embedding: `POST {ai}/embeddings` mit `search_query: ` Präfix; Längenprüfung gegen
+- [x] Embedding: `POST {ai}/embeddings` mit `search_query: ` Präfix; Längenprüfung gegen
       die Collection.
-- [ ] Suche: `POST /collections/{name}/points/query`, `limit 5`, `score_threshold 0.40`,
+- [x] Suche: `POST /collections/{name}/points/query`, `limit 5`, `score_threshold 0.40`,
       `with_payload true`.
-- [ ] Text und Quelle aus dem Payload in der Reihenfolge aus Abschnitt 9.1, Chunk auf
+- [x] Text und Quelle aus dem Payload in der Reihenfolge aus Abschnitt 9.1, Chunk auf
       700 Zeichen, Quelle auf 80 Zeichen.
-- [ ] Werkzeugergebnis-Format "Fundstellen der Ähnlichkeitssuche, …" und der
+- [x] Werkzeugergebnis-Format "Fundstellen der Ähnlichkeitssuche, …" und der
       Kein-Treffer-Text mit der Datenrettungssonde Siri.
-- [ ] Fehlertexte 401/403 "zugriff verweigert, api-key prüfen", 404 "collection nicht
+- [x] Fehlertexte 401/403 "zugriff verweigert, api-key prüfen", 404 "collection nicht
       gefunden".
-- [ ] Tests mit gemocktem Qdrant und Embedding.
+- [x] Tests mit gemocktem Qdrant und Embedding.
 
 ## 6. Terminal mit Texteingabe
 
-- [ ] Template `cbeamd/templates/cbeamd/assistant.django`: schwarzer Kasten, dünner
+- [x] Template `cbeamd/templates/cbeamd/assistant.django`: schwarzer Kasten, dünner
       türkiser Rahmen, Monospace, 12 Zeilen Scrollback, Prompt `<user>@c-beam>`, alles
       klein geschrieben. CSS an den bestehenden `.terminal`-Stil der Startseite anlehnen.
-- [ ] Eingabezeile direkt hinter dem Prompt, Enter sendet; während einer laufenden
+- [x] Eingabezeile direkt hinter dem Prompt, Enter sendet; während einer laufenden
       Anfrage gesperrt.
-- [ ] Reines JavaScript als statische Datei (`cbeamd/static/assistant.js`), kein
+- [x] Reines JavaScript als statische Datei (`cbeamd/static/assistant.js`), kein
       React-Build. `fetch` mit CSRF-Token aus dem Cookie.
-- [ ] Fortschrittszeilen ("denke nach…", Werkzeugbeschreibung) werden durch die nächste
+- [x] Fortschrittszeilen ("denke nach…", Werkzeugbeschreibung) werden durch die nächste
       Ausgabe ersetzt, nicht angehängt.
-- [ ] CONFIRM: Zeile `durchsage: „…“ [j/n]` beziehungsweise `sound: name [j/n]` mit
+- [x] CONFIRM: Zeile `durchsage: „…“ [j/n]` beziehungsweise `sound: name [j/n]` mit
       Knöpfen "verwerfen" und "ausführen".
-- [ ] Fehler als Zeile `fehler: …`.
+- [x] Fehler als Zeile `fehler: …`.
 - [ ] Manuell im Browser gegen den echten KI-Server testen, auch Nachfragen
-      ("und in Fuß?").
+      ("und in Fuß?"). Stand 2026-10-29: der Ablauf (Bar, Crew, Events, Durchsage
+      verwerfen, Sound ausführen, Rechnen mit Nachfrage) ist per curl gegen die
+      JSON-Endpunkte und das echte Modell geprüft; das JavaScript ist nur
+      syntaxgeprüft, der Klick-Test im Browser steht noch aus.
 
 ## 7. Vorlesen im Browser
 

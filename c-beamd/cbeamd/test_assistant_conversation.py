@@ -32,11 +32,16 @@ def test_prompt_names_user_and_time():
     assert '{' not in text and '}' not in text
 
 
-def test_prompt_without_knowledge_source_has_no_knowledge_paragraph():
+def test_prompt_without_knowledge_source_answers_station_questions_itself():
     text = prompt.build('smile')
     assert 'station_knowledge' not in text
-    assert 'Datenrettungssonde' not in text
-    assert 'beantwortest du mit Hilfe der Werkzeuge. Alle anderen Fragen' in text
+    assert 'beantwortest du mit Hilfe der Werkzeuge. Fragen über die c-base selbst' in text
+    assert 'Sage dazu nie, dass du das nicht tun kannst. Alle anderen Fragen' in text
+
+
+def test_knowledge_paragraph_replaces_the_fallback():
+    text = prompt.build('smile', knowledge=True)
+    assert 'Fragen über die c-base selbst' not in text
 
 
 def test_prompt_with_knowledge_source_forces_lookups():

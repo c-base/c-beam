@@ -1,0 +1,72 @@
+{% extends "cbeamd/base.django" %}
+{% load static %}
+
+{% block title %}c-beam fragen{% endblock %}
+
+{% block head %}
+<style type="text/css">
+  /* the box is the site's .terminal (black, blue frame, Andale Mono); only
+     the line kinds and the prompt line at the bottom are added here */
+  #assistant {
+    max-height: 60vh;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  #assistant div.line-done, #assistant div.line-info { color: #0f0; }
+  #assistant div.line-confirm { color: #ffcc00; }
+  #assistant div.line-error { color: #f00; }
+  #assistant div.line-buttons { margin: 4px 0 6px 0; }
+  #assistant div.line-buttons button { margin-right: 8px; }
+  #assistant-line { display: flex; align-items: baseline; }
+  #assistant-input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    padding: 0;
+    margin-left: 0.6em;
+    color: #33b5e5;
+    font: inherit;
+    line-height: inherit;
+  }
+  #assistant-input::placeholder { color: #666; }
+  #assistant-input:disabled { color: #999999; }
+  #assistant-controls { margin-top: 10px; color: #999999; }
+  #assistant-controls label { font-weight: normal; margin-right: 16px; }
+  #assistant-record {
+    display: none;
+    margin-top: 8px;
+    padding: 4px 8px;
+    background: #8b0000;
+    color: #fff;
+    font-family: Andale Mono, monospace;
+  }
+  #assistant-record.active { display: block; }
+  #assistant-level { display: inline-block; height: 8px; background: #fff; vertical-align: middle; }
+</style>
+{% endblock head %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-12">
+      <h1 align="center">C-BEAM FRAGEN</h1>
+
+      <div id="assistant" class="terminal"
+           data-ask-url="{% url 'assistant_ask' %}"
+           data-confirm-url="{% url 'assistant_confirm' %}"
+           data-username="{{ username }}"
+           data-configured="{{ configured|yesno:'1,0' }}"><div><span class="prompt">{{ username }}@c-beam&gt;</span> hallo {{ username }}. frag mich etwas, oder sag mir, was ich tun soll.</div>{% if not configured %}<div class="line-error">fehler: KI-server nicht konfiguriert</div>{% endif %}<div id="assistant-line"><span class="prompt">{{ username }}@c-beam&gt;</span><input id="assistant-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="_" {% if not configured %}disabled{% endif %}></div></div>
+
+      <div id="assistant-record">&#9679; aufnahme la:uft <span id="assistant-time">0:00 / 0:20</span> <span id="assistant-level"></span></div>
+
+      <div id="assistant-controls">
+        <label><input type="checkbox" id="assistant-speak"> antworten vorlesen</label>
+        <button type="button" class="btn btn-default btn-sm" id="assistant-mic" style="display:none">&#127908; halten zum sprechen</button>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+
+{% block extra_js %}
+  <script src="{% static 'assistant.js' %}"></script>
+{% endblock %}

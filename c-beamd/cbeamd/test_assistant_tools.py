@@ -27,7 +27,8 @@ def no_knowledge_no_sounds(monkeypatch):
 
 
 @pytest.fixture
-def request_as_smile(db):
+def request_as_smile(db, settings):
+    settings.PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
     request = RequestFactory().post('/assistant/ask')
     request.user = get_user_model().objects.create_user('smile', password='pw')
     return request
@@ -78,11 +79,11 @@ def test_station_knowledge_is_offered_only_with_a_key(monkeypatch):
     assert 'station_knowledge' in tools.names(tools.available())
 
 
-def test_play_sound_is_offered_with_the_sound_list_as_enum():
+def test_play_sound_is_offered_with_a_free_name_not_an_enum():
     with mock.patch('cbeamd.assistant.tools.rpc_sounds', return_value=['beep.mp3', 'siri.mp3']):
         tool = by_name('play_sound')
     assert tool.level == CONFIRM
-    assert tool.definition()['function']['parameters']['properties']['sound']['enum'] == ['beep.mp3', 'siri.mp3']
+    assert 'enum' not in tool.definition()['function']['parameters']['properties']['sound']
 
 
 def test_sound_list_is_cached(monkeypatch):
@@ -121,10 +122,37 @@ def test_non_string_argument_is_not_understood():
 
 
 def test_value_outside_enum_is_not_understood():
-    with mock.patch('cbeamd.assistant.tools.rpc_sounds', return_value=['beep.mp3']):
-        with pytest.raises(AssistantError, match='nicht verstanden'):
-            prepared('play_sound', {'sound': 'other.mp3'})
-        assert prepared('play_sound', {'sound': 'beep.mp3'}).arguments == {'sound': 'beep.mp3'}
+    tool = Tool('t', QUERY, 'd', lambda r, a: a, lambda a: 't', {'voice': Param(enum=['julia', 'r2d2'])})
+    with pytest.raises(AssistantError, match='nicht verstanden'):
+        tool.validate({'voice': 'c3po'})
+
+
+SOUNDS = ['siri.mp3', 'siri_looped.mp3', 'laserraycannon.mp3', 'Cultur.mp3', '281395_SOUNDDOGS__sp.mp3']
+
+
+@pytest.mark.parametrize('wanted, expected', [
+    ('siri.mp3', 'siri.mp3'),
+    ('siri', 'siri.mp3'),
+    ('Siri', 'siri.mp3'),
+    ('siri looped', None),
+    ('siri_looped', 'siri_looped.mp3'),
+    ('laser', 'laserraycannon.mp3'),
+    ('cultur', 'Cultur.mp3'),
+    ('sounddogs', '281395_SOUNDDOGS__sp.mp3'),
+    ('fräse', None),
+    ('', None),
+])
+def test_sound_names_are_matched_against_the_list(wanted, expected):
+    assert tools.match_sound(wanted, SOUNDS) == expected
+
+
+def test_play_sound_resolves_the_name_before_the_confirmation():
+    with mock.patch('cbeamd.assistant.tools.rpc_sounds', return_value=SOUNDS):
+        action = prepared('play_sound', {'sound': 'laser'})
+        assert action.arguments == {'sound': 'laserraycannon.mp3'}
+        assert action.description == 'sound: laserraycannon.mp3'
+        with pytest.raises(AssistantError, match='sound „fräse“ nicht gefunden'):
+            prepared('play_sound', {'sound': 'fräse'})
 
 
 def test_arguments_are_normalized_cut_and_unknown_keys_dropped():

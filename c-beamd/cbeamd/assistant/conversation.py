@@ -82,6 +82,10 @@ class Conversation:
         self.last = self.now()
         self._mark = len(self.messages)
 
+    def touch(self):
+        """count a confirmation as activity without starting a request."""
+        self.last = self.now()
+
     def rollback(self):
         del self.messages[self._mark:]
         self.pending = None

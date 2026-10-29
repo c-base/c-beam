@@ -61,6 +61,11 @@ urlpatterns = [
     re_path(r'^oauth/callback/$', views.oauth_callback, name='oauth_callback'),
     re_path(r'^logout/$', auth_views.LogoutView.as_view(template_name="cbeamd/logout.django"), name='logout'),
     re_path(r'^logactivity$', views.logactivity_web, name='logactivity_web'),
+    # the web assistant (AI-ASSISTANT.md): a page with a terminal, and two json
+    # endpoints the page talks to; django talks to the ai server in turn
+    re_path(r'^assistant$', views.assistant_page, name='assistant'),
+    re_path(r'^assistant/ask$', views.assistant_ask, name='assistant_ask'),
+    re_path(r'^assistant/confirm$', views.assistant_confirm, name='assistant_confirm'),
     # re_path(r'^missions/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail, dict(mission_dict, template_name='mission_detail.django'), mission_dict),
     re_path(r'^missions$', views.mission_list, name='mission_list'),
     re_path(r'^missions/(?P<mission_id>\d+)/edit$', views.edit_mission, name='edit_mission'),
