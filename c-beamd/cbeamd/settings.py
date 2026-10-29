@@ -322,6 +322,8 @@ TEMPLATES = [
                 'django.template.context_processors.tz',
                 'django.template.context_processors.request',
                 'django.contrib.messages.context_processors.messages',
+                # the assistant's terminal at the bottom of every page (base.django)
+                'cbeamd.assistant.context.assistant',
             ],
         },
     },

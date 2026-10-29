@@ -24,22 +24,12 @@ from ..assistant.chat import AssistantError
 MAX_UPLOAD = 2 * 1024 * 1024
 
 
-def assistant_context(request):
-    """what assistant_terminal.django needs, for every page that embeds it."""
-    configured = chat.configured()
-    return {
-        'assistant_configured': configured,
-        'assistant_models': chat.models() if configured else [],
-        'assistant_model': request.session.get(engine.MODEL_KEY) or '',
-        'assistant_default_model': cfg.ai_model,
-    }
-
-
 @login_required
 def assistant_page(request):
-    context = assistant_context(request)
-    context['assistant_prompt_line'] = 'hallo %s. frag mich etwas, oder sag mir, was ich tun soll.' % request.user.username
-    return render(request, 'cbeamd/assistant.django', context)
+    # the terminal's context comes from cbeamd.assistant.context on every page
+    return render(request, 'cbeamd/assistant.django', {
+        'assistant_prompt_line': 'hallo %s. frag mich etwas, oder sag mir, was ich tun soll.' % request.user.username,
+    })
 
 
 def _json_body(request):

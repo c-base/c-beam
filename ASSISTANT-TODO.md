@@ -230,7 +230,10 @@ Grundentscheidungen:
 - [x] Terminal auf der Startseite: das Activitylog-Terminal auf `/` ist jetzt das
       Assistent-Terminal (Teiltemplate `assistant_terminal.django`, CSS in
       `assistant.css`); die Seite `/assistant` bleibt als Variante ohne Activitylog.
-- [ ] Terminal als Panel auf allen übrigen Seiten.
+- [x] Terminal auf allen übrigen Seiten: `base.django` hängt es unter den Inhalt, der
+      Kontext kommt aus dem Context-Processor `cbeamd.assistant.context` (nur eingeloggt
+      und nur mit KI-Server). `/` und `/assistant` leeren den Block und betten selbst ein,
+      `dash_base.django` (Display-Seiten) leert ihn ebenfalls.
 - [x] Wegzieh-Geste zum Verwerfen einer Aufnahme (in Block 8 mit umgesetzt).
 - [ ] Falls doch gewünscht: `say` als CONFIRM-Werkzeug über c_out (`tts` in `audio.py`
       ist zurzeit ein Stub).

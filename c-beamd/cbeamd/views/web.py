@@ -36,16 +36,12 @@ def index(request):
     al = ActivityLog.objects.order_by('-timestamp')[:20]
     rev = list(al)
     rev.reverse()
-    context = {
+    # the activity log's terminal doubles as the assistant's (assistant_terminal.django);
+    # its context comes from the cbeamd.assistant.context processor
+    return render(request, 'cbeamd/index.django', {
         'user_list_online': user_list_online, 'user_list_eta': user_list_eta,
         'user_list_offline': user_list_offline, 'status': 'all', 'activitylog': rev,
-    }
-    # the activity log's terminal doubles as the assistant's (assistant_terminal.django).
-    # imported here, not at the top: views.assistant pulls in the assistant's tools,
-    # which import this module's stats_list through views.hardware
-    from .assistant import assistant_context
-    context.update(assistant_context(request))
-    return render(request, 'cbeamd/index.django', context)
+    })
 
 
 @login_required

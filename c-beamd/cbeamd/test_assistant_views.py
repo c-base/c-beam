@@ -22,7 +22,7 @@ def configured(monkeypatch):
     monkeypatch.setattr(cfg, 'rag_key', '')
     monkeypatch.setattr(tools, '_sounds_cache', (0.0, []))
     with mock.patch('cbeamd.assistant.tools.rpc_sounds', return_value=['siri.mp3']), \
-            mock.patch('cbeamd.views.assistant.chat.models', return_value=[]):
+            mock.patch('cbeamd.assistant.context.chat.models', return_value=[]):
         yield
 
 
@@ -378,7 +378,7 @@ def set_model(client, model):
 
 def test_pages_offer_the_model_choice(client, monkeypatch):
     monkeypatch.setattr(cfg, 'ai_model', 'gemma4:e4b')
-    with mock.patch('cbeamd.views.assistant.chat.models', return_value=MODELS):
+    with mock.patch('cbeamd.assistant.context.chat.models', return_value=MODELS):
         content = client.get('/assistant').content.decode()
         index = client.get('/').content.decode()
     assert '<option value="">gemma4:e4b (standard)</option>' in content
@@ -394,7 +394,7 @@ def test_page_without_models_has_no_select(client):
 
 def test_model_choice_is_kept_in_the_session_and_used(client, complete, monkeypatch):
     monkeypatch.setattr(cfg, 'ai_model', 'gemma4:e4b')
-    with mock.patch('cbeamd.views.assistant.chat.models', return_value=MODELS):
+    with mock.patch('cbeamd.assistant.context.chat.models', return_value=MODELS):
         response, data = set_model(client, 'Qwen3-Coder-Next-GGUF')
         assert response.status_code == 200
         assert data['lines'] == [{'kind': 'info', 'text': 'modell: Qwen3-Coder-Next-GGUF'}]
@@ -405,7 +405,7 @@ def test_model_choice_is_kept_in_the_session_and_used(client, complete, monkeypa
     ask(client, 'hallo')
     assert complete.call_args.kwargs['model'] == 'Qwen3-Coder-Next-GGUF'
 
-    with mock.patch('cbeamd.views.assistant.chat.models', return_value=MODELS):
+    with mock.patch('cbeamd.assistant.context.chat.models', return_value=MODELS):
         response, data = set_model(client, '')
     assert data['lines'] == [{'kind': 'info', 'text': 'modell: gemma4:e4b (standard)'}]
     ask(client, 'hallo')
@@ -413,7 +413,7 @@ def test_model_choice_is_kept_in_the_session_and_used(client, complete, monkeypa
 
 
 def test_unknown_model_is_refused(client):
-    with mock.patch('cbeamd.views.assistant.chat.models', return_value=MODELS):
+    with mock.patch('cbeamd.assistant.context.chat.models', return_value=MODELS):
         response, data = set_model(client, 'gpt-9')
     assert response.status_code == 400
     assert data['lines'][0]['text'] == 'fehler: unbekanntes modell'
@@ -439,3 +439,43 @@ def test_the_views_package_imports_in_the_servers_order():
         [sys.executable, '-c', 'import django; django.setup(); import cbeamd.urls'],
         cwd=base, env=env, capture_output=True, text=True, timeout=120)
     assert result.returncode == 0, result.stderr[-2000:]
+
+
+# the terminal on every page --------------------------------------------------------
+
+def test_other_pages_get_the_terminal_below_their_content(client):
+    content = client.get('/missions').content.decode()
+    assert content.count('id="assistant"') == 1
+    assert 'frag mich etwas, oder sag mir, was ich tun soll.' in content
+    assert 'assistant.css' in content and 'assistant.js' in content
+    # below the page's own content, above the footer
+    assert content.index('<h1') < content.index('id="assistant"') < content.index('<footer')
+
+
+def test_index_and_assistant_page_have_exactly_one_terminal(client):
+    assert client.get('/').content.decode().count('id="assistant"') == 1
+    assert client.get('/assistant').content.decode().count('id="assistant"') == 1
+
+
+def test_no_terminal_on_other_pages_without_a_server(client, monkeypatch):
+    monkeypatch.setattr(cfg, 'ai_url', '')
+    content = client.get('/missions').content.decode()
+    assert 'id="assistant"' not in content
+    # the dedicated page still renders, with the error line
+    assert 'KI-server nicht konfiguriert' in client.get('/assistant').content.decode()
+
+
+def test_no_terminal_for_anonymous_pages(db):
+    content = Client().get('/login/').content.decode()
+    assert 'id="assistant"' not in content
+    assert 'assistant.js' not in content
+
+
+def test_display_pages_have_no_terminal(client):
+    from django.template.loader import render_to_string
+    from django.test import RequestFactory
+    request = RequestFactory().get('/dash')
+    request.user = get_user_model().objects.get(username='smile')
+    request.session = client.session
+    content = render_to_string('cbeamd/dash_base.django', {}, request=request)
+    assert 'id="assistant"' not in content

@@ -1,11 +1,8 @@
 {% extends "cbeamd/base.django" %}
-{% load static %}
 
 {% block title %}c-beam fragen{% endblock %}
 
-{% block head %}
-  <link href="{% static 'assistant.css' %}" rel="stylesheet">
-{% endblock head %}
+{% block assistant %}{% endblock %}
 
 {% block content %}
   <div class="row">
@@ -15,7 +12,3 @@
     </div>
   </div>
 {% endblock content %}
-
-{% block extra_js %}
-  <script src="{% static 'assistant.js' %}"></script>
-{% endblock %}
