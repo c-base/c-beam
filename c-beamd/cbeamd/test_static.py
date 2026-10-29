@@ -17,7 +17,9 @@ def test_collected_static_files_are_served_with_debug_off():
             response = client.get('/static/assistant.js')
             assert response.status_code == 200
             assert b'cbeamAssistant' in b''.join(response.streaming_content)
+            response.close()   # whitenoise streams the file; unclosed, it is a ResourceWarning
             response = client.get('/static/assistant.css')
             assert response.status_code == 200
             assert response['Content-Type'].startswith('text/css')
+            response.close()
             assert client.get('/static/does-not-exist.js').status_code == 404
