@@ -177,20 +177,170 @@
 
   // the prompt line ---------------------------------------------------------------
 
+  // what was sent before, for arrow up and down like in a shell; kept per tab
+  var HISTORY_KEY = 'assistant.history';
+  var HISTORY_MAX = 50;
+  var history = [];
+  var position = 0;      // index into history while browsing, history.length otherwise
+  var draft = '';        // what was typed before browsing started
+
+  try { history = JSON.parse(sessionStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) { history = []; }
+  if (!Array.isArray(history)) { history = []; }
+  position = history.length;
+
+  function recordInput(text) {
+    if (history[history.length - 1] !== text) {
+      history.push(text);
+      if (history.length > HISTORY_MAX) { history.shift(); }
+      try { sessionStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) { /* no storage */ }
+    }
+    position = history.length;
+    draft = '';
+  }
+
+  function browse(step) {
+    if (!history.length) { return; }
+    if (position === history.length) { draft = input.value; }
+    position = Math.max(0, Math.min(history.length, position + step));
+    input.value = position === history.length ? draft : history[position];
+    // the cursor goes to the end, where it is when a line was just typed
+    var end = input.value.length;
+    window.setTimeout(function () { input.setSelectionRange(end, end); }, 0);
+  }
+
   input.addEventListener('keydown', function (event) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      var text = input.value;
+      var text = input.value.trim();
       input.value = '';
+      if (text) { recordInput(text); }
       ask(text, false);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      browse(-1);
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      browse(1);
     }
   });
 
-  // a click anywhere in the box puts the cursor on the prompt line, like a terminal
+  // a click anywhere in the box puts the cursor on the prompt line, like a
+  // terminal, unless the click was the end of a text selection: focusing
+  // would throw the selection away before it can be copied
   box.addEventListener('click', function (event) {
-    if (event.target.tagName !== 'BUTTON' && !busy && configured) { input.focus(); }
+    if (event.target.tagName === 'BUTTON' || busy || !configured) { return; }
+    var selection = window.getSelection ? window.getSelection() : null;
+    if (selection && selection.toString()) { return; }
+    input.focus();
   });
 
   if (configured) { input.focus(); }
   scroll();
+})();
+
+// reading answers aloud (AI-ASSISTANT.md, section 10), in the browser with
+// speechSynthesis: optional, off by default, and only with a german voice
+// that runs on the device, so that no answer goes to a cloud service. the
+// station's names are english words a german voice would spell out; they are
+// swapped for phonetic spellings before speaking.
+(function () {
+  'use strict';
+
+  var Assistant = window.cbeamAssistant;
+  var toggle = document.getElementById('assistant-speak');
+  var box = document.getElementById('assistant');
+  if (!Assistant || !toggle || !box) { return; }
+
+  var STORAGE_KEY = 'assistant.speak';
+  // chosen by ear for the voices at hand; check again when they change
+  var PRONUNCIATION = [
+    [/\bc-base\b/gi, 'ssiebays'],
+    [/\bc-beam\b/gi, 'ssiebiem'],
+    [/\bcrew\b/gi, 'kru']
+  ];
+
+  var synth = window.speechSynthesis;
+  var available = !!(synth && window.SpeechSynthesisUtterance);
+  var warned = false;
+
+  function remember(on) {
+    try { localStorage.setItem(STORAGE_KEY, on ? '1' : '0'); } catch (e) { /* private window etc. */ }
+  }
+
+  function remembered() {
+    try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  function notice(text) {
+    var el = document.createElement('div');
+    el.className = 'line-info';
+    el.textContent = text;
+    box.insertBefore(el, document.getElementById('assistant-line'));
+    box.scrollTop = box.scrollHeight;
+  }
+
+  // a german voice on the device; voices load late in some browsers, so this
+  // is looked up at speaking time, not once at start
+  function germanVoice() {
+    var voices = synth.getVoices() || [];
+    var german = voices.filter(function (v) { return /^de(-|_|$)/i.test(v.lang); });
+    var local = german.filter(function (v) { return v.localService; });
+    if (local.length) {
+      var exact = local.filter(function (v) { return /^de[-_]DE$/i.test(v.lang); });
+      return exact[0] || local[0];
+    }
+    return null;
+  }
+
+  function pronounce(text) {
+    PRONUNCIATION.forEach(function (pair) { text = text.replace(pair[0], pair[1]); });
+    return text;
+  }
+
+  function silence() {
+    if (available) { synth.cancel(); }
+  }
+
+  function say(text) {
+    if (!available || !toggle.checked || !text) { return; }
+    var voice = germanVoice();
+    if (!voice) {
+      if (!warned) {
+        warned = true;
+        notice('sprachausgabe: keine deutsche offline-stimme im browser');
+      }
+      return;
+    }
+    silence();
+    var utterance = new SpeechSynthesisUtterance(pronounce(text));
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+    utterance.rate = 1;
+    synth.speak(utterance);
+  }
+
+  if (!available) {
+    toggle.disabled = true;
+    toggle.parentNode.title = 'der browser hat keine sprachausgabe';
+  } else {
+    toggle.checked = remembered();
+    if (synth.getVoices && synth.addEventListener) {
+      synth.addEventListener('voiceschanged', function () { /* warms the voice list */ });
+    }
+  }
+
+  toggle.addEventListener('change', function () {
+    remember(toggle.checked);
+    if (!toggle.checked) { silence(); }
+  });
+
+  // what the server marked for speaking: the answer, "Erledigt." after a
+  // self action, "<beschreibung>. Ausführen?" for a proposal
+  Assistant.hooks.reply.push(function (reply) { say(reply.speak); });
+
+  // nothing keeps talking after the page is gone, and nothing is spoken into
+  // a recording (block 8 calls silence() before it starts)
+  window.addEventListener('pagehide', silence);
+  Assistant.silence = silence;
+  Assistant.say = say;
 })();

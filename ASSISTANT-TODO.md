@@ -155,6 +155,8 @@ Grundentscheidungen:
 - [x] CONFIRM: Zeile `durchsage: „…“ [j/n]` beziehungsweise `sound: name [j/n]` mit
       Knöpfen "verwerfen" und "ausführen".
 - [x] Fehler als Zeile `fehler: …`.
+- [x] Pfeil hoch/runter blättert durch die gesendeten Eingaben (pro Tab in
+      `sessionStorage`, 50 Einträge), Textauswahl im Kasten bleibt für Copy & Paste erhalten.
 - [ ] Manuell im Browser gegen den echten KI-Server testen, auch Nachfragen
       ("und in Fuß?"). Stand 2026-10-29: der Ablauf (Bar, Crew, Events, Durchsage
       verwerfen, Sound ausführen, Rechnen mit Nachfrage) ist per curl gegen die
@@ -163,14 +165,16 @@ Grundentscheidungen:
 
 ## 7. Vorlesen im Browser
 
-- [ ] Schalter "antworten vorlesen" auf der Seite, Zustand in `localStorage`, Standard aus.
-- [ ] `speechSynthesis` mit einer `de-DE`-Stimme; fehlt eine, einmalig die Zeile
-      "sprachausgabe: keine deutsche stimme im browser".
-- [ ] Aussprache-Ersetzungen mit Wortgrenzen: c-base → ssiebays, c-beam → ssiebiem,
-      crew → kru. Nach Gehör im Browser prüfen und anpassen.
-- [ ] Vorgelesen werden: Antwort, "Erledigt." nach SELF, "<Beschreibung>. Ausführen?"
+- [x] Schalter "antworten vorlesen" auf der Seite, Zustand in `localStorage`, Standard aus.
+- [x] `speechSynthesis` mit einer deutschen Stimme, die auf dem Gerät läuft
+      (`localService`), wie in der App; fehlt eine, einmalig die Zeile
+      "sprachausgabe: keine deutsche offline-stimme im browser".
+- [x] Aussprache-Ersetzungen mit Wortgrenzen: c-base → ssiebays, c-beam → ssiebiem,
+      crew → kru (Konstante `PRONUNCIATION` in `assistant.js`).
+- [ ] Ersetzungen nach Gehör im Browser prüfen und anpassen.
+- [x] Vorgelesen werden: Antwort, "Erledigt." nach SELF, "<Beschreibung>. Ausführen?"
       bei CONFIRM.
-- [ ] `speechSynthesis.cancel()` vor jeder Aufnahme und beim Verlassen der Seite.
+- [x] `speechSynthesis.cancel()` vor jeder Aufnahme und beim Verlassen der Seite.
 
 ## 8. Spracheingabe (Hold-to-talk)
 
