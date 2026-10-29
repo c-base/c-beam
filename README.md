@@ -15,6 +15,7 @@ c-beam API: https://c-beam.cbrp3.c-base.org/api (from crew network only)
    ```bash
    git clone <repository-url>
    cd c-beam
+   git submodule update --init   # the c-base-bootstrap theme under cbeamd/static
    ```
 
 2. **Set up environment variables**
@@ -78,6 +79,9 @@ make down
 
 `make up` does not run migrations (`c-beamd/start` only collects static
 files), so after pulling new migrations:
+
+the collected files are served by the app itself (whitenoise), so the proxy in
+front needs no `/static/` location of its own.
 
 ```bash
 make migrate
@@ -154,6 +158,37 @@ to `<BASE_DIR>/fcm.json` — `/opt/c-beamd/fcm.json` inside the container, where
 inside that file. pyfcm only opens the file on the first send, so a wrong path
 shows up as "The service account file does not exist or is not a regular file"
 when calling e.g. `gcm_send_test`, not at startup.
+
+## Web assistant (c-beam fragen)
+
+the android app's voice assistant, rebuilt for the browser: `/assistant` shows a
+terminal where crew can type (or hold the microphone button and speak) a question
+or a command, and the station's language model answers or proposes a tool call.
+`AI-ASSISTANT.md` describes the original; `ASSISTANT-TODO.md` what was built and
+how it deviates. the browser only ever talks to c-beam — django talks to the ai
+server and to qdrant on its behalf, so the qdrant key never leaves the server.
+
+the assistant needs the station's ai server (whisper, chat model, embeddings)
+and the knowledge base, both reachable from the crew network only:
+
+```
+AI_URL=https://ai.cbrp3.c-base.org/ollama/v1   # empty disables the assistant
+AI_MODEL=gemma4:e4b
+AI_WHISPER_MODEL=Whisper-Large-v3-Turbo
+AI_EMBED_MODEL=nomic-embed-text-v1-GGUF
+RAG_URL=http://lazee-nerdserv.cbrp3.c-base.org:8123
+RAG_KEY=                                        # empty: no knowledge base, no station_knowledge tool
+RAG_COLLECTION=cbase_knowledge
+KNOWLEDGE_SOURCE=qdrant                         # or sandy: sandy strands over SANDY_URL, slower
+```
+
+what the model may do is fixed in `cbeamd/assistant/tools.py`: station queries
+(who is on board, bar, events, missions, artefacts, the knowledge base), login
+and logout of the logged-in user, and, only after the user confirms in the
+terminal, an announcement, a spoken text or a sound over c_out (shout). answers are read aloud in the
+browser if the user switches that on; nothing the assistant says goes over the
+station's speakers. a chat request can take up to 60 s, so a reverse proxy in
+front of c-beam needs a read timeout of at least 90 s for `/assistant/`.
 
 ## JSON RPC
 

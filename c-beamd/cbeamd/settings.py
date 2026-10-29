@@ -93,6 +93,10 @@ SECRET_KEY = config('SECRET_KEY')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # serves STATIC_ROOT itself, so that /static/ works behind a proxy that
+    # has no static location (nginx at the station forwards everything to
+    # gunicorn, and django alone serves nothing from /static/ with DEBUG off)
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'cbeamd.middleware.RequestLoggingMiddleware',
     'cbeamd.middleware.SecurityLoggingMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -297,6 +301,15 @@ SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
 SESSION_COOKIE_HTTPONLY = True
 
+# static files: collected by c-beamd/start into STATIC_ROOT and served from
+# there by whitenoise, gzip/brotli-compressed, with short cache headers (no
+# manifest storage: the theme's css references files that do not exist, which
+# a manifest build would refuse)
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
+
 # webpack Configuration #######################################################
 
 WEBPACK_LOADER = {
@@ -322,6 +335,8 @@ TEMPLATES = [
                 'django.template.context_processors.tz',
                 'django.template.context_processors.request',
                 'django.contrib.messages.context_processors.messages',
+                # the assistant's terminal at the bottom of every page (base.django)
+                'cbeamd.assistant.context.assistant',
             ],
         },
     },

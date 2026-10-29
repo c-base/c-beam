@@ -1,0 +1,14 @@
+{% extends "cbeamd/base.django" %}
+
+{% block title %}c-beam fragen{% endblock %}
+
+{% block assistant %}{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-12">
+      <h1 align="center">C-BEAM FRAGEN</h1>
+      {% include "cbeamd/assistant_terminal.django" %}
+    </div>
+  </div>
+{% endblock content %}

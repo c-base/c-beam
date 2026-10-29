@@ -1,5 +1,7 @@
 {% extends "cbeamd/base.django" %}
 
+{% block assistant %}{% endblock %}
+
 {% block content %}
 
   <div class="row">
@@ -66,19 +68,10 @@
           </div>
         {% endfor %}
       {% endif %}
-      <h1 align="center">ACTIVITYLOG</h1>
-      <div class="center">
-        <div class="terminal" id="terminal">
-            <div>user@c-beam&gt; tail activitylog</div>
-            {% for entry in activitylog %}
-                <div>{{ entry }}</div>
-            {% empty %}
-                <div>WTF</div>
-            {% endfor %}
-            <div>user@c-beam&gt;&nbsp;<blink>_</blink></div>
-        </div>
-      </div>
-    </div> 
+      {# the activity log's terminal is the assistant's: the log is its first output, the prompt line below takes questions #}
+      <div style="margin-top: 20px"></div>
+      {% include "cbeamd/assistant_terminal.django" with assistant_prompt_line="tail activitylog" assistant_lines=activitylog %}
+    </div>
   </div>
 
 {% endblock content%}

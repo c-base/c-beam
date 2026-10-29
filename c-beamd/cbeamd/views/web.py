@@ -36,7 +36,12 @@ def index(request):
     al = ActivityLog.objects.order_by('-timestamp')[:20]
     rev = list(al)
     rev.reverse()
-    return render(request, 'cbeamd/index.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all', 'activitylog': rev})
+    # the activity log's terminal doubles as the assistant's (assistant_terminal.django);
+    # its context comes from the cbeamd.assistant.context processor
+    return render(request, 'cbeamd/index.django', {
+        'user_list_online': user_list_online, 'user_list_eta': user_list_eta,
+        'user_list_offline': user_list_offline, 'status': 'all', 'activitylog': rev,
+    })
 
 
 @login_required

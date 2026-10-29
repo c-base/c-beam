@@ -6,6 +6,8 @@ djangorestframework
 drf-spectacular
 django-webpack-loader
 gunicorn
+# serves the collected static files from gunicorn itself
+whitenoise
 icalendar
 recurring-ical-events
 python-decouple
@@ -22,3 +24,5 @@ python-mpd2
 # oauth2 bearer tokens: jwt validation against the idp's jwks
 PyJWT
 cryptography
+# sandy strands' voice websocket (web assistant knowledge source)
+websocket-client
