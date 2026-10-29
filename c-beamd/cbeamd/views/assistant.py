@@ -15,6 +15,8 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_POST
 
+import cbeamdcfg as cfg
+
 from ..assistant import chat, engine
 from ..assistant.chat import AssistantError
 
@@ -22,12 +24,22 @@ from ..assistant.chat import AssistantError
 MAX_UPLOAD = 2 * 1024 * 1024
 
 
+def assistant_context(request):
+    """what assistant_terminal.django needs, for every page that embeds it."""
+    configured = chat.configured()
+    return {
+        'assistant_configured': configured,
+        'assistant_models': chat.models() if configured else [],
+        'assistant_model': request.session.get(engine.MODEL_KEY) or '',
+        'assistant_default_model': cfg.ai_model,
+    }
+
+
 @login_required
 def assistant_page(request):
-    return render(request, 'cbeamd/assistant.django', {
-        'assistant_configured': chat.configured(),
-        'assistant_prompt_line': 'hallo %s. frag mich etwas, oder sag mir, was ich tun soll.' % request.user.username,
-    })
+    context = assistant_context(request)
+    context['assistant_prompt_line'] = 'hallo %s. frag mich etwas, oder sag mir, was ich tun soll.' % request.user.username
+    return render(request, 'cbeamd/assistant.django', context)
 
 
 def _json_body(request):
@@ -91,3 +103,17 @@ def assistant_transcribe(request):
     except AssistantError as e:
         return JsonResponse({'text': None, 'error': str(e)})
     return JsonResponse({'text': text, 'error': None})
+
+
+@require_POST
+@_guarded
+def assistant_model(request, body):
+    """{"model": "…"} picks the chat model for this session; "" goes back to the default."""
+    model = body.get('model')
+    if not isinstance(model, str):
+        return _reply(engine.Reply.error("ungu:ltige anfrage"), status=400)
+    model = model.strip()
+    if model and model not in {m['id'] for m in chat.models()}:
+        return _reply(engine.Reply.error("unbekanntes modell"), status=400)
+    request.session[engine.MODEL_KEY] = model
+    return _reply(engine.Reply().add('info', 'modell: ' + (model or cfg.ai_model + ' (standard)')))

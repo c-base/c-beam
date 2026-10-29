@@ -21,7 +21,8 @@ def configured(monkeypatch):
     monkeypatch.setattr(cfg, 'ai_url', 'http://ai.test/v1/')
     monkeypatch.setattr(cfg, 'rag_key', '')
     monkeypatch.setattr(tools, '_sounds_cache', (0.0, []))
-    with mock.patch('cbeamd.assistant.tools.rpc_sounds', return_value=['siri.mp3']):
+    with mock.patch('cbeamd.assistant.tools.rpc_sounds', return_value=['siri.mp3']), \
+            mock.patch('cbeamd.views.assistant.chat.models', return_value=[]):
         yield
 
 
@@ -363,3 +364,78 @@ def test_page_offers_the_microphone_hooks(client):
     assert 'data-transcribe-url="/assistant/transcribe"' in content
     assert 'assistant-worklet.js' in content
     assert 'id="assistant-mic"' in content
+
+
+# model choice ------------------------------------------------------------------------
+
+MODELS = [{'id': 'Gemma-4-E4B-it-MTP-GGUF', 'labels': ['tool-calling', 'vision']}, {'id': 'Qwen3-Coder-Next-GGUF', 'labels': []}]
+
+
+def set_model(client, model):
+    response = client.post('/assistant/model', json.dumps({'model': model}), content_type='application/json')
+    return response, response.json()
+
+
+def test_pages_offer_the_model_choice(client, monkeypatch):
+    monkeypatch.setattr(cfg, 'ai_model', 'gemma4:e4b')
+    with mock.patch('cbeamd.views.assistant.chat.models', return_value=MODELS):
+        content = client.get('/assistant').content.decode()
+        index = client.get('/').content.decode()
+    assert '<option value="">gemma4:e4b (standard)</option>' in content
+    assert '<option value="Gemma-4-E4B-it-MTP-GGUF">Gemma-4-E4B-it-MTP-GGUF [tool-calling, vision]</option>' in content
+    assert '<option value="Qwen3-Coder-Next-GGUF">Qwen3-Coder-Next-GGUF</option>' in content
+    assert 'data-model-url="/assistant/model"' in content
+    assert 'id="assistant-model"' in index
+
+
+def test_page_without_models_has_no_select(client):
+    assert 'id="assistant-model"' not in client.get('/assistant').content.decode()
+
+
+def test_model_choice_is_kept_in_the_session_and_used(client, complete, monkeypatch):
+    monkeypatch.setattr(cfg, 'ai_model', 'gemma4:e4b')
+    with mock.patch('cbeamd.views.assistant.chat.models', return_value=MODELS):
+        response, data = set_model(client, 'Qwen3-Coder-Next-GGUF')
+        assert response.status_code == 200
+        assert data['lines'] == [{'kind': 'info', 'text': 'modell: Qwen3-Coder-Next-GGUF'}]
+        assert client.session[engine.MODEL_KEY] == 'Qwen3-Coder-Next-GGUF'
+        assert '<option value="Qwen3-Coder-Next-GGUF" selected>' in client.get('/assistant').content.decode()
+
+    complete.return_value = ModelReply(text='ok')
+    ask(client, 'hallo')
+    assert complete.call_args.kwargs['model'] == 'Qwen3-Coder-Next-GGUF'
+
+    with mock.patch('cbeamd.views.assistant.chat.models', return_value=MODELS):
+        response, data = set_model(client, '')
+    assert data['lines'] == [{'kind': 'info', 'text': 'modell: gemma4:e4b (standard)'}]
+    ask(client, 'hallo')
+    assert complete.call_args.kwargs['model'] is None
+
+
+def test_unknown_model_is_refused(client):
+    with mock.patch('cbeamd.views.assistant.chat.models', return_value=MODELS):
+        response, data = set_model(client, 'gpt-9')
+    assert response.status_code == 400
+    assert data['lines'][0]['text'] == 'fehler: unbekanntes modell'
+    assert engine.MODEL_KEY not in client.session
+    assert client.post('/assistant/model', json.dumps({'model': 5}), content_type='application/json').status_code == 400
+
+
+# import order -------------------------------------------------------------------------
+
+def test_the_views_package_imports_in_the_servers_order():
+    """
+    the dev server and gunicorn import cbeamd.urls first, which imports the
+    views package top to bottom; the assistant's tools import view modules in
+    turn. a cycle shows up only in a fresh interpreter, not in the test
+    process, where the assistant modules may already be loaded.
+    """
+    import os
+    import subprocess
+    import sys
+    env = dict(os.environ, DJANGO_SETTINGS_MODULE='cbeamd.settings', MQTT_ENABLED='False')
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # c-beamd/, where manage.py lives
+    result = subprocess.run(
+        [sys.executable, '-c', 'import django; django.setup(); import cbeamd.urls'],
+        cwd=base, env=env, capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, result.stderr[-2000:]

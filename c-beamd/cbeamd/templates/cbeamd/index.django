@@ -72,6 +72,7 @@
         {% endfor %}
       {% endif %}
       {# the activity log's terminal is the assistant's: the log is its first output, the prompt line below takes questions #}
+      <div style="margin-top: 20px"></div>
       {% include "cbeamd/assistant_terminal.django" with assistant_prompt_line="tail activitylog" assistant_lines=activitylog %}
     </div>
   </div>

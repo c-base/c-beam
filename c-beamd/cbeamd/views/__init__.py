@@ -56,4 +56,5 @@ from .api import (BarViewSet, EventViewSet, MatelightViewSet, MemberViewSet, Pri
     UserViewSet)
 from .jsonrpc import (jsonrpc_handler)
 from .oauth_login import (PasswordLoginView, oauth_callback, oauth_login)
-from .assistant import (assistant_ask, assistant_confirm, assistant_page, assistant_transcribe)
+from .assistant import (assistant_ask, assistant_confirm, assistant_context, assistant_model,
+    assistant_page, assistant_transcribe)

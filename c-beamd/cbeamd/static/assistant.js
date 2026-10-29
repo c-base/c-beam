@@ -29,7 +29,7 @@
     ask: ask,
     busy: function () { return busy; },
     // for the other sections of this file
-    line: null, progress: null, clearProgress: null, recordInput: null, csrfToken: null
+    line: null, append: null, progress: null, clearProgress: null, recordInput: null, csrfToken: null
   };
   window.cbeamAssistant = Assistant;
 
@@ -236,7 +236,16 @@
     input.focus();
   });
 
+  // the model choice, kept in the session by the server
+  var modelSelect = document.getElementById('assistant-model');
+  if (modelSelect && box.dataset.modelUrl) {
+    modelSelect.addEventListener('change', function () {
+      post(box.dataset.modelUrl, { model: modelSelect.value }).then(show);
+    });
+  }
+
   Assistant.line = line;
+  Assistant.append = append;
   Assistant.progress = setProgress;
   Assistant.clearProgress = clearProgress;
   Assistant.recordInput = recordInput;
@@ -396,7 +405,39 @@
   }
   button.style.display = '';
 
-  var recording = null;   // {context, stream, node, blocks, started, timer, cancelled}
+  var recording = null;   // {context, stream, node, blocks, started, outside}
+
+  // before the first recording, and so before the browser asks for the
+  // microphone, the same notice as in the android app; the first press shows
+  // it instead of recording, the next one records
+  var NOTICE_KEY = 'assistant.mic.notice';
+  var NOTICE = 'die aufnahme la:uft nur, solange der knopf gehalten wird. sie geht zum ' +
+               'KI-server der station, der nur im crew-netz erreichbar ist, und wird dort in ' +
+               'text umgewandelt. c-beam speichert nichts davon.';
+  var noticeShown = false;
+
+  function noticeAcknowledged() {
+    try { return localStorage.getItem(NOTICE_KEY) === '1'; } catch (e) { return noticeShown; }
+  }
+
+  function showNotice() {
+    if (noticeShown) { return; }
+    noticeShown = true;
+    Assistant.line('info', 'mikrofon: ' + NOTICE);
+    var el = document.createElement('div');
+    el.className = 'line-buttons';
+    var ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = 'btn btn-primary btn-xs';
+    ok.textContent = 'verstanden';
+    ok.addEventListener('click', function () {
+      try { localStorage.setItem(NOTICE_KEY, '1'); } catch (e) { /* kept for this page only */ }
+      el.parentNode.removeChild(el);
+      Assistant.line('info', 'mikrofon: knopf halten und sprechen');
+    });
+    el.appendChild(ok);
+    Assistant.append(el);
+  }
 
   function formatTime(seconds) {
     seconds = Math.floor(seconds);
@@ -453,6 +494,7 @@
 
   function start() {
     if (recording || Assistant.busy()) { return; }
+    if (!noticeAcknowledged()) { showNotice(); return; }
     if (Assistant.silence) { Assistant.silence(); }   // never record the station's own voice
     var rec = { blocks: [], started: 0, outside: false, context: null, stream: null, node: null };
     recording = rec;

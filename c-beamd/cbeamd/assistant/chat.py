@@ -103,13 +103,21 @@ def post(path, *, json=None, data=None, files=None, read_timeout=None):
     that is waited out once. a longer Retry-After, a second 429, timeouts and
     http errors become AssistantErrors.
     """
+    return _send('POST', path, json=json, data=data, files=files, read_timeout=read_timeout)
+
+
+def get(path, read_timeout=None):
+    return _send('GET', path, read_timeout=read_timeout)
+
+
+def _send(method, path, *, json=None, data=None, files=None, read_timeout=None):
     if not configured():
         raise AssistantError("KI-server nicht konfiguriert")
     timeout = (cfg.ai_connect_timeout, read_timeout or cfg.ai_read_timeout)
     waited = False
     while True:
         try:
-            response = requests.post(_url(path), json=json, data=data, files=files, timeout=timeout)
+            response = requests.request(method, _url(path), json=json, data=data, files=files, timeout=timeout)
         except requests.Timeout:
             raise AssistantError("KI-server antwortet nicht")
         except requests.RequestException as e:
@@ -131,6 +139,45 @@ def post(path, *, json=None, data=None, files=None, read_timeout=None):
             return response.json()
         except ValueError:
             raise AssistantError(UNREADABLE)
+
+
+# the model list, cached per process: it changes when someone loads a model
+# on the server, not between two page views
+MODELS_TTL = 300
+_models_cache = (0.0, [])
+
+
+def models():
+    """
+    [{'id', 'labels'}] of the chat models on the ai server, from GET /models.
+    embedding models (label embeddings, or "embed" in the name) are left out;
+    labels like tool-calling, coding or vision are kept as hints. empty when
+    the server cannot be asked.
+    """
+    global _models_cache
+    fetched, found = _models_cache
+    now = time.monotonic()
+    if now - fetched < MODELS_TTL:
+        return found
+    found = []
+    try:
+        for entry in (get('models', read_timeout=10) or {}).get('data') or []:
+            model_id = entry.get('id') if isinstance(entry, dict) else None
+            if not isinstance(model_id, str) or not model_id:
+                continue
+            labels = [str(label) for label in entry.get('labels') or [] if label]
+            if 'embeddings' in labels or 'embed' in model_id.lower():
+                continue
+            found.append({'id': model_id, 'labels': labels})
+    except AssistantError as e:
+        logger.warning("model list unavailable: %s", e)
+    _models_cache = (now, found)
+    return found
+
+
+def reset_models():
+    global _models_cache
+    _models_cache = (0.0, [])
 
 
 def parse_text_tool_call(text, names):

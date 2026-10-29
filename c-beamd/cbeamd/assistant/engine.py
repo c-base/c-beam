@@ -24,6 +24,8 @@ from .conversation import Conversation
 logger = logging.getLogger(__name__)
 
 MAX_ROUNDS = 3
+# the session key of the user's model choice; absent or empty means cfg.ai_model
+MODEL_KEY = 'assistant.model'
 SPOKEN_DONE = "Erledigt."
 SPOKEN_CONFIRM = "%s. Ausführen?"
 
@@ -95,7 +97,7 @@ def _rounds(request, conv, voice):
     definitions = tools.definitions(offered)
     for round_number in range(1, MAX_ROUNDS + 1):
         messages = [_system(request, voice, offered)] + conv.messages
-        answer = chat.complete(messages, definitions)
+        answer = chat.complete(messages, definitions, model=request.session.get(MODEL_KEY) or None)
         if answer.text is not None:
             conv.add_answer(answer.text)
             return Reply(speak=answer.text).add('answer', terminal(answer.text))

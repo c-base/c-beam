@@ -27,6 +27,7 @@
 #assistant-input:disabled { color: #999999; }
 #assistant-controls { margin-top: 10px; color: #999999; }
 #assistant-controls label { font-weight: normal; margin-right: 16px; }
+#assistant-model { background: #000; color: #33b5e5; border: 1px solid #3ab6e4; font-family: Andale Mono, monospace; margin-left: 6px; }
 #assistant-record {
   display: none;
   margin-top: 8px;

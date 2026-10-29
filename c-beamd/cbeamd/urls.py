@@ -67,6 +67,7 @@ urlpatterns = [
     re_path(r'^assistant/ask$', views.assistant_ask, name='assistant_ask'),
     re_path(r'^assistant/confirm$', views.assistant_confirm, name='assistant_confirm'),
     re_path(r'^assistant/transcribe$', views.assistant_transcribe, name='assistant_transcribe'),
+    re_path(r'^assistant/model$', views.assistant_model, name='assistant_model'),
     # re_path(r'^missions/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail, dict(mission_dict, template_name='mission_detail.django'), mission_dict),
     re_path(r'^missions$', views.mission_list, name='mission_list'),
     re_path(r'^missions/(?P<mission_id>\d+)/edit$', views.edit_mission, name='edit_mission'),

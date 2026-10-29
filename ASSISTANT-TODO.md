@@ -15,6 +15,10 @@ Grundentscheidungen:
 - Keine Celery- oder Channels-Infrastruktur: synchrone Views, Konversation in der Session.
   Der gthread-Worker von gunicorn verträgt die langen Requests.
 - Erste Version als eigene Seite `/assistant`; ein Panel auf allen Seiten kommt später.
+- Import-Reihenfolge: `cbeamd.views.web` darf `views.assistant` nur innerhalb einer
+  Funktion importieren (Kreis über `engine` → `tools` → `views.hardware` → `web`);
+  ein Test startet dafür einen frischen Interpreter, weil der Testprozess den Kreis
+  nicht zeigt.
 - Lokaler Test: Dev-Server mit `MQTT_ENABLED=False DEBUG=True` und Nutzer in der
   SQLite-DB; KI-Server und shout sind von außerhalb des Containers erreichbar. Der
   Dev-Lauf publiziert nichts per MQTT, `announce` erreicht shout aber direkt, deshalb
@@ -195,6 +199,9 @@ Grundentscheidungen:
       `voice: true` (Prompt-Variante mit Spracherkennungs-Sätzen).
 - [x] Knopf nur zeigen, wenn `navigator.mediaDevices.getUserMedia` verfügbar ist
       (HTTPS oder localhost); sonst Hinweis.
+- [x] Vor der ersten Aufnahme, also vor der Berechtigungsabfrage des Browsers, der
+      Hinweistext der App ("die aufnahme la:uft nur, solange der knopf gehalten wird …")
+      mit Knopf "verstanden", einmalig je Browser (`localStorage`).
 - [ ] Auf Handy und Desktop ausprobieren (Touch, Maus, Berechtigungsdialog). Stand
       2026-10-29: der Endpunkt ist mit einer espeak-ng-Aufnahme gegen das echte Whisper
       geprüft ("Wer ist gerade in der C-base an Bord?" kam wörtlich zurück); die
@@ -216,7 +223,10 @@ Grundentscheidungen:
       verworfen. Gegen den echten Sandy geprüft am 2026-10-29: "sieben konzentrische
       Ringe" nach 15,5 s. Standard bleibt `qdrant`, weil es in unter einer Sekunde
       antwortet.
-- [ ] Modellwahl aus `GET {ai}/models` als Einstellung.
+- [x] Modellwahl: Dropdown in der Steuerleiste aus `GET {ai}/models` (Embedding-Modelle
+      ausgeblendet, Labels als Hinweis, Liste fünf Minuten gecacht), Auswahl pro Session
+      über `POST /assistant/model`; leer heißt `AI_MODEL`. Mit Qwen3-Coder gegen den echten
+      Server geprüft am 2026-10-29.
 - [x] Terminal auf der Startseite: das Activitylog-Terminal auf `/` ist jetzt das
       Assistent-Terminal (Teiltemplate `assistant_terminal.django`, CSS in
       `assistant.css`); die Seite `/assistant` bleibt als Variante ohne Activitylog.

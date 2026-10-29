@@ -48,7 +48,7 @@ def ai_configured(monkeypatch):
 
 @pytest.fixture
 def post():
-    with mock.patch('cbeamd.assistant.chat.requests.post') as p:
+    with mock.patch('cbeamd.assistant.chat.requests.request') as p:
         yield p
 
 
@@ -64,7 +64,7 @@ def test_complete_sends_the_app_payload(post):
     post.return_value = reply({'content': 'niemand'})
     chat.complete(MESSAGES, TOOLS)
     args, kwargs = post.call_args
-    assert args[0] == 'http://ai.test/v1/chat/completions'
+    assert args == ('POST', 'http://ai.test/v1/chat/completions')
     assert kwargs['timeout'] == (5, 60)
     payload = kwargs['json']
     assert payload['model'] == 'test-model'
@@ -284,7 +284,7 @@ def test_transcribe_sends_the_wav_with_the_spelling_prompt(post, monkeypatch):
     post.return_value = FakeResponse(body={'text': '  Ist die  Bar offen? '})
     assert chat.transcribe(b'RIFF....', 'speech.wav') == 'Ist die Bar offen?'
     args, kwargs = post.call_args
-    assert args[0] == 'http://ai.test/v1/audio/transcriptions'
+    assert args == ('POST', 'http://ai.test/v1/audio/transcriptions')
     assert kwargs['data'] == {'model': 'whisper-test', 'prompt': chat.WHISPER_PROMPT}
     assert kwargs['files'] == {'file': ('speech.wav', b'RIFF....', 'audio/wav')}
     assert kwargs['json'] is None
@@ -307,3 +307,45 @@ def test_transcribe_unreadable_and_busy(post, sleep):
     post.return_value = FakeResponse(429)
     with pytest.raises(AssistantError, match='ausgelastet'):
         chat.transcribe(b'wav')
+
+
+# the model list -------------------------------------------------------------
+
+@pytest.fixture
+def fresh_models():
+    chat.reset_models()
+    yield
+    chat.reset_models()
+
+
+def test_models_lists_chat_models_without_embeddings(post, fresh_models):
+    post.return_value = FakeResponse(body={'data': [
+        {'id': 'Gemma-4-E4B-it-MTP-GGUF', 'labels': ['custom', 'tool-calling', 'vision']},
+        {'id': 'Qwen3-Coder-Next-GGUF', 'labels': ['coding', 'tool-calling']},
+        {'id': 'nomic-embed-text-v1-GGUF', 'labels': ['embeddings']},
+        {'id': 'some-embed-model', 'labels': []},
+        {'labels': ['broken']},
+        'garbage',
+    ]})
+    assert chat.models() == [
+        {'id': 'Gemma-4-E4B-it-MTP-GGUF', 'labels': ['custom', 'tool-calling', 'vision']},
+        {'id': 'Qwen3-Coder-Next-GGUF', 'labels': ['coding', 'tool-calling']},
+    ]
+    args, kwargs = post.call_args
+    assert args == ('GET', 'http://ai.test/v1/models')
+    assert kwargs['timeout'] == (5, 10)
+
+
+def test_models_are_cached(post, fresh_models):
+    post.return_value = FakeResponse(body={'data': [{'id': 'm', 'labels': []}]})
+    chat.models()
+    chat.models()
+    assert post.call_count == 1
+
+
+def test_models_are_empty_when_the_server_cannot_be_asked(post, fresh_models):
+    post.side_effect = requests.ConnectionError()
+    assert chat.models() == []
+    post.return_value = FakeResponse(body={'nope': 1})
+    chat.reset_models()
+    assert chat.models() == []
