@@ -6,6 +6,8 @@ djangorestframework
 drf-spectacular
 django-webpack-loader
 gunicorn
+# serves the collected static files from gunicorn itself
+whitenoise
 icalendar
 recurring-ical-events
 python-decouple

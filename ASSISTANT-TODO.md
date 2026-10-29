@@ -14,6 +14,10 @@ Grundentscheidungen:
 - Keine Celery- oder Channels-Infrastruktur: synchrone Views, Konversation in der Session.
   Der gthread-Worker von gunicorn verträgt die langen Requests.
 - Erste Version als eigene Seite `/assistant`; ein Panel auf allen Seiten kommt später.
+- Static-Dateien in Produktion: nginx vor c-beam hat keinen `/static/`-Block, und Django
+  liefert mit `DEBUG=False` nichts davon aus; seit 2026-10-29 serviert WhiteNoise das
+  `static_collected`-Verzeichnis aus gunicorn heraus. Vorher kam auf dem Server weder
+  das Theme noch `assistant.js` an (alle Seiten unformatiert, Enter ohne Wirkung).
 - Import-Reihenfolge: `cbeamd.views.web` darf `views.assistant` nur innerhalb einer
   Funktion importieren (Kreis über `engine` → `tools` → `views.hardware` → `web`);
   ein Test startet dafür einen frischen Interpreter, weil der Testprozess den Kreis

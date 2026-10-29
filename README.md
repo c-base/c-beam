@@ -80,6 +80,9 @@ make down
 `make up` does not run migrations (`c-beamd/start` only collects static
 files), so after pulling new migrations:
 
+the collected files are served by the app itself (whitenoise), so the proxy in
+front needs no `/static/` location of its own.
+
 ```bash
 make migrate
 make shell                          # manage.py shell
