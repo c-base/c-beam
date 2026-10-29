@@ -22,8 +22,19 @@ from cbeamd.models import Mission, Status, User
 def no_knowledge_no_sounds(monkeypatch):
     monkeypatch.setattr(cfg, 'rag_key', '')
     monkeypatch.setattr(tools, '_sounds_cache', (0.0, []))
+    monkeypatch.setattr(tools, '_voices_cache', (0.0, []))
+    monkeypatch.setattr(tools.station, 'cout', None)
     with mock.patch('cbeamd.assistant.tools.rpc_sounds', return_value=[]):
         yield
+
+
+@pytest.fixture
+def shout(monkeypatch):
+    """a c_out client that lists shout's voices and records what it is told to say."""
+    client = mock.Mock()
+    client.voices.return_value = ['de5', 'r2d2']
+    monkeypatch.setattr(tools.station, 'cout', client)
+    return client
 
 
 @pytest.fixture
@@ -287,3 +298,51 @@ def test_play_sound_goes_over_c_out(request_as_smile):
         assert action.description == 'sound: siri.mp3'
         assert action.run(request_as_smile) == 'ausgeführt'
     rpc.assert_called_once_with(request_as_smile, 'siri.mp3')
+
+
+# say -------------------------------------------------------------------------------
+
+def test_say_is_offered_only_with_shout(shout, monkeypatch):
+    assert 'say' in tools.names(tools.available())
+    monkeypatch.setattr(tools.station, 'cout', None)
+    assert 'say' not in tools.names(tools.available())
+
+
+def test_say_definition_matches_the_app(shout):
+    assert tools.SAY.definition() == {
+        'type': 'function',
+        'function': {
+            'name': 'say',
+            'description': "Einen Text über die Lautsprecher der Station sprechen lassen",
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'text': {'type': 'string', 'description': "Der Text, der gesprochen wird"},
+                    'voice': {'type': 'string', 'description': "julia ist die normale Stimme, r2d2 piept",
+                              'enum': ['julia', 'r2d2']},
+                },
+                'required': ['text'],
+            },
+        },
+    }
+
+
+def test_say_maps_the_voices_to_shout(shout, request_as_smile):
+    action = prepared('say', {'text': 'hallo crew'})
+    assert action.level == CONFIRM
+    assert action.arguments == {'text': 'hallo crew', 'voice': 'de5'}
+    assert action.description == 'de5 sagt: „hallo crew“'
+    assert action.run(request_as_smile) == 'ausgeführt'
+    shout.tts.assert_called_once_with('de5', 'hallo crew')
+
+    action = prepared('say', {'text': 'piep', 'voice': 'r2d2'})
+    assert action.arguments == {'text': 'piep', 'voice': 'r2d2'}
+    assert action.description == 'r2d2 piept: „piep“'
+    with pytest.raises(AssistantError, match='nicht verstanden'):
+        prepared('say', {'text': 'x', 'voice': 'c3po'})
+
+
+def test_say_without_a_voice_list_uses_the_app_names(shout):
+    shout.voices.side_effect = RuntimeError('down')
+    assert prepared('say', {'text': 'x'}).arguments['voice'] == 'julia'
+    assert prepared('say', {'text': 'x', 'voice': 'r2d2'}).arguments['voice'] == 'r2d2'

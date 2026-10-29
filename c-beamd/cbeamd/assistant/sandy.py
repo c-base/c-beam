@@ -19,11 +19,17 @@ import json
 import logging
 import time
 
-from websocket import ABNF, WebSocketException, WebSocketTimeoutException, create_connection
-
 import cbeamdcfg as cfg
 
 from .chat import AssistantError
+
+# websocket-client is imported when sandy is asked, not here: this module is
+# reached through the url configuration of every page, and a missing optional
+# dependency must not take the whole site down with it
+try:
+    from websocket import ABNF, WebSocketException, WebSocketTimeoutException, create_connection
+except ImportError:   # pragma: no cover - exercised in a subprocess test
+    ABNF = WebSocketException = WebSocketTimeoutException = create_connection = None
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +44,13 @@ NOTHING = ("nichts gefunden: sandy strands hat zu „%s“ nichts gesagt. sage d
            "datenrettungssonde siri, die diese information leider auch nicht enthält")
 
 
+def available():
+    """whether websocket-client is installed."""
+    return create_connection is not None
+
+
 def configured():
-    return bool(cfg.sandy_url)
+    return bool(cfg.sandy_url) and available()
 
 
 def _sources(entries):
@@ -107,6 +118,8 @@ def converse(ws, question):
 
 def ask(question):
     """the tool result of station_knowledge for question, from sandy."""
+    if not available():
+        raise AssistantError("sandy strands: websocket-client ist nicht installiert")
     if not configured():
         raise AssistantError("sandy strands nicht konfiguriert")
     try:

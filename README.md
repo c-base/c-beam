@@ -182,7 +182,7 @@ KNOWLEDGE_SOURCE=qdrant                         # or sandy: sandy strands over S
 what the model may do is fixed in `cbeamd/assistant/tools.py`: station queries
 (who is on board, bar, events, missions, artefacts, the knowledge base), login
 and logout of the logged-in user, and, only after the user confirms in the
-terminal, an announcement or a sound over c_out. answers are read aloud in the
+terminal, an announcement, a spoken text or a sound over c_out (shout). answers are read aloud in the
 browser if the user switches that on; nothing the assistant says goes over the
 station's speakers. a chat request can take up to 60 s, so a reverse proxy in
 front of c-beam needs a read timeout of at least 90 s for `/assistant/`.

@@ -485,8 +485,10 @@ Seit 2026-10-29 gibt es dieselben Funktionen in der Web-Oberfläche von c-beam u
 Übernommen sind Requests, Prompt, Werkzeugliste, Validierung, Konversationsregeln und
 Wissensformate. Abweichungen:
 
-- Die Sprachausgabe läuft im Browser (`speechSynthesis`, nur deutsche Offline-Stimmen).
-  Über c_out gehen nur `announce` und `play_sound`; `say` gibt es im Web nicht.
+- Die Sprachausgabe läuft im Browser (`speechSynthesis`, deutsche Stimme, bevorzugt
+  offline). Über c_out gehen nur die Werkzeuge `announce`, `say` und `play_sound`. `say`
+  bietet dem Modell wie hier `julia`/`r2d2` an und übersetzt `julia` in die normale
+  Stimme aus shouts `voices`-Liste (zurzeit `de5`).
 - `play_sound` bekommt den Sound als freien String, nicht als `enum`: Mit der Liste von
   156 Dateinamen als `enum` rief gemma4:e4b gar keine Werkzeuge mehr auf (fünf von acht
   Stationsfragen frei erfunden). Der Name wird vor der Bestätigung gegen die Liste

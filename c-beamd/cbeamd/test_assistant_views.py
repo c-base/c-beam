@@ -21,6 +21,10 @@ def configured(monkeypatch):
     monkeypatch.setattr(cfg, 'ai_url', 'http://ai.test/v1/')
     monkeypatch.setattr(cfg, 'rag_key', '')
     monkeypatch.setattr(tools, '_sounds_cache', (0.0, []))
+    monkeypatch.setattr(tools, '_voices_cache', (0.0, []))
+    shout = mock.Mock()
+    shout.voices.return_value = ['de5', 'r2d2']
+    monkeypatch.setattr(tools.station, 'cout', shout)
     with mock.patch('cbeamd.assistant.tools.rpc_sounds', return_value=['siri.mp3']), \
             mock.patch('cbeamd.assistant.context.chat.models', return_value=[]):
         yield
@@ -150,7 +154,7 @@ def test_plain_answer(client, complete):
     assert messages[1:] == [{'role': 'user', 'content': 'hallo'}]
     assert {d['function']['name'] for d in definitions} == {
         'who_is_on_board', 'bar_status', 'events_today', 'missions', 'artefacts',
-        'login', 'logout', 'announce', 'play_sound'}
+        'login', 'logout', 'announce', 'say', 'play_sound'}
 
 
 def test_voice_flag_picks_the_spoken_prompt(client, complete):
@@ -285,8 +289,8 @@ def test_model_error_rolls_back(client, complete):
 
 
 def test_unknown_tool_rolls_back(client, complete):
-    complete.return_value = call('say', {'text': 'hi'})
-    response, data = ask(client, 'sag hi')
+    complete.return_value = call('open_bar', {})
+    response, data = ask(client, 'mach die bar auf')
     assert data['lines'] == [{'kind': 'error', 'text': 'fehler: nicht verstanden'}]
     assert history(client) == []
 
@@ -479,3 +483,12 @@ def test_display_pages_have_no_terminal(client):
     request.session = client.session
     content = render_to_string('cbeamd/dash_base.django', {}, request=request)
     assert 'id="assistant"' not in content
+
+
+def test_say_waits_for_the_user_and_speaks_over_shout(client, complete):
+    complete.return_value = call('say', {'text': 'Hallo Crew', 'voice': 'r2d2'})
+    response, data = ask(client, 'lass r2d2 hallo crew sagen')
+    assert data['confirm'] == {'id': 'c1', 'description': 'r2d2 piept: „Hallo Crew“'}
+    tools.station.cout.tts.assert_not_called()
+    confirm(client, 'c1', True)
+    tools.station.cout.tts.assert_called_once_with('r2d2', 'Hallo Crew')

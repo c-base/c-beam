@@ -10,8 +10,8 @@ each tool has a fixed level the model cannot change:
   CONFIRM  anything audible in the station: shown to the user, run on their tap
 
 the station functions behind the tools are the same python the json-rpc
-methods call, so nothing goes over the network except announce and play_sound
-(c_out, the station's speakers). what the assistant says itself is spoken in
+methods call, so nothing goes over the network except announce, say and
+play_sound (c_out, the station's speakers). what the assistant says itself is spoken in
 the browser, never over c_out.
 """
 
@@ -25,6 +25,7 @@ import cbeamdcfg as cfg
 
 from ..models import Mission
 from ..views.audio import announce as rpc_announce, play as rpc_play, sounds as rpc_sounds
+from ..views import helpers as station
 from ..views.auth import force_login, force_logout
 from ..views.bar import get_barstatus
 from ..views.events import event_list
@@ -234,6 +235,50 @@ def play_sound(request, args):
     return DONE
 
 
+def say(request, args):
+    # straight to shout, not through the tts json-rpc method: that one is a
+    # stub, and waking it would also bring back the spoken login greeting
+    station.cout.tts(args['voice'], args['text'])
+    return DONE
+
+
+VOICE_NORMAL = 'julia'
+VOICE_R2D2 = 'r2d2'
+
+_voices_cache = (0.0, [])
+
+
+def voice_names():
+    """the voices shout offers, cached like the sounds; empty without shout."""
+    global _voices_cache
+    fetched, names = _voices_cache
+    now = time.monotonic()
+    if now - fetched < SOUNDS_TTL:
+        return names
+    names = []
+    if station.cout is not None:
+        try:
+            names = [str(name) for name in station.cout.voices() or []]
+        except Exception:
+            logger.exception("voice list unavailable")
+    _voices_cache = (now, names)
+    return names
+
+
+def resolve_voice(args):
+    """
+    the model picks julia (the normal voice) or r2d2, as in the app; shout's
+    normal voice is whatever it lists besides r2d2 (de5 at the time of writing).
+    """
+    names = voice_names()
+    if args['voice'] == VOICE_R2D2:
+        voice = VOICE_R2D2 if VOICE_R2D2 in names or not names else names[0]
+    else:
+        normal = [n for n in names if n.lower() != VOICE_R2D2]
+        voice = normal[0] if normal else VOICE_NORMAL
+    return {'text': args['text'], 'voice': voice}
+
+
 def _stem(name):
     return re.sub(r'\.[a-z0-9]+$', '', name.lower().strip())
 
@@ -313,6 +358,14 @@ ANNOUNCE = Tool(
     announce, lambda a: "durchsage: " + quoted(a['text']),
     {'text': Param("Der Text der Durchsage", required=True, max_length=200)})
 
+SAY = Tool(
+    'say', CONFIRM,
+    "Einen Text über die Lautsprecher der Station sprechen lassen",
+    say, lambda a: ("r2d2 piept: " if a['voice'] == VOICE_R2D2 else "%s sagt: " % a['voice']) + quoted(a['text']),
+    {'text': Param("Der Text, der gesprochen wird", required=True, max_length=200),
+     'voice': Param("julia ist die normale Stimme, r2d2 piept", enum=[VOICE_NORMAL, VOICE_R2D2], default=VOICE_NORMAL)},
+    resolve=resolve_voice)
+
 # the sound's name is a free string on purpose: offered as an enum of the 156
 # file names, the model stopped calling any tool at all (checked 2026-10-29
 # against gemma4:e4b: five of eight station questions were answered from thin
@@ -360,6 +413,8 @@ def available(username=None):
         tools.append(LOGIN)
     tools.append(LOGOUT)
     tools.append(ANNOUNCE)
+    if station.cout is not None:
+        tools.append(SAY)
     if sound_names():
         tools.append(PLAY_SOUND)
     return tools

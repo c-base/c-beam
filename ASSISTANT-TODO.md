@@ -9,9 +9,8 @@ Grundentscheidungen:
 - Der Browser spricht nur mit c-beam. KI-Server und Qdrant werden von Django angesprochen,
   der Qdrant-Key bleibt in der `.env`.
 - **Sprachausgabe läuft lokal im Browser** (`speechSynthesis`), wie in der App auf dem
-  Gerät. `c_out` / `cbeamd/views/audio.py` ist für die Stationslautsprecher und wird nur von
-  den Werkzeugen `announce` und `play_sound` benutzt. Das Werkzeug `say` aus der App
-  entfällt.
+  Gerät. `c_out` / shout ist für die Stationslautsprecher und wird nur von den
+  Werkzeugen `announce`, `say` und `play_sound` benutzt, jeweils erst nach Bestätigung.
 - Keine Celery- oder Channels-Infrastruktur: synchrone Views, Konversation in der Session.
   Der gthread-Worker von gunicorn verträgt die langen Requests.
 - Erste Version als eigene Seite `/assistant`; ein Panel auf allen Seiten kommt später.
@@ -235,5 +234,9 @@ Grundentscheidungen:
       und nur mit KI-Server). `/` und `/assistant` leeren den Block und betten selbst ein,
       `dash_base.django` (Display-Seiten) leert ihn ebenfalls.
 - [x] Wegzieh-Geste zum Verwerfen einer Aufnahme (in Block 8 mit umgesetzt).
-- [ ] Falls doch gewünscht: `say` als CONFIRM-Werkzeug über c_out (`tts` in `audio.py`
-      ist zurzeit ein Stub).
+- [x] `say` als CONFIRM-Werkzeug: das Modell wählt wie in der App `julia` oder `r2d2`,
+      serverseitig wird `julia` auf die normale Stimme aus shouts `voices`-Liste
+      aufgelöst (zurzeit `de5`). Ruft shouts `tts` direkt auf, nicht über den
+      JSON-RPC-Stub `tts` in `audio.py`, weil der auch die Login-Begrüßung steuert.
+      Nur angeboten, wenn `COUT_URL` gesetzt ist. Gegen das Modell geprüft am
+      2026-10-29, das Zwei-Werte-Enum stört das Tool-Calling nicht.

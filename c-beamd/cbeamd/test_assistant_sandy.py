@@ -159,3 +159,34 @@ def test_knowledge_uses_qdrant_otherwise(connect, monkeypatch):
     monkeypatch.setattr(cfg, 'rag_key', 'secret')
     assert knowledge.configured()
     connect.assert_not_called()
+
+
+def test_the_site_imports_without_websocket_client():
+    """
+    the image once shipped without websocket-client and every page answered
+    500, because the url configuration reaches sandy.py. the dependency is
+    optional: without it, sandy is simply not available.
+    """
+    import os
+    import subprocess
+    import sys
+    code = (
+        "import sys; sys.modules['websocket'] = None\n"   # makes `import websocket` fail
+        "import django; django.setup()\n"
+        "import cbeamd.urls\n"
+        "from cbeamd.assistant import sandy, knowledge\n"
+        "import cbeamdcfg as cfg\n"
+        "assert not sandy.available()\n"
+        "cfg.knowledge_source = 'sandy'\n"
+        "assert not knowledge.configured()\n"
+        "try:\n"
+        "    sandy.ask('x')\n"
+        "except Exception as e:\n"
+        "    assert 'websocket-client' in str(e), e\n"
+        "else:\n"
+        "    raise SystemExit('no error')\n"
+    )
+    env = dict(os.environ, DJANGO_SETTINGS_MODULE='cbeamd.settings', MQTT_ENABLED='False')
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    result = subprocess.run([sys.executable, '-c', code], cwd=base, env=env, capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, result.stderr[-2000:]
