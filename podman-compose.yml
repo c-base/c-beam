@@ -1,6 +1,6 @@
 services:
   cbeam:
-    image: cbeamd:refactor
+    image: cbeamd:latest
     build: .
     network_mode: "host"
     env_file: .env

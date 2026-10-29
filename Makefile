@@ -27,7 +27,7 @@ COMPOSE ?= $(shell if command -v podman-compose >/dev/null 2>&1; then echo podma
 	elif podman compose version >/dev/null 2>&1; then echo "podman compose"; fi)
 compose := $(COMPOSE) -f $(compose_file)
 
-image ?= c-beamd:refactor
+image ?= c-beamd:latest
 name ?= c-beamd
 port ?= 4254
 # the service in podman-compose.yml that runs django
