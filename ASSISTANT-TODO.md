@@ -23,9 +23,9 @@ Grundentscheidungen:
 ## 0. Vorbereitung
 
 - [ ] Timeout des Reverse-Proxys vor c-beam prüfen: mindestens 90 s für `/assistant/`.
-- [ ] Prüfen, dass der c-beam-Container `https://ai.cbrp3.c-base.org/ollama/v1` und
-      `http://lazee-nerdserv.cbrp3.c-base.org:8123` erreicht (Compose läuft mit
-      `network_mode: host`, sollte also gehen).
+- [x] Prüfen, dass der c-beam-Container `https://ai.cbrp3.c-base.org/ollama/v1` und
+      `http://lazee-nerdserv.cbrp3.c-base.org:8123` erreicht: vom Host aus am 2026-10-29
+      geprüft, der Container läuft mit `network_mode: host` und sieht dasselbe Netz.
 - [x] Qdrant-`api-key` besorgen und in die `.env` eintragen (nicht ins Repo). Suche gegen
       die echte Collection geprüft am 2026-10-29 (768 Dimensionen, unbenannter Vektor).
 
@@ -166,9 +166,11 @@ Grundentscheidungen:
 ## 7. Vorlesen im Browser
 
 - [x] Schalter "antworten vorlesen" auf der Seite, Zustand in `localStorage`, Standard aus.
-- [x] `speechSynthesis` mit einer deutschen Stimme, die auf dem Gerät läuft
-      (`localService`), wie in der App; fehlt eine, einmalig die Zeile
-      "sprachausgabe: keine deutsche offline-stimme im browser".
+- [x] `speechSynthesis` mit einer deutschen Stimme, bevorzugt eine, die auf dem Gerät
+      läuft (`localService`). Gibt es nur eine Online-Stimme des Browser-Anbieters, wird
+      sie genommen, mit einmaligem Hinweis, dass der Text dorthin geht (Abweichung von
+      der App, weil Firefox und Chrome oft keine Offline-Stimme haben). Ohne deutsche
+      Stimme: "sprachausgabe: der browser hat keine deutsche stimme".
 - [x] Aussprache-Ersetzungen mit Wortgrenzen: c-base → ssiebays, c-beam → ssiebiem,
       crew → kru (Konstante `PRONUNCIATION` in `assistant.js`).
 - [ ] Ersetzungen nach Gehör im Browser prüfen und anpassen.
@@ -209,13 +211,16 @@ Grundentscheidungen:
 
 ## 10. Später, nicht für die erste Version
 
-- [ ] Sandy Strands als zweite Wissensquelle (`websocket-client`-Abhängigkeit, 90 s
-      Antwortzeit, nur Text, Audio serverseitig verwerfen).
+- [x] Sandy Strands als zweite Wissensquelle: `KNOWLEDGE_SOURCE=sandy` in der `.env`,
+      Modul `assistant/sandy.py` über `websocket-client`, nur Text, Audio-Frames werden
+      verworfen. Gegen den echten Sandy geprüft am 2026-10-29: "sieben konzentrische
+      Ringe" nach 15,5 s. Standard bleibt `qdrant`, weil es in unter einer Sekunde
+      antwortet.
 - [ ] Modellwahl aus `GET {ai}/models` als Einstellung.
 - [x] Terminal auf der Startseite: das Activitylog-Terminal auf `/` ist jetzt das
       Assistent-Terminal (Teiltemplate `assistant_terminal.django`, CSS in
       `assistant.css`); die Seite `/assistant` bleibt als Variante ohne Activitylog.
 - [ ] Terminal als Panel auf allen übrigen Seiten.
-- [ ] Wegzieh-Geste zum Verwerfen einer Aufnahme.
+- [x] Wegzieh-Geste zum Verwerfen einer Aufnahme (in Block 8 mit umgesetzt).
 - [ ] Falls doch gewünscht: `say` als CONFIRM-Werkzeug über c_out (`tts` in `audio.py`
       ist zurzeit ein Stub).

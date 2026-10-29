@@ -176,6 +176,7 @@ AI_EMBED_MODEL=nomic-embed-text-v1-GGUF
 RAG_URL=http://lazee-nerdserv.cbrp3.c-base.org:8123
 RAG_KEY=                                        # empty: no knowledge base, no station_knowledge tool
 RAG_COLLECTION=cbase_knowledge
+KNOWLEDGE_SOURCE=qdrant                         # or sandy: sandy strands over SANDY_URL, slower
 ```
 
 what the model may do is fixed in `cbeamd/assistant/tools.py`: station queries

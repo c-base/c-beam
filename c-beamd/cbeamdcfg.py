@@ -62,5 +62,7 @@ ai_read_timeout = config('AI_READ_TIMEOUT', default=60, cast=int)
 rag_url = config('RAG_URL', default='http://lazee-nerdserv.cbrp3.c-base.org:8123')
 rag_key = config('RAG_KEY', default='')
 rag_collection = config('RAG_COLLECTION', default='cbase_knowledge')
-# sandy strands' voice websocket, the alternative knowledge source (not wired up yet)
+# which source station_knowledge uses: 'qdrant' (above) or 'sandy', the station's
+# own assistant with its rag, over its voice websocket (text only, 10 to 90 s)
+knowledge_source = config('KNOWLEDGE_SOURCE', default='qdrant')
 sandy_url = config('SANDY_URL', default='wss://ai.cbrp3.c-base.org:8444/ws/voice')

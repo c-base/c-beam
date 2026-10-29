@@ -22,3 +22,5 @@ python-mpd2
 # oauth2 bearer tokens: jwt validation against the idp's jwks
 PyJWT
 cryptography
+# sandy strands' voice websocket (web assistant knowledge source)
+websocket-client

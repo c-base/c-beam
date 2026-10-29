@@ -497,4 +497,5 @@ Wissensformate. Abweichungen:
   ohne ihn antwortete das Modell auf "wieviele ringe hat die c-base" mit "ich kann das
   nicht tun".
 - Die Konversation liegt in der Django-Session, der Nutzer kommt aus dem Login, der
-  Qdrant-Key bleibt auf dem Server. Sandy Strands ist nicht angebunden.
+  Qdrant-Key bleibt auf dem Server. Sandy Strands ist über `KNOWLEDGE_SOURCE=sandy`
+  wählbar, nur Text; Sandys Audio wird serverseitig verworfen.

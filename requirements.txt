@@ -169,6 +169,8 @@ urllib3==2.7.0
     # via
     #   pyfcm
     #   requests
+websocket-client==1.9.2
+    # via -r requirements.in
 x-wr-timezone==2.0.1
     # via recurring-ical-events
 yarl==1.24.5

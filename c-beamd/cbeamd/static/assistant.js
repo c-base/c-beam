@@ -287,17 +287,26 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  // a german voice on the device; voices load late in some browsers, so this
-  // is looked up at speaking time, not once at start
+  // a german voice, preferably one on the device; voices load late in some
+  // browsers, so this is looked up at speaking time, not once at start
+  function pick(voices) {
+    var exact = voices.filter(function (v) { return /^de[-_]DE$/i.test(v.lang); });
+    return exact[0] || voices[0] || null;
+  }
+
   function germanVoice() {
     var voices = synth.getVoices() || [];
     var german = voices.filter(function (v) { return /^de(-|_|$)/i.test(v.lang); });
     var local = german.filter(function (v) { return v.localService; });
-    if (local.length) {
-      var exact = local.filter(function (v) { return /^de[-_]DE$/i.test(v.lang); });
-      return exact[0] || local[0];
+    if (local.length) { return pick(local); }
+    // only a voice of the browser's provider: the answer text leaves the
+    // device for it, which is why the app does not do this; said once
+    var online = pick(german);
+    if (online && !warned) {
+      warned = true;
+      notice('sprachausgabe: keine offline-stimme, nutze „' + online.name + '“; der text geht dafu:r an den browser-anbieter');
     }
-    return null;
+    return online;
   }
 
   function pronounce(text) {
@@ -315,7 +324,7 @@
     if (!voice) {
       if (!warned) {
         warned = true;
-        notice('sprachausgabe: keine deutsche offline-stimme im browser');
+        notice('sprachausgabe: der browser hat keine deutsche stimme');
       }
       return;
     }

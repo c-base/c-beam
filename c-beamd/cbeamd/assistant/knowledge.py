@@ -1,6 +1,7 @@
 """
-the knowledge base behind station_knowledge (AI-ASSISTANT.md, section 9.1):
-qdrant, spoken to directly. qdrant has no question endpoint, only vectors, so
+the knowledge base behind station_knowledge (AI-ASSISTANT.md, section 9).
+KNOWLEDGE_SOURCE picks sandy strands (sandy.py) or qdrant, which this module
+speaks to directly. qdrant has no question endpoint, only vectors, so
 a search is three steps, the first of them once per process:
 
 1. the collection's layout: vector size, and the vector's name when the
@@ -24,7 +25,7 @@ import requests
 
 import cbeamdcfg as cfg
 
-from . import chat
+from . import chat, sandy
 from .chat import AssistantError
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,14 @@ UNREACHABLE = "wissensdatenbank nicht erreichbar"
 _layouts = {}
 
 
+def use_sandy():
+    return cfg.knowledge_source == 'sandy'
+
+
 def configured():
+    """whether station_knowledge has a source: sandy, or qdrant with a key."""
+    if use_sandy():
+        return sandy.configured()
     return bool(cfg.rag_url and cfg.rag_key)
 
 
@@ -199,9 +207,11 @@ def format_hits(points):
 
 
 def search(question):
-    """the tool result of station_knowledge for question."""
+    """the tool result of station_knowledge for question, from the configured source."""
     if not configured():
         raise AssistantError("wissensdatenbank nicht konfiguriert")
+    if use_sandy():
+        return sandy.ask(question)
     shape = layout()
     vector = embed(question)
     if len(vector) != shape['size']:

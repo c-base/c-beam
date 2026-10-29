@@ -51,6 +51,7 @@ def configured(monkeypatch):
     monkeypatch.setattr(cfg, 'rag_url', 'http://qdrant.test:8123/')
     monkeypatch.setattr(cfg, 'rag_key', 'secret')
     monkeypatch.setattr(cfg, 'rag_collection', 'cbase_knowledge')
+    monkeypatch.setattr(cfg, 'knowledge_source', 'qdrant')
     knowledge.reset_cache()
 
 
