@@ -16,6 +16,7 @@ from ..models import ActivityLog, User
 
 from .helpers import logger
 from .helpers import getuser
+from ..assistant import chat as assistant_chat
 
 def index2(request):
     online_users_list = User.objects.filter(status="online").order_by('username')
@@ -36,7 +37,12 @@ def index(request):
     al = ActivityLog.objects.order_by('-timestamp')[:20]
     rev = list(al)
     rev.reverse()
-    return render(request, 'cbeamd/index.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all', 'activitylog': rev})
+    return render(request, 'cbeamd/index.django', {
+        'user_list_online': user_list_online, 'user_list_eta': user_list_eta,
+        'user_list_offline': user_list_offline, 'status': 'all', 'activitylog': rev,
+        # the activity log's terminal doubles as the assistant's (assistant_terminal.django)
+        'assistant_configured': assistant_chat.configured(),
+    })
 
 
 @login_required

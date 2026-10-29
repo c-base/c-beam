@@ -1,4 +1,9 @@
 {% extends "cbeamd/base.django" %}
+{% load static %}
+
+{% block head %}
+  <link href="{% static 'assistant.css' %}" rel="stylesheet">
+{% endblock head %}
 
 {% block content %}
 
@@ -66,20 +71,14 @@
           </div>
         {% endfor %}
       {% endif %}
-      <h1 align="center">ACTIVITYLOG</h1>
-      <div class="center">
-        <div class="terminal" id="terminal">
-            <div>user@c-beam&gt; tail activitylog</div>
-            {% for entry in activitylog %}
-                <div>{{ entry }}</div>
-            {% empty %}
-                <div>WTF</div>
-            {% endfor %}
-            <div>user@c-beam&gt;&nbsp;<blink>_</blink></div>
-        </div>
-      </div>
-    </div> 
+      {# the activity log's terminal is the assistant's: the log is its first output, the prompt line below takes questions #}
+      {% include "cbeamd/assistant_terminal.django" with assistant_prompt_line="tail activitylog" assistant_lines=activitylog %}
+    </div>
   </div>
 
 {% endblock content%}
+
+{% block extra_js %}
+  <script src="{% static 'assistant.js' %}"></script>
+{% endblock %}
 

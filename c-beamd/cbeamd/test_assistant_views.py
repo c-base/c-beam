@@ -77,6 +77,17 @@ def test_page_renders_the_terminal(client):
     assert 'href="/assistant">c-beam fragen</a>' in content
 
 
+def test_index_shows_the_activity_log_in_the_assistant_terminal(client):
+    response = client.get('/')
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'ACTIVITYLOG' not in content
+    assert '<span class="prompt">smile@c-beam&gt;</span> tail activitylog</div>' in content
+    assert 'id="assistant-line"' in content
+    assert 'data-ask-url="/assistant/ask"' in content
+    assert 'assistant.js' in content and 'assistant.css' in content
+
+
 def test_page_says_when_the_server_is_not_configured(client, monkeypatch):
     monkeypatch.setattr(cfg, 'ai_url', '')
     content = client.get('/assistant').content.decode()

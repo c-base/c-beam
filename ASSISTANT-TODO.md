@@ -212,7 +212,10 @@ Grundentscheidungen:
 - [ ] Sandy Strands als zweite Wissensquelle (`websocket-client`-Abhängigkeit, 90 s
       Antwortzeit, nur Text, Audio serverseitig verwerfen).
 - [ ] Modellwahl aus `GET {ai}/models` als Einstellung.
-- [ ] Terminal als Panel auf allen Seiten statt eigener Seite.
+- [x] Terminal auf der Startseite: das Activitylog-Terminal auf `/` ist jetzt das
+      Assistent-Terminal (Teiltemplate `assistant_terminal.django`, CSS in
+      `assistant.css`); die Seite `/assistant` bleibt als Variante ohne Activitylog.
+- [ ] Terminal als Panel auf allen übrigen Seiten.
 - [ ] Wegzieh-Geste zum Verwerfen einer Aufnahme.
 - [ ] Falls doch gewünscht: `say` als CONFIRM-Werkzeug über c_out (`tts` in `audio.py`
       ist zurzeit ein Stub).

@@ -1,0 +1,42 @@
+/* the assistant's terminal (assistant_terminal.django): the box is the site's
+   .terminal (black, blue frame, Andale Mono); only the line kinds, the prompt
+   line at the bottom and the controls below are added here */
+#assistant {
+  max-height: 60vh;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+#assistant div.line-done, #assistant div.line-info { color: #0f0; }
+#assistant div.line-confirm { color: #ffcc00; }
+#assistant div.line-error { color: #f00; }
+#assistant div.line-buttons { margin: 4px 0 6px 0; }
+#assistant div.line-buttons button { margin-right: 8px; }
+#assistant-line { display: flex; align-items: baseline; }
+#assistant-input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  margin-left: 0.6em;
+  color: #33b5e5;
+  font: inherit;
+  line-height: inherit;
+}
+#assistant-input::placeholder { color: #666; }
+#assistant-input:disabled { color: #999999; }
+#assistant-controls { margin-top: 10px; color: #999999; }
+#assistant-controls label { font-weight: normal; margin-right: 16px; }
+#assistant-record {
+  display: none;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: #8b0000;
+  color: #fff;
+  font-family: Andale Mono, monospace;
+}
+#assistant-record.active { display: block; }
+#assistant-record.cancel { background: #555; }
+#assistant-level { display: inline-block; height: 8px; width: 0; max-width: 200px; background: #fff; vertical-align: middle; }
+#assistant-mic { touch-action: none; user-select: none; -webkit-user-select: none; }
+#assistant-mic.recording { background: #8b0000; color: #fff; border-color: #8b0000; }

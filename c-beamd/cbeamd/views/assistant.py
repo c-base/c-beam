@@ -25,8 +25,8 @@ MAX_UPLOAD = 2 * 1024 * 1024
 @login_required
 def assistant_page(request):
     return render(request, 'cbeamd/assistant.django', {
-        'configured': chat.configured(),
-        'username': request.user.username,
+        'assistant_configured': chat.configured(),
+        'assistant_prompt_line': 'hallo %s. frag mich etwas, oder sag mir, was ich tun soll.' % request.user.username,
     })
 
 
