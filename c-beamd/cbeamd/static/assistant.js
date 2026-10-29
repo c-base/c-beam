@@ -244,6 +244,19 @@
     });
   }
 
+  // typing anywhere on the page goes to the prompt line, like in a terminal
+  // window; focusing it then scrolls the terminal into view. form fields and
+  // shortcuts with modifiers keep their keys
+  document.addEventListener('keydown', function (event) {
+    if (document.activeElement === input || busy || !configured) { return; }
+    var tag = (event.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || event.target.isContentEditable) { return; }
+    if (event.ctrlKey || event.altKey || event.metaKey) { return; }
+    if (event.key.length === 1 || event.key === 'ArrowUp' || event.key === 'Backspace') {
+      input.focus();
+    }
+  });
+
   Assistant.line = line;
   Assistant.append = append;
   Assistant.progress = setProgress;
@@ -251,7 +264,10 @@
   Assistant.recordInput = recordInput;
   Assistant.csrfToken = csrfToken;
 
-  if (configured) { input.focus(); }
+  // the cursor starts on the prompt line only when the terminal is already in
+  // view (as on /assistant); on the start page it sits below the crew list,
+  // and focusing it there would scroll the whole page down on every load
+  if (configured && box.getBoundingClientRect().top < window.innerHeight) { input.focus(); }
   scroll();
 })();
 
