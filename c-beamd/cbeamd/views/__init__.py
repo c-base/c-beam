@@ -24,7 +24,7 @@ from .eta import (achievements, activities, arrivals, available, cleanup, eta, e
 from .events import (event_detail, event_list, event_list_web, events, update_event_cache)
 from .audio import (announce, c_out, c_out_play_web, c_out_web, getvolume, monmessage, play,
     r2d2, remind, reminder, setvolume, sounds, tts, voices)
-from .web import (c_buttons, c_leuse, control, index, index2, profile_edit, stats, stats_list,
+from .web import (c_buttons, c_leuse, control, crew_list_partial, index, index2, profile_edit, stats, stats_list,
     user, user_all, user_eta, user_list, user_list_web, user_offline, user_online)
 from .missions import (add_mission, edit_mission, is_mission_editor, mission_assign,
     mission_assign_web, mission_cancel, mission_cancel_web, mission_complete,

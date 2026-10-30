@@ -47,6 +47,8 @@ urlpatterns = [
     # re_path(r'^user/(?P<user_id>\d+)/$', views.user),
     # re_path(r'^user/(?P<object_id>\d+)/$', 'django.views.generic.list_detail.object_detail', dict(user_dict, template_name='user_detail.django'), user_dict),
     re_path(r'^user/online$', views.user_list_web, name='user_list_web'),
+    # the crew list alone, refreshed into / and /user/online by crew.js once a minute
+    re_path(r'^user/online/list$', views.crew_list_partial, name='crew_list_partial'),
     re_path(r'^user/offline$', views.user_offline, name='user_offline'),
     re_path(r'^user/eta$', views.user_eta, name='user_eta'),
     re_path(r'^user/all$', views.user_all, name='user_all'),

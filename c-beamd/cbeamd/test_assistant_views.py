@@ -492,3 +492,32 @@ def test_say_waits_for_the_user_and_speaks_over_shout(client, complete):
     tools.station.cout.tts.assert_not_called()
     confirm(client, 'c1', True)
     tools.station.cout.tts.assert_called_once_with('r2d2', 'Hallo Crew')
+
+
+# the crew list refresh --------------------------------------------------------------
+
+def test_crew_list_is_a_refreshable_partial(client):
+    from datetime import timedelta
+    from django.utils import timezone
+    from cbeamd.models import User
+    now = timezone.now()
+    User.objects.create(username='alice', status='online', logintime=now, logouttime=now - timedelta(hours=1))
+    User.objects.create(username='bob', status='eta', eta='20:00', logintime=now, logouttime=now - timedelta(hours=1))
+
+    index = client.get('/').content.decode()
+    assert 'id="crew-list" data-url="/user/online/list"' in index
+    assert 'crew.js' in index
+    assert index.count('<h1 align="center">AN BORD</h1>') == 1
+    assert 'https://alice.crew.c-base.org</a>' in index and '<iframe' not in index
+
+    online = client.get('/user/online').content.decode()
+    assert 'data-url="/user/online/list?iframe=1"' in online
+    assert '<iframe src="https://alice.crew.c-base.org"' in online
+
+    partial = client.get('/user/online/list').content.decode()
+    assert partial.startswith('\n      <h1 align="center">AN BORD</h1>') or 'AN BORD' in partial
+    assert '<html' not in partial
+    assert 'alice (' in partial and 'bob (20:00)' in partial
+    assert '<iframe' not in partial
+    assert '<iframe' in client.get('/user/online/list?iframe=1').content.decode()
+    assert Client().get('/user/online/list').status_code == 302

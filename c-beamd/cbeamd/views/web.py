@@ -82,6 +82,16 @@ def user_list_web(request):
     return render(request, 'cbeamd/user_list.django', {'user_list_online': user_list_online, 'user_list_eta': user_list_eta, 'user_list_offline': user_list_offline, 'status': 'all'})
 
 
+@login_required
+def crew_list_partial(request):
+    """the crew list alone, for crew.js to refresh / and /user/online with."""
+    return render(request, 'cbeamd/crew_list.django', {
+        'user_list_online': User.objects.filter(status="online").order_by('username'),
+        'user_list_eta': User.objects.filter(status="eta").order_by('username'),
+        'crew_iframe': request.GET.get('iframe') == '1',
+    })
+
+
 @jsonrpc_method('user_list')
 def user_list(request):
     users = User.objects.all().order_by('username')
