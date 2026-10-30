@@ -1,7 +1,11 @@
 services:
   cbeam:
     image: cbeamd:latest
-    build: .
+    build:
+      context: .
+      # the build runs in the host's network like the container itself; podman's
+      # own build network (netavark) broke after a kernel update at the station
+      network: host
     network_mode: "host"
     env_file: .env
     ports:
