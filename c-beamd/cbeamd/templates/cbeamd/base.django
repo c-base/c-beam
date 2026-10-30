@@ -7,7 +7,11 @@
     <style type="text/css">
       body {
         padding-top: 60px;
-        background: #000 url("/static/c-base-bootstrap/img/bg.jpg") center center / cover no-repeat fixed;
+        /* the station photo, dimmed: the black layer on top is 60% opaque; raise
+           the two 0.6 values for darker, lower them for more picture */
+        background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+                    url("/static/c-base-bootstrap/img/bg.jpg") center center / cover no-repeat fixed;
+        background-color: #000;
         min-height: 100vh;
       }
       /* centre logo and name on the same line as the menu entries; the logo
