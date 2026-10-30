@@ -59,9 +59,15 @@ coverage-html:
 #
 # `make up` does not migrate: c-beamd/start only collects static files. run
 # `make migrate` after pulling new migrations.
+#
+# the image is built with the engine directly, in the host's network, and
+# tagged as podman-compose.yml expects it: podman's own build network
+# (netavark) broke after a kernel update at the station, and podman-compose
+# does not pass a build network option through.
+compose_image := cbeamd:latest
 
-build: check-compose
-	$(compose) build
+build: check-engine
+	$(CONTAINER) build --network=host $(repo_root) -t $(compose_image)
 
 up: check-compose
 	@test -f "$(env_file)" || { echo "no .env at $(env_file) — cp .env.example .env and set SECRET_KEY"; exit 1; }
