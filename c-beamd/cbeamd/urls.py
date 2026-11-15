@@ -10,6 +10,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
+router.register(r'usertag', views.UserTagViewSet, basename='UserTag')
 router.register(r'member', views.MemberViewSet, basename='Member')
 router.register(r'prices', views.PriceViewSet, basename='Prices')
 router.register(r'events', views.EventViewSet, basename='Events')

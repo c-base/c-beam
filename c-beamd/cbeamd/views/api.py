@@ -14,9 +14,12 @@ from rest_framework.decorators import action
 from ..models import User
 from ..serializers import UserSerializer
 
+from .auth import tagevent
 from .bar import get_barstatus
 from .events import event_list
 from .helpers import get_prices
+from tools.ldapRfid import LdapRfidCheck
+
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -41,6 +44,15 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+
+class UserTagViewSet(viewsets.ModelViewSet):
+    @action(detail=True, methods=['post'])
+    def seen(self, request, rfid, *args, **kwargs):
+        # lookup user by tag
+        f = LdapRfidCheck("ldaps://lea.cbrp3.c-base.org", 'ou=crew,dc=c-base,dc=org', '', '', 'rfid', '(memberOf=cn=crew,ou=groups,dc=c-base,dc=org)')
+        username = f.getUserForRfid(rfid)
+        tagevent(request, username)
+           
 
 class MemberViewSet(viewsets.ViewSet):
     """
