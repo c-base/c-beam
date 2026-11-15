@@ -47,12 +47,25 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class UserTagViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
-    def seen(self, request, rfid, *args, **kwargs):
+    def seen(self, request, *args, **kwargs):
+        rfid = request.data.get('rfid')
+        if not rfid:
+            return Response({'error': 'rfid missing'}, status=status.HTTP_400_BAD_REQUEST)
         # lookup user by tag
         f = LdapRfidCheck("ldaps://lea.cbrp3.c-base.org", 'ou=crew,dc=c-base,dc=org', '', '', 'rfid', '(memberOf=cn=crew,ou=groups,dc=c-base,dc=org)')
-        username = f.getUserForRfid(rfid)
-        tagevent(request, username)
-           
+        try:
+            dn = f.getUserForRfid(rfid)
+        finally:
+            f.cleanup()
+        if dn is None:
+            return Response({'error': 'unknown rfid'}, status=status.HTTP_404_NOT_FOUND)
+        # the lookup returns the DN (uid=<nick>,ou=crew,...), tagevent wants the nick
+        username = dn.split(',')[0].split('=', 1)[1]
+        result = tagevent(request, username)
+        if isinstance(result, HttpResponse):
+            result = result.content.decode()
+        return Response({'user': username, 'result': result})
+
 
 class MemberViewSet(viewsets.ViewSet):
     """

@@ -32,4 +32,11 @@ class LdapRfidCheck:
         # print("lookup: " + rfid + " - " + self.__searchFilter + " - " + self.__rfidAttr) 
         result = self.__connection.search_s(self.__baseDn, ldap.SCOPE_SUBTREE, '%s' % (self.__searchFilter), [self.__rfidAttr])
         # print(result)
-        return getDnForLdapAttr(self.__rfidAttr, rfid, result)
+        for dn, attrs in result:
+            # an entry can carry several rfid values, each possibly comma separated
+            for value in attrs.get(self.__rfidAttr, []):
+                if isinstance(value, bytes):
+                    value = value.decode()
+                if rfid in value.split(','):
+                    return dn
+        return None
