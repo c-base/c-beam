@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import User as CBeamUser, Mission, ActivityLog, Status
+from .models import User as CBeamUser, Mission, ActivityLog, Status, Device, normalize_device_id
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -68,3 +68,46 @@ class StatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Status
         fields = ['bar_open']
+
+
+class DeviceSerializer(serializers.ModelSerializer):
+    """
+    a registered rfid reader. the key is never readable: it appears exactly
+    once, in the response that issued it (create and rotate_key), carried on
+    the instance as `plain_key` by the view.
+    """
+    key = serializers.SerializerMethodField()
+    # declared explicitly so that a form-encoded create without the field
+    # yields an enabled device, as the model default says, instead of drf's
+    # html-input rule "missing checkbox means false"
+    enabled = serializers.BooleanField(default=True)
+
+    class Meta:
+        model = Device
+        fields = [
+            'id', 'device_id', 'name', 'location', 'enabled', 'notes',
+            'created', 'last_seen', 'last_ip', 'key',
+        ]
+        read_only_fields = ['id', 'created', 'last_seen', 'last_ip']
+
+    def validate_device_id(self, value):
+        # the model's UniqueValidator compares the raw input; ids are stored
+        # normalized, so "AA:BB" and "aa:bb" have to collide here as well
+        value = normalize_device_id(value)
+        if not value:
+            raise serializers.ValidationError("device_id must not be empty")
+        others = Device.objects.filter(device_id=value)
+        if self.instance is not None:
+            others = others.exclude(pk=self.instance.pk)
+        if others.exists():
+            raise serializers.ValidationError("a device with this device_id is already registered")
+        return value
+
+    def get_key(self, obj) -> str | None:
+        return getattr(obj, 'plain_key', None)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data.get('key') is None:
+            del data['key']
+        return data

@@ -11,8 +11,9 @@ from rest_framework import permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from ..models import User
-from ..serializers import UserSerializer
+from ..models import Device, User
+from ..serializers import DeviceSerializer, UserSerializer
+from ..devices import DeviceAuthentication, IsRegisteredDevice, assign_key
 
 from .auth import tagevent
 from .bar import get_barstatus
@@ -46,6 +47,17 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class UserTagViewSet(viewsets.ViewSet):
+    """
+    tag events from the rfid readers at the airlock.
+
+    only registered devices may post here: the reader authenticates with
+    `Authorization: Device <device_id>:<key>` (see cbeamd/devices.py and the
+    devices endpoint). session and bearer authentication are deliberately not
+    accepted — a crew member is not a reader.
+    """
+    authentication_classes = [DeviceAuthentication]
+    permission_classes = [IsRegisteredDevice]
+
     @action(detail=False, methods=['post'])
     def seen(self, request, *args, **kwargs):
         rfid = request.data.get('rfid')
@@ -64,7 +76,37 @@ class UserTagViewSet(viewsets.ViewSet):
         result = tagevent(request, username)
         if isinstance(result, HttpResponse):
             result = result.content.decode()
-        return Response({'user': username, 'result': result})
+        return Response({'user': username, 'result': result, 'device': request.auth.device_id})
+
+
+class DeviceViewSet(viewsets.ModelViewSet):
+    """
+    registration of rfid readers, for admins (staff accounts) only.
+
+    ## Create device
+    Registers a reader and answers with its key — the only time the key is
+    readable. Flash it into the device together with the device_id.
+
+    ## Rotate key
+    POST to `/devices/<id>/rotate_key/` issues a new key and invalidates the
+    old one; the response carries the new key once.
+    """
+    queryset = Device.objects.all()
+    serializer_class = DeviceSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def perform_create(self, serializer):
+        device = Device(**serializer.validated_data)
+        device.plain_key = assign_key(device)
+        device.save()
+        serializer.instance = device
+
+    @action(detail=True, methods=['post'])
+    def rotate_key(self, request, *args, **kwargs):
+        device = self.get_object()
+        device.plain_key = assign_key(device)
+        device.save(update_fields=['key_hash'])
+        return Response(self.get_serializer(device).data)
 
 
 class MemberViewSet(viewsets.ViewSet):

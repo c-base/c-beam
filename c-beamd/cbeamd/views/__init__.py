@@ -52,8 +52,8 @@ from .display import (ampel, ampel_web, ampelblink, barbutton, bvg, cbeamviewer,
 from .mpd import (MPDClient, mpd_command, mpd_get_random, mpd_get_repeat, mpd_get_volume,
     mpd_listplaylists, mpd_play, mpd_status, mpd_stop, mpd_volume)
 from .health import (health_check, liveness_check, metrics, readiness_check)
-from .api import (BarViewSet, EventViewSet, MatelightViewSet, MemberViewSet, PriceViewSet,
-    UserTagViewSet, UserViewSet)
+from .api import (BarViewSet, DeviceViewSet, EventViewSet, MatelightViewSet, MemberViewSet,
+    PriceViewSet, UserTagViewSet, UserViewSet)
 from .jsonrpc import (jsonrpc_handler)
 from .oauth_login import (PasswordLoginView, oauth_callback, oauth_login)
 from .assistant import (assistant_ask, assistant_confirm, assistant_model, assistant_page,

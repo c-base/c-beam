@@ -257,3 +257,43 @@ class Status(models.Model):
     bar_open = models.BooleanField(default=False)
     airlock_stripe_mode = models.IntegerField(default=1)
     airlock_volume = models.IntegerField(default=42)
+
+
+class Device(models.Model):
+    """
+    a registered rfid reader (or other station microcontroller) that may post
+    tag events to the rest api. the reader identifies itself with `device_id`
+    and proves it with a per-device key that c-beam generated at registration;
+    only the sha256 of the key is stored. see cbeamd/devices.py.
+    """
+    device_id = models.CharField(
+        max_length=64, unique=True,
+        help_text="hardware id of the reader, e.g. the esp32 efuse mac as lowercase hex",
+    )
+    name = models.CharField(max_length=100)
+    location = models.CharField(max_length=100, blank=True, default="")
+    key_hash = models.CharField(max_length=64, editable=False)
+    enabled = models.BooleanField(default=True)
+    notes = models.TextField(blank=True, default="")
+    created = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(null=True, blank=True, editable=False)
+    last_ip = models.GenericIPAddressField(null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self) -> str:
+        return "%s (%s)" % (self.name, self.device_id)
+
+    def clean(self):
+        # runs before validate_unique(), so the admin form checks the normalized id
+        self.device_id = normalize_device_id(self.device_id)
+
+    def save(self, *args, **kwargs):
+        self.device_id = normalize_device_id(self.device_id)
+        super().save(*args, **kwargs)
+
+
+def normalize_device_id(value: str) -> str:
+    """device ids are compared case-insensitively and without surrounding whitespace."""
+    return (value or "").strip().lower()

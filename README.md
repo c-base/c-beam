@@ -222,4 +222,31 @@ for crew members.
 
 operators configure this through the `OAUTH_*` entries in `.env.example`.
 
+### rfid readers (registered devices)
+
+the readers at the airlock post tag events to `/api/v1/usertag/seen/`. that
+endpoint accepts neither sessions nor bearer tokens — only devices an admin
+has registered. a reader sends
+
+    Authorization: Device <device_id>:<key>
+
+`device_id` is the reader's hardware id. use something the chip cannot lose
+and nobody has to invent: on an esp32 the factory mac from the efuse
+(`ESP.getEfuseMac()`), on a raspberry pi pico the flash unique id
+(`pico_get_unique_board_id()`), on an stm32 the 96-bit uid register — written
+as lowercase hex, e.g. `esp32-a4cf12b3e9d0`. the id only names the device;
+mac addresses are visible on the air and trivially cloned, so it never
+authenticates on its own. that is what the key is for: c-beam generates it
+at registration, stores only its sha256 and shows it exactly once. flash it
+into the device's non-volatile storage next to the id and send both over
+https.
+
+registration is for admins (staff accounts): either in the django admin under
+*devices* — the key appears in the message after saving, the *rotate key*
+action issues a new one — or through the rest api, `POST /api/v1/devices/`
+with `device_id`, `name` and optionally `location` and `notes`; the response
+carries the key. `POST /api/v1/devices/<id>/rotate_key/` replaces it, a
+`PATCH` with `{"enabled": false}` locks a reader out without deleting it.
+`last_seen` and `last_ip` show when and from where a reader last checked in.
+
   - ...
