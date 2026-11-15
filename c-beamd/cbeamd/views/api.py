@@ -18,7 +18,7 @@ from .auth import tagevent
 from .bar import get_barstatus
 from .events import event_list
 from .helpers import get_prices
-from tools.ldapRfid import LdapRfidCheck
+from cbeamd.tools.ldapRfid import LdapRfidCheck
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -45,8 +45,8 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 
-class UserTagViewSet(viewsets.ModelViewSet):
-    @action(detail=True, methods=['post'])
+class UserTagViewSet(viewsets.ViewSet):
+    @action(detail=False, methods=['post'])
     def seen(self, request, rfid, *args, **kwargs):
         # lookup user by tag
         f = LdapRfidCheck("ldaps://lea.cbrp3.c-base.org", 'ou=crew,dc=c-base,dc=org', '', '', 'rfid', '(memberOf=cn=crew,ou=groups,dc=c-base,dc=org)')
