@@ -68,8 +68,7 @@ def fcm_update(request, user, regid):
 # This method should usually not be exposed through JSON-RPC
 # @jsonrpc_method('gcm_send')
 def gcm_send(request, title, text):
-    logger.error("gcm_Send called: %s - %s", title, text)
-    logger.critical("gcm_Send called: %s - %s", title, text)
+    logger.info("gcm_Send called: %s - %s", title, text)
     push_service = _push_service()
     if title == "now boarding":
         users = User.objects.filter(push_boarding=True)
